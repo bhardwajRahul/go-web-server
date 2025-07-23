@@ -1,6 +1,9 @@
 package view
 
-import "github.com/dunamismax/go-web-server/internal/view/layout"
+import (
+	"fmt"
+	"github.com/dunamismax/go-web-server/internal/view/layout"
+)
 
 templ Home() {
 	@layout.Base("Home") {
@@ -118,12 +121,6 @@ templ HomeContent() {
 				>
 					Health Check
 				</button>
-				<button
-					onclick="showFlash('Hello from the Modern Go Stack!', 'success')"
-					class="outline"
-				>
-					Test Flash Message
-				</button>
 			</div>
 		</div>
 	</section>
@@ -202,4 +199,44 @@ templ HomeContent() {
 			</div>
 		</article>
 	</section>
+}
+
+templ HealthCheck(status, service, version, uptime, timestamp string, checks map[string]string) {
+	<article>
+		<header>
+			<h4>System Health Check</h4>
+		</header>
+		<div class="grid">
+			<div>
+				<h6>Service Status</h6>
+				<p>
+					<strong>Status:</strong>
+					if status == "ok" {
+						<span style="color: var(--pico-color-green-600)">✓ { status }</span>
+					} else {
+						<span style="color: var(--pico-color-red-600)">✗ { status }</span>
+					}
+				</p>
+				<p><strong>Service:</strong> { service }</p>
+				<p><strong>Version:</strong> { version }</p>
+				<p><strong>Uptime:</strong> { uptime }</p>
+			</div>
+			<div>
+				<h6>Component Checks</h6>
+				for component, checkStatus := range checks {
+					<p>
+						<strong>{ fmt.Sprintf("%s:", component) }</strong>
+						if checkStatus == "ok" {
+							<span style="color: var(--pico-color-green-600)">✓ { checkStatus }</span>
+						} else {
+							<span style="color: var(--pico-color-red-600)">✗ { checkStatus }</span>
+						}
+					</p>
+				}
+			</div>
+		</div>
+		<footer>
+			<small><strong>Last checked:</strong> { timestamp }</small>
+		</footer>
+	</article>
 }

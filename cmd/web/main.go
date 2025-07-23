@@ -1,3 +1,4 @@
+// Package main provides the entry point for the Go web server application.
 package main
 
 import (
@@ -118,7 +119,7 @@ func main() {
 		LogLatency:   true,
 		LogRemoteIP:  true,
 		LogUserAgent: cfg.App.Debug,
-		LogValuesFunc: func(c echo.Context, v echomiddleware.RequestLoggerValues) error {
+		LogValuesFunc: func(_ echo.Context, v echomiddleware.RequestLoggerValues) error {
 			if v.Error == nil {
 				slog.Info("request",
 					"method", v.Method,
@@ -166,7 +167,7 @@ func main() {
 		IdentifierExtractor: func(c echo.Context) (string, error) {
 			return c.RealIP(), nil
 		},
-		ErrorHandler: func(context echo.Context, err error) error {
+		ErrorHandler: func(_ echo.Context, err error) error {
 			return middleware.ErrTooManyRequests.WithInternal(err)
 		},
 	}))

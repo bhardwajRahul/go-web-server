@@ -1,3 +1,4 @@
+// Package middleware provides custom middleware functions for the Echo web framework.
 package middleware
 
 import (
@@ -186,12 +187,12 @@ func RecoveryMiddleware() echo.MiddlewareFunc {
 }
 
 // NotFoundHandler handles 404 errors
-func NotFoundHandler(c echo.Context) error {
+func NotFoundHandler(_ echo.Context) error {
 	return ErrNotFound
 }
 
 // MethodNotAllowedHandler handles 405 errors
-func MethodNotAllowedHandler(c echo.Context) error {
+func MethodNotAllowedHandler(_ echo.Context) error {
 	return NewAppError(http.StatusMethodNotAllowed, "Method not allowed")
 }
 

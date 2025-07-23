@@ -4,10 +4,20 @@
 *.dll
 *.so
 *.dylib
+
+# Build directories and binaries
 /bin/
 /dist/
 bin/
 bin
+server
+server.exe
+
+# Generated binaries (common names)
+main
+main.exe
+app
+app.exe
 
 # Test binary, built with `go test -c`
 *.test
@@ -73,7 +83,61 @@ Thumbs.db
 # Air (hot reload) temporary files
 .air/
 tmp-air/
+build-errors.log
+
+# Development and testing files
+*.test.cache/
+testdata/
+coverage/
+.coverage/
+
+# Generated code (templ, sqlc, etc.)
+*_templ.go
+*.sql.go
+
+# Node.js (if frontend tooling is added)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Docker
+.dockerignore
+Dockerfile.dev
+docker-compose.override.yml
+
+# CI/CD
+.github/workflows/test.yml.bak
+
+# Configuration overrides
+config.local.json
+config.local.yaml
+config.local.yml
+config.local.toml
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+*.ca-bundle
+
+# Memory and CPU profiles
+*.prof
+*.mem
+*.cpu
 
 # Backup files
 *.bak
 *.backup
+
+# Future-proofing: common artifacts
+dist/
+build/
+out/
+target/
+.next/
+.nuxt/
+.cache/
+public/build/

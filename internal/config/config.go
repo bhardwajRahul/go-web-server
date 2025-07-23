@@ -1,3 +1,4 @@
+// Package config provides application configuration management using Koanf.
 package config
 
 import (
@@ -15,6 +16,7 @@ import (
 	"github.com/knadh/koanf/v2"
 )
 
+// Config holds all application configuration settings.
 type Config struct {
 	// Server configuration
 	Server struct {
@@ -55,6 +57,7 @@ type Config struct {
 	} `koanf:"features"`
 }
 
+// New creates and returns a new configuration instance with defaults, file, and environment overrides.
 func New() *Config {
 	k := koanf.New(".")
 

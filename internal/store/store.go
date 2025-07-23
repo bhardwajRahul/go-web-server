@@ -1,10 +1,11 @@
+// Package store provides database access and query execution functionality.
 package store
 
 import (
 	"database/sql"
 	"fmt"
 
-	_ "modernc.org/sqlite"
+	_ "modernc.org/sqlite" // Import SQLite driver
 )
 
 // Store provides all functions to execute db queries.

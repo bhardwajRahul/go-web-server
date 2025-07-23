@@ -12,10 +12,12 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// UserHandler handles all user-related HTTP requests including CRUD operations.
 type UserHandler struct {
 	store *store.Store
 }
 
+// NewUserHandler creates a new UserHandler with the given store.
 func NewUserHandler(s *store.Store) *UserHandler {
 	return &UserHandler{
 		store: s,
@@ -93,27 +95,27 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 	name := c.FormValue("name")
 	email := c.FormValue("email")
 	bio := c.FormValue("bio")
-	avatarUrl := c.FormValue("avatar_url")
+	avatarURL := c.FormValue("avatar_url")
 
 	if name == "" || email == "" {
 		return c.String(http.StatusBadRequest, "Name and email are required")
 	}
 
-	var bioSql sql.NullString
+	var bioSQL sql.NullString
 	if bio != "" {
-		bioSql = sql.NullString{String: bio, Valid: true}
+		bioSQL = sql.NullString{String: bio, Valid: true}
 	}
 
-	var avatarUrlSql sql.NullString
-	if avatarUrl != "" {
-		avatarUrlSql = sql.NullString{String: avatarUrl, Valid: true}
+	var avatarURLSQL sql.NullString
+	if avatarURL != "" {
+		avatarURLSQL = sql.NullString{String: avatarURL, Valid: true}
 	}
 
 	params := store.CreateUserParams{
 		Email:     email,
 		Name:      name,
-		Bio:       bioSql,
-		AvatarUrl: avatarUrlSql,
+		Bio:       bioSQL,
+		AvatarUrl: avatarURLSQL,
 	}
 
 	_, err := h.store.CreateUser(ctx, params)
@@ -147,26 +149,26 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 
 	name := c.FormValue("name")
 	bio := c.FormValue("bio")
-	avatarUrl := c.FormValue("avatar_url")
+	avatarURL := c.FormValue("avatar_url")
 
 	if name == "" {
 		return c.String(http.StatusBadRequest, "Name is required")
 	}
 
-	var bioSql sql.NullString
+	var bioSQL sql.NullString
 	if bio != "" {
-		bioSql = sql.NullString{String: bio, Valid: true}
+		bioSQL = sql.NullString{String: bio, Valid: true}
 	}
 
-	var avatarUrlSql sql.NullString
-	if avatarUrl != "" {
-		avatarUrlSql = sql.NullString{String: avatarUrl, Valid: true}
+	var avatarURLSQL sql.NullString
+	if avatarURL != "" {
+		avatarURLSQL = sql.NullString{String: avatarURL, Valid: true}
 	}
 
 	params := store.UpdateUserParams{
 		Name:      name,
-		Bio:       bioSql,
-		AvatarUrl: avatarUrlSql,
+		Bio:       bioSQL,
+		AvatarUrl: avatarURLSQL,
 		ID:        id,
 	}
 
