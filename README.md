@@ -4,20 +4,24 @@
 
 <p align="center">
   <a href="https://github.com/dunamismax/go-web-server">
-    <img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&size=24&pause=1000&color=00ADD8&center=true&vCenter=true&width=900&lines=The+Modern+Go+Stack;Echo+%2B+Templ+%2B+HTMX+%2B+Pico.css;Type-Safe+SQL+with+SQLC;Structured+Logging+%26+Testing;Production-Ready+Template;Single+Binary+Deployment;Zero+External+Dependencies" alt="Typing SVG" />
+    <img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&size=24&pause=1000&color=00ADD8&center=true&vCenter=true&width=900&lines=The+Modern+Go+Stack;Echo+v4+%2B+Templ+%2B+HTMX+2.x+%2B+Pico.css+v2;Type-Safe+SQL+with+SQLC+%26+Pure+Go+SQLite;Structured+Logging+with+slog+%26+JSON+Output;Hot+Reload+with+Air+%26+Mage+Build+Automation;Database+Migrations+with+Goose;Multi-Source+Configuration+with+Koanf;Production-Ready+Security+%26+Middleware;Single+Binary+Deployment+~11MB;Zero+External+Dependencies" alt="Typing SVG" />
   </a>
 </p>
 
 <p align="center">
   <a href="https://golang.org/"><img src="https://img.shields.io/badge/Go-1.24+-00ADD8.svg?logo=go" alt="Go Version"></a>
-  <a href="https://echo.labstack.com/"><img src="https://img.shields.io/badge/Framework-Echo-00ADD8.svg?logo=go" alt="Echo Framework"></a>
+  <a href="https://echo.labstack.com/"><img src="https://img.shields.io/badge/Framework-Echo_v4-00ADD8.svg?logo=go" alt="Echo Framework"></a>
   <a href="https://templ.guide/"><img src="https://img.shields.io/badge/Templates-Templ-00ADD8.svg?logo=go" alt="Templ"></a>
-  <a href="https://htmx.org/"><img src="https://img.shields.io/badge/Frontend-HTMX-3D72D7.svg?logo=htmx" alt="HTMX"></a>
-  <a href="https://picocss.com/"><img src="https://img.shields.io/badge/CSS-Pico.css-13795B.svg" alt="Pico.css"></a>
+  <a href="https://htmx.org/"><img src="https://img.shields.io/badge/Frontend-HTMX_2.x-3D72D7.svg?logo=htmx" alt="HTMX"></a>
+  <a href="https://picocss.com/"><img src="https://img.shields.io/badge/CSS-Pico.css_v2-13795B.svg" alt="Pico.css"></a>
   <a href="https://sqlc.dev/"><img src="https://img.shields.io/badge/Queries-SQLC-00ADD8.svg?logo=go" alt="SQLC"></a>
   <a href="https://www.sqlite.org/"><img src="https://img.shields.io/badge/Database-SQLite-003B57.svg?logo=sqlite" alt="SQLite"></a>
+  <a href="https://pkg.go.dev/modernc.org/sqlite"><img src="https://img.shields.io/badge/Driver-Pure_Go-00ADD8.svg?logo=go" alt="Pure Go SQLite"></a>
   <a href="https://pkg.go.dev/log/slog"><img src="https://img.shields.io/badge/Logging-slog-00ADD8.svg?logo=go" alt="Go slog"></a>
-  <a href="https://golang.org/pkg/go/"><img src="https://img.shields.io/badge/Build-go%20generate-purple.svg?logo=go" alt="Go Generate"></a>
+  <a href="https://github.com/knadh/koanf"><img src="https://img.shields.io/badge/Config-Koanf-00ADD8.svg?logo=go" alt="Koanf"></a>
+  <a href="https://github.com/pressly/goose"><img src="https://img.shields.io/badge/Migrations-Goose-00ADD8.svg?logo=go" alt="Goose"></a>
+  <a href="https://magefile.org/"><img src="https://img.shields.io/badge/Build-Mage-purple.svg?logo=go" alt="Mage"></a>
+  <a href="https://github.com/air-verse/air"><img src="https://img.shields.io/badge/HotReload-Air-FF6B6B.svg?logo=go" alt="Air"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License"></a>
 </p>
 
@@ -29,30 +33,31 @@ A production-ready template for modern web applications using **The Modern Go St
 
 **Key Features:**
 
-- **Echo + Templ + HTMX**: Modern web stack with type-safe templates and dynamic UX
-- **SQLC + SQLite**: Type-safe database operations with pure Go driver
-- **Structured Logging**: Built-in slog with JSON output for production
-
-- **Production Security**: Rate limiting, CORS, secure headers, graceful shutdown
-- **Developer Experience**: Hot reload, Mage automation, static analysis
+- **Echo v4 + Templ + HTMX 2.x**: High-performance web framework with type-safe templates and dynamic UX
+- **SQLC + SQLite + Pure Go Driver**: Type-safe database operations with zero CGO dependencies
+- **Structured Logging**: Built-in slog with JSON output and configurable levels
+- **Mage Build System**: Go-based automation with comprehensive quality checks
+- **Production Security**: Rate limiting, CORS, secure headers, graceful shutdown, middleware
+- **Developer Experience**: Hot reload with Air, database migrations with Goose, multi-source config
 
 ## Tech Stack
 
-| Layer          | Technology                                                  | Purpose                                 |
-| -------------- | ----------------------------------------------------------- | --------------------------------------- |
-| **Language**   | [Go 1.24](https://go.dev/doc/)                              | Latest performance & features           |
-| **Framework**  | [Echo](https://echo.labstack.com/)                          | High-performance web framework          |
-| **Templates**  | [Templ](https://templ.guide/)                               | Type-safe Go HTML components            |
-| **Logging**    | [slog](https://pkg.go.dev/log/slog)                         | Structured logging with JSON output     |
-| **Database**   | [SQLite](https://www.sqlite.org/)                           | Self-contained, serverless database     |
-| **Queries**    | [SQLC](https://sqlc.dev/)                                   | Generate type-safe Go from SQL          |
-| **DB Driver**  | [modernc.org/sqlite](https://pkg.go.dev/modernc.org/sqlite) | Pure Go, CGO-free SQLite driver         |
-| **Frontend**   | [HTMX](https://htmx.org/)                                   | Dynamic interactions without JavaScript |
-| **CSS**        | [Pico.css](https://picocss.com/)                            | Minimal, semantic CSS framework         |
-| **Assets**     | [Go Embed](https://pkg.go.dev/embed)                        | Single binary with embedded resources   |
-| **Config**     | [Koanf](https://github.com/knadh/koanf)                     | Multi-source configuration management   |
-| **Migrations** | [Goose](https://github.com/pressly/goose)                   | Database migration management           |
-| **Build**      | [Mage](https://magefile.org/)                               | Go-based build automation               |
+| Layer          | Technology                                                  | Purpose                                |
+| -------------- | ----------------------------------------------------------- | -------------------------------------- |
+| **Language**   | [Go 1.24+](https://go.dev/doc/)                             | Latest performance & language features |
+| **Framework**  | [Echo v4](https://echo.labstack.com/)                       | High-performance web framework         |
+| **Templates**  | [Templ](https://templ.guide/)                               | Type-safe Go HTML components           |
+| **Frontend**   | [HTMX 2.x](https://htmx.org/)                               | Dynamic interactions with smooth UX    |
+| **CSS**        | [Pico.css v2](https://picocss.com/)                         | Semantic CSS with dark/light themes    |
+| **Logging**    | [slog](https://pkg.go.dev/log/slog)                         | Structured logging with JSON output    |
+| **Database**   | [SQLite](https://www.sqlite.org/)                           | Self-contained, serverless database    |
+| **Queries**    | [SQLC](https://sqlc.dev/)                                   | Generate type-safe Go from SQL         |
+| **DB Driver**  | [modernc.org/sqlite](https://pkg.go.dev/modernc.org/sqlite) | Pure Go, CGO-free SQLite driver        |
+| **Assets**     | [Go Embed](https://pkg.go.dev/embed)                        | Single binary with embedded resources  |
+| **Config**     | [Koanf](https://github.com/knadh/koanf)                     | Multi-source configuration management  |
+| **Migrations** | [Goose](https://github.com/pressly/goose)                   | Database migration management          |
+| **Build**      | [Mage](https://magefile.org/)                               | Go-based build automation              |
+| **Hot Reload** | [Air](https://github.com/air-verse/air)                     | Development server with live reload    |
 
 <p align="center">
   <img src="https://github.com/dunamismax/images/blob/main/gopher-mage.svg" alt="Gopher Mage" width="200" />
@@ -122,7 +127,12 @@ mage clean (c)        # Clean build artifacts
 
 ### Web Demo (`localhost:8080`)
 
-Interactive user management application demonstrating the full Modern Go Stack with CRUD operations, real-time updates, and responsive design.
+Interactive user management application demonstrating the complete Modern Go Stack with:
+
+- CRUD operations with type-safe database queries
+- Real-time updates via HTMX with smooth page transitions
+- Responsive design with automatic dark/light theme switching
+- Custom middleware for security, validation, and error handling
 
 ## Project Structure
 
@@ -172,30 +182,30 @@ Koanf supports multiple configuration sources (JSON, YAML, TOML files + environm
 
 **Modern Web Stack:**
 
-- Echo framework with comprehensive middleware
-- Type-safe Templ templates with components
-- HTMX dynamic interactions without JavaScript
-- Pico.css semantic styling with themes
-- SQLC type-safe database queries
-- Structured logging with slog
+- Echo v4 framework with comprehensive middleware stack
+- Type-safe Templ templates with reusable components
+- HTMX 2.x dynamic interactions with smooth page transitions
+- Pico.css v2 semantic styling with automatic dark/light themes
+- SQLC type-safe database queries with pure Go SQLite driver
+- Structured logging with slog and configurable JSON output
 
 **Developer Experience:**
 
-- Hot reloading with Air
-- Request validation middleware
-- Comprehensive error handling
-- Static analysis (golangci-lint, govulncheck)
-- Mage build automation with goimports
-- Single-command CI pipeline
+- Hot reloading with Air for rapid development
+- Custom request validation middleware with struct tags
+- Comprehensive error handling with structured logging
+- Static analysis suite (golangci-lint, govulncheck, go vet)
+- Mage build automation with goimports and templ formatting
+- Single-command CI pipeline with quality checks
 
 **Production Ready:**
 
-- Security middleware & rate limiting
-- Graceful shutdown & request tracing
-- Multi-source configuration with Koanf
-- Goose database migrations
-- Single binary deployment (~11MB)
-- Zero external dependencies
+- Security middleware stack with rate limiting and CORS
+- Graceful shutdown with timeout and request tracing
+- Multi-source configuration with Koanf (JSON, YAML, ENV)
+- Database migrations with Goose (SQL and Go support)
+- Single binary deployment (~11MB) with embedded assets
+- Zero external dependencies and CGO-free compilation
 
 <p align="center">
   <a href="https://buymeacoffee.com/dunamismax" target="_blank">
@@ -219,7 +229,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 <p align="center">
   <strong>The Modern Go Stack</strong><br>
-  <sub>Echo • Templ • HTMX • Pico.css • SQLC • SQLite • slog</sub>
+  <sub>Echo v4 • Templ • HTMX 2.x • Pico.css v2 • SQLC • SQLite • slog • Koanf • Goose • Mage • Air</sub>
 </p>
 
 <p align="center">
