@@ -26,14 +26,15 @@ templ HomeContent() {
 			</div>
 			<div>
 				<button
-					hx-get="/users/list"
+					hx-get="/demo"
 					hx-target="#demo-area"
-					hx-swap="innerHTML"
+					hx-swap="innerHTML swap:0s settle:0s"
 					hx-trigger="click"
 					class="contrast"
+					hx-indicator=".demo-indicator"
 				>
-					<span>Try Live Demo</span>
-					<span class="htmx-indicator" aria-hidden="true">Loading...</span>
+					Try Live Demo
+					<span class="demo-indicator htmx-indicator" style="margin-left: 0.5rem;" aria-hidden="true">⏳</span>
 				</button>
 			</div>
 		</div>
@@ -107,19 +108,22 @@ templ HomeContent() {
 				<button
 					hx-get="/users/list"
 					hx-target="#demo-area"
-					hx-swap="innerHTML"
+					hx-swap="innerHTML swap:0s settle:0s"
 					hx-trigger="click"
+					hx-indicator=".users-indicator"
 				>
 					Load Users
-					<span class="htmx-indicator" aria-hidden="true">Loading...</span>
+					<span class="users-indicator htmx-indicator" style="margin-left: 0.5rem;" aria-hidden="true">⏳</span>
 				</button>
 				<button
 					hx-get="/health"
 					hx-target="#demo-area"
-					hx-swap="innerHTML"
+					hx-swap="innerHTML swap:0s settle:0s"
 					class="secondary"
+					hx-indicator=".health-indicator"
 				>
 					Health Check
+					<span class="health-indicator htmx-indicator" style="margin-left: 0.5rem;" aria-hidden="true">⏳</span>
 				</button>
 			</div>
 		</div>
@@ -199,6 +203,54 @@ templ HomeContent() {
 			</div>
 		</article>
 	</section>
+}
+
+templ DemoContent(message string, features []string, serverTime, requestID string) {
+	<article class="fade-in">
+		<header>
+			<h4>🚀 Live Demo Results</h4>
+		</header>
+		<p><strong>{ message }</strong></p>
+		<div class="grid">
+			<div>
+				<h6>Features Demonstrated:</h6>
+				<ul>
+					for _, feature := range features {
+						<li>{ feature }</li>
+					}
+				</ul>
+			</div>
+			<div>
+				<h6>Technical Details:</h6>
+				<p><small><strong>Server Time:</strong> { serverTime }</small></p>
+				if requestID != "" {
+					<p><small><strong>Request ID:</strong> { requestID }</small></p>
+				}
+				<p><small><strong>Content Type:</strong> Server-rendered HTML</small></p>
+				<p><small><strong>Method:</strong> HTMX partial page update</small></p>
+			</div>
+		</div>
+		<footer>
+			<div role="group">
+				<button
+					hx-get="/demo"
+					hx-target="#demo-area"
+					hx-swap="innerHTML"
+					class="secondary"
+				>
+					🔄 Reload Demo
+				</button>
+				<button
+					hx-get="/health"
+					hx-target="#demo-area"
+					hx-swap="innerHTML"
+					class="outline"
+				>
+					📊 System Health
+				</button>
+			</div>
+		</footer>
+	</article>
 }
 
 templ HealthCheck(status, service, version, uptime, timestamp string, checks map[string]string) {

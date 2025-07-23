@@ -37,6 +37,7 @@ func RegisterRoutes(e *echo.Echo, handlers *Handlers) error {
 
 	// Home routes
 	e.GET("/", handlers.Home.Home)
+	e.GET("/demo", handlers.Home.Demo)
 	e.GET("/health", handlers.Home.Health)
 
 	// User management routes
