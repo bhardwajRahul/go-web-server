@@ -1,0 +1,147 @@
+# golangci-lint configuration for Modern Go Web Server
+# This configuration follows best practices for Go 1.24+ development
+
+version: 2
+
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+  skip-dirs:
+    - bin
+    - tmp
+    - vendor
+  skip-files:
+    - ".*_templ.go$"  # Skip generated templ files
+    - "queries.sql.go"  # Skip generated sqlc files
+
+output:
+  format: colored-text
+  print-issued-lines: true
+  print-linter-name: true
+  uniq-by-line: true
+  sort-results: true
+
+linters-settings:
+  # Enable all error checks
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    exclude-functions:
+      - (io.Closer).Close
+
+  # Gocyclo complexity check
+  gocyclo:
+    min-complexity: 15
+
+  # Gofmt settings
+  gofumpt:
+    lang-version: "1.24"
+    extra-rules: true
+
+  # Goimports settings
+  goimports:
+    local-prefixes: github.com/dunamismax/go-web-server
+
+  # Govet settings
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment  # Can be too strict for readability
+
+  # Ineffassign settings
+  ineffassign:
+    check-exported: true
+
+  # Misspell settings
+  misspell:
+    locale: US
+
+  # Prealloc settings
+  prealloc:
+    simple: true
+    range-loops: true
+    for-loops: true
+
+  # Unparam settings
+  unparam:
+    check-exported: true
+
+  # Unused settings
+  unused:
+    check-exported: false
+
+  # Whitespace settings
+  whitespace:
+    multi-if: false
+    multi-func: false
+
+  # Security-focused linters
+  gosec:
+    confidence: medium
+    severity: medium
+    excludes:
+      - G104  # Errors unhandled - we use errcheck for this
+
+  # Documentation linters
+  revive:
+    min-confidence: 0.8
+    rules:
+      - name: exported
+        severity: warning
+        disabled: false
+        arguments:
+          - "checkPrivateReceivers"
+          - "sayRepetitiveInsteadOfStutters"
+
+linters:
+  enable:
+    # Default enabled linters
+    - errcheck      # Check for unchecked errors
+    - govet         # Go vet analysis
+    - ineffassign   # Detect ineffectual assignments
+    - staticcheck   # Static analysis
+    - unused        # Check for unused code
+
+    # Additional useful linters
+    - bodyclose     # Check HTTP response body closure
+    - gosec         # Security analysis
+    - misspell      # Fix common spelling mistakes
+    - revive        # Fast, configurable linter
+
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - gosec
+        - unparam
+
+    # Exclude generated files
+    - path: ".*_templ.go"
+      linters:
+        - revive
+        - unused
+        - deadcode
+
+    # Exclude sqlc generated files
+    - path: "queries.sql.go"
+      linters:
+        - revive
+        - unused
+        - deadcode
+
+  # Maximum issues count per one linter
+  max-issues-per-linter: 0
+
+  # Maximum count of issues with the same text
+  max-same-issues: 0
+
+  # Show only new issues
+  new: false
+
+  # Fix found issues if possible
+  fix: false

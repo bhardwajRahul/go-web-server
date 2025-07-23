@@ -3,124 +3,182 @@ package config
 import (
 	"log/slog"
 	"os"
-	"strconv"
+	"strings"
 	"time"
+
+	"github.com/knadh/koanf/parsers/json"
+	"github.com/knadh/koanf/parsers/toml"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/env"
+	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/providers/structs"
+	"github.com/knadh/koanf/v2"
 )
 
 type Config struct {
 	// Server configuration
-	Port            string
-	Host            string
-	ReadTimeout     time.Duration
-	WriteTimeout    time.Duration
-	ShutdownTimeout time.Duration
+	Server struct {
+		Port            string        `koanf:"port"`
+		Host            string        `koanf:"host"`
+		ReadTimeout     time.Duration `koanf:"read_timeout"`
+		WriteTimeout    time.Duration `koanf:"write_timeout"`
+		ShutdownTimeout time.Duration `koanf:"shutdown_timeout"`
+	} `koanf:"server"`
 
 	// Database configuration
-	DatabaseURL            string
-	DatabaseMaxConnections int
-	DatabaseTimeout        time.Duration
-	RunMigrations          bool
+	Database struct {
+		URL            string        `koanf:"url"`
+		MaxConnections int           `koanf:"max_connections"`
+		Timeout        time.Duration `koanf:"timeout"`
+		RunMigrations  bool          `koanf:"run_migrations"`
+	} `koanf:"database"`
 
 	// Application configuration
-	Environment string
-	Debug       bool
-	LogLevel    slog.Level
-	LogFormat   string // "json" or "text"
+	App struct {
+		Environment string `koanf:"environment"`
+		Debug       bool   `koanf:"debug"`
+		LogLevel    string `koanf:"log_level"`
+		LogFormat   string `koanf:"log_format"`
+	} `koanf:"app"`
 
 	// Security configuration
-	TrustedProxies []string
-	EnableCORS     bool
-	AllowedOrigins []string
+	Security struct {
+		TrustedProxies []string `koanf:"trusted_proxies"`
+		EnableCORS     bool     `koanf:"enable_cors"`
+		AllowedOrigins []string `koanf:"allowed_origins"`
+	} `koanf:"security"`
 
 	// Feature flags
-	EnableMetrics bool
-	EnablePprof   bool
+	Features struct {
+		EnableMetrics bool `koanf:"enable_metrics"`
+		EnablePprof   bool `koanf:"enable_pprof"`
+	} `koanf:"features"`
 }
 
 func New() *Config {
-	cfg := &Config{
-		// Server defaults
-		Port:            getEnv("PORT", "8080"),
-		Host:            getEnv("HOST", ""),
-		ReadTimeout:     getDurationEnv("READ_TIMEOUT", 10*time.Second),
-		WriteTimeout:    getDurationEnv("WRITE_TIMEOUT", 10*time.Second),
-		ShutdownTimeout: getDurationEnv("SHUTDOWN_TIMEOUT", 30*time.Second),
+	k := koanf.New(".")
 
-		// Database defaults
-		DatabaseURL:            getEnv("DATABASE_URL", "data.db"),
-		DatabaseMaxConnections: getIntEnv("DATABASE_MAX_CONNECTIONS", 25),
-		DatabaseTimeout:        getDurationEnv("DATABASE_TIMEOUT", 30*time.Second),
-		RunMigrations:          getBoolEnv("RUN_MIGRATIONS", true),
-
-		// Application defaults
-		Environment: getEnv("ENVIRONMENT", "development"),
-		Debug:       getBoolEnv("DEBUG", false),
-		LogFormat:   getEnv("LOG_FORMAT", "text"),
-
-		// Security defaults
-		TrustedProxies: []string{"127.0.0.1"},
-		EnableCORS:     getBoolEnv("ENABLE_CORS", true),
-		AllowedOrigins: []string{"*"},
-
-		// Feature flags
-		EnableMetrics: getBoolEnv("ENABLE_METRICS", false),
-		EnablePprof:   getBoolEnv("ENABLE_PPROF", false),
+	// Set defaults using structs provider
+	cfg := getDefaults()
+	if err := k.Load(structs.Provider(cfg, "koanf"), nil); err != nil {
+		slog.Error("failed to load default config", "error", err)
+		os.Exit(1)
 	}
 
-	// Set log level
-	switch getEnv("LOG_LEVEL", "info") {
-	case "debug":
-		cfg.LogLevel = slog.LevelDebug
-		cfg.Debug = true
-	case "warn":
-		cfg.LogLevel = slog.LevelWarn
-	case "error":
-		cfg.LogLevel = slog.LevelError
-	default:
-		cfg.LogLevel = slog.LevelInfo
+	// Load from config file if exists (supports JSON, YAML, TOML)
+	configFiles := []struct {
+		path   string
+		parser koanf.Parser
+	}{
+		{"config.json", json.Parser()},
+		{"config.yaml", yaml.Parser()},
+		{"config.yml", yaml.Parser()},
+		{"config.toml", toml.Parser()},
+	}
+
+	for _, configFile := range configFiles {
+		if _, err := os.Stat(configFile.path); err == nil {
+			if err := k.Load(file.Provider(configFile.path), configFile.parser); err != nil {
+				slog.Warn("failed to load config file", "file", configFile.path, "error", err)
+			} else {
+				slog.Info("loaded configuration from file", "file", configFile.path)
+				break
+			}
+		}
+	}
+
+	// Load from environment variables (highest priority)
+	if err := k.Load(env.Provider("", ".", func(s string) string {
+		return strings.ReplaceAll(strings.ToLower(s), "_", ".")
+	}), nil); err != nil {
+		slog.Error("failed to load environment config", "error", err)
+		os.Exit(1)
+	}
+
+	// Unmarshal into config struct
+	var finalCfg Config
+	if err := k.Unmarshal("", &finalCfg); err != nil {
+		slog.Error("failed to unmarshal config", "error", err)
+		os.Exit(1)
 	}
 
 	// Production overrides
-	if cfg.Environment == "production" {
-		cfg.Debug = false
-		cfg.LogFormat = "json"
-		cfg.AllowedOrigins = []string{}
-		cfg.RunMigrations = false
+	if finalCfg.App.Environment == "production" {
+		finalCfg.App.Debug = false
+		finalCfg.App.LogFormat = "json"
+		finalCfg.Security.AllowedOrigins = []string{}
+		finalCfg.Database.RunMigrations = false
 	}
 
-	return cfg
+	return &finalCfg
 }
 
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
+func getDefaults() Config {
+	return Config{
+		Server: struct {
+			Port            string        `koanf:"port"`
+			Host            string        `koanf:"host"`
+			ReadTimeout     time.Duration `koanf:"read_timeout"`
+			WriteTimeout    time.Duration `koanf:"write_timeout"`
+			ShutdownTimeout time.Duration `koanf:"shutdown_timeout"`
+		}{
+			Port:            "8080",
+			Host:            "",
+			ReadTimeout:     10 * time.Second,
+			WriteTimeout:    10 * time.Second,
+			ShutdownTimeout: 30 * time.Second,
+		},
+		Database: struct {
+			URL            string        `koanf:"url"`
+			MaxConnections int           `koanf:"max_connections"`
+			Timeout        time.Duration `koanf:"timeout"`
+			RunMigrations  bool          `koanf:"run_migrations"`
+		}{
+			URL:            "data.db",
+			MaxConnections: 25,
+			Timeout:        30 * time.Second,
+			RunMigrations:  true,
+		},
+		App: struct {
+			Environment string `koanf:"environment"`
+			Debug       bool   `koanf:"debug"`
+			LogLevel    string `koanf:"log_level"`
+			LogFormat   string `koanf:"log_format"`
+		}{
+			Environment: "development",
+			Debug:       false,
+			LogLevel:    "info",
+			LogFormat:   "text",
+		},
+		Security: struct {
+			TrustedProxies []string `koanf:"trusted_proxies"`
+			EnableCORS     bool     `koanf:"enable_cors"`
+			AllowedOrigins []string `koanf:"allowed_origins"`
+		}{
+			TrustedProxies: []string{"127.0.0.1"},
+			EnableCORS:     true,
+			AllowedOrigins: []string{"*"},
+		},
+		Features: struct {
+			EnableMetrics bool `koanf:"enable_metrics"`
+			EnablePprof   bool `koanf:"enable_pprof"`
+		}{
+			EnableMetrics: false,
+			EnablePprof:   false,
+		},
 	}
-	return defaultValue
 }
 
-func getBoolEnv(key string, defaultValue bool) bool {
-	if value := os.Getenv(key); value != "" {
-		if b, err := strconv.ParseBool(value); err == nil {
-			return b
-		}
+// GetLogLevel converts the string log level to slog.Level
+func (c *Config) GetLogLevel() slog.Level {
+	switch strings.ToLower(c.App.LogLevel) {
+	case "debug":
+		return slog.LevelDebug
+	case "warn", "warning":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
 	}
-	return defaultValue
-}
-
-func getIntEnv(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if i, err := strconv.Atoi(value); err == nil {
-			return i
-		}
-	}
-	return defaultValue
-}
-
-func getDurationEnv(key string, defaultValue time.Duration) time.Duration {
-	if value := os.Getenv(key); value != "" {
-		if d, err := time.ParseDuration(value); err == nil {
-			return d
-		}
-	}
-	return defaultValue
 }

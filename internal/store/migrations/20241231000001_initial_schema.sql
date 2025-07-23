@@ -1,3 +1,4 @@
+-- +goose Up
 -- Initial schema for users table
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,3 +23,9 @@ INSERT INTO users (email, name, bio) VALUES
     ('bob@example.com', 'Bob Smith', 'DevOps engineer who loves automation'),
     ('charlie@example.com', 'Charlie Brown', 'UI/UX designer focused on user experience')
 ON CONFLICT(email) DO NOTHING;
+
+-- +goose Down
+-- Rollback initial schema
+DROP INDEX IF EXISTS idx_users_active;
+DROP INDEX IF EXISTS idx_users_email;
+DROP TABLE IF EXISTS users;

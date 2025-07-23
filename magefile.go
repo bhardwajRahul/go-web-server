@@ -30,14 +30,14 @@ func Build() error {
 
 func buildServer() error {
 	fmt.Println("🔨 Building server...")
-	
+
 	if err := sh.Run("mkdir", "-p", buildDir); err != nil {
 		return fmt.Errorf("failed to create build directory: %w", err)
 	}
 
 	ldflags := "-s -w -X main.version=1.0.0 -X main.buildTime=" + getCurrentTime()
 	binaryPath := filepath.Join(buildDir, binaryName)
-	
+
 	// Add .exe extension on Windows
 	if runtime.GOOS == "windows" {
 		binaryPath += ".exe"
@@ -71,20 +71,32 @@ func generateTempl() error {
 	return sh.RunV("templ", "generate")
 }
 
-
-
-// Fmt formats and tidies code
+// Fmt formats and tidies code using goimports and standard tooling
 func Fmt() error {
 	fmt.Println("✨ Formatting and tidying...")
-	
+
+	// Tidy go modules
 	if err := sh.RunV("go", "mod", "tidy"); err != nil {
 		return fmt.Errorf("failed to tidy modules: %w", err)
 	}
-	
-	if err := sh.RunV("go", "fmt", "./..."); err != nil {
-		return fmt.Errorf("failed to format code: %w", err)
+
+	// Use goimports for better import management and formatting
+	fmt.Println("  📦 Running goimports...")
+	gopath := os.Getenv("GOPATH")
+	if gopath == "" {
+		if home := os.Getenv("HOME"); home != "" {
+			gopath = filepath.Join(home, "go")
+		}
 	}
-	
+
+	goimportsPath := filepath.Join(gopath, "bin", "goimports")
+	if err := sh.RunV(goimportsPath, "-w", "."); err != nil {
+		fmt.Printf("Warning: goimports failed, falling back to go fmt: %v\n", err)
+		if err := sh.RunV("go", "fmt", "./..."); err != nil {
+			return fmt.Errorf("failed to format code: %w", err)
+		}
+	}
+
 	// Format templ files if templ is available
 	if err := sh.Run("which", "templ"); err == nil {
 		fmt.Println("  🎨 Formatting templ files...")
@@ -92,7 +104,7 @@ func Fmt() error {
 			fmt.Printf("Warning: failed to format templ files: %v\n", err)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -108,49 +120,38 @@ func VulnCheck() error {
 	return sh.RunV("govulncheck", "./...")
 }
 
-// StaticCheck runs staticcheck linter
-func StaticCheck() error {
-	fmt.Println("🔬 Running staticcheck...")
-	
-	// Try to find staticcheck in GOPATH/bin
-	gopath := os.Getenv("GOPATH")
-	if gopath == "" {
-		// Default GOPATH
-		if home := os.Getenv("HOME"); home != "" {
-			gopath = filepath.Join(home, "go")
+// Lint runs golangci-lint with comprehensive linting rules
+func Lint() error {
+	fmt.Println("🔬 Running golangci-lint...")
+
+	// Ensure golangci-lint is available
+	if err := sh.Run("which", "golangci-lint"); err != nil {
+		fmt.Println("Installing golangci-lint...")
+		if err := sh.RunV("go", "install", "github.com/golangci/golangci-lint/cmd/golangci-lint@latest"); err != nil {
+			return fmt.Errorf("failed to install golangci-lint: %w", err)
 		}
 	}
-	
-	staticcheckPath := filepath.Join(gopath, "bin", "staticcheck")
-	
-	// Check if staticcheck exists, install if not
-	if _, err := os.Stat(staticcheckPath); os.IsNotExist(err) {
-		fmt.Println("Installing staticcheck...")
-		if err := sh.RunV("go", "install", "honnef.co/go/tools/cmd/staticcheck@latest"); err != nil {
-			return fmt.Errorf("failed to install staticcheck: %w", err)
-		}
-	}
-	
-	return sh.RunV(staticcheckPath, "./...")
+
+	return sh.RunV("golangci-lint", "run", "./...")
 }
 
 // Run builds and runs the server
 func Run() error {
 	mg.SerialDeps(Build)
 	fmt.Println("🚀 Starting server...")
-	
+
 	binaryPath := filepath.Join(buildDir, binaryName)
 	if runtime.GOOS == "windows" {
 		binaryPath += ".exe"
 	}
-	
+
 	return sh.RunV(binaryPath)
 }
 
 // Dev starts development server with hot reload
 func Dev() error {
 	fmt.Println("🔥 Starting development server with hot reload...")
-	
+
 	// Ensure air is available
 	if err := sh.Run("which", "air"); err != nil {
 		fmt.Println("Installing air...")
@@ -158,28 +159,24 @@ func Dev() error {
 			return fmt.Errorf("failed to install air: %w", err)
 		}
 	}
-	
+
 	return sh.RunV("air")
 }
 
 // Clean removes built binaries and generated files
 func Clean() error {
 	fmt.Println("🧹 Cleaning up...")
-	
+
 	// Remove build directory
 	if err := sh.Rm(buildDir); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove build directory: %w", err)
 	}
-	
+
 	// Remove tmp directory
 	if err := sh.Rm(tmpDir); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove tmp directory: %w", err)
 	}
-	
-	// Remove coverage files
-	sh.Rm("coverage.out")
-	sh.Rm("coverage.html")
-	
+
 	fmt.Println("✅ Clean complete!")
 	return nil
 }
@@ -187,50 +184,69 @@ func Clean() error {
 // Setup installs required development tools
 func Setup() error {
 	fmt.Println("🚀 Setting up development environment...")
-	
+
 	tools := map[string]string{
-		"templ":        "github.com/a-h/templ/cmd/templ@latest",
-		"sqlc":         "github.com/sqlc-dev/sqlc/cmd/sqlc@latest",
-		"govulncheck":  "golang.org/x/vuln/cmd/govulncheck@latest",
-		"air":          "github.com/air-verse/air@latest",
-		"staticcheck":  "honnef.co/go/tools/cmd/staticcheck@latest",
+		"templ":         "github.com/a-h/templ/cmd/templ@latest",
+		"sqlc":          "github.com/sqlc-dev/sqlc/cmd/sqlc@latest",
+		"govulncheck":   "golang.org/x/vuln/cmd/govulncheck@latest",
+		"air":           "github.com/air-verse/air@latest",
+		"golangci-lint": "github.com/golangci/golangci-lint/cmd/golangci-lint@latest",
+		"goimports":     "golang.org/x/tools/cmd/goimports@latest",
+		"goose":         "github.com/pressly/goose/v3/cmd/goose@latest",
 	}
-	
+
 	for tool, pkg := range tools {
 		fmt.Printf("  📦 Installing %s...\n", tool)
 		if err := sh.RunV("go", "install", pkg); err != nil {
 			return fmt.Errorf("failed to install %s: %w", tool, err)
 		}
 	}
-	
+
 	// Download module dependencies
 	fmt.Println("📥 Downloading dependencies...")
 	if err := sh.RunV("go", "mod", "download"); err != nil {
 		return fmt.Errorf("failed to download dependencies: %w", err)
 	}
-	
+
 	fmt.Println("✅ Setup complete!")
 	fmt.Println("💡 Next steps:")
 	fmt.Println("   • Run 'mage dev' to start development with hot reload")
-	
+
 	fmt.Println("   • Run 'mage build' to create production binary")
-	
+
 	return nil
 }
 
-// Lint runs all linters and checks
-func Lint() error {
-	fmt.Println("🔍 Running all linters...")
-	mg.Deps(Vet, StaticCheck, VulnCheck)
+// Migrate runs database migrations up
+func Migrate() error {
+	fmt.Println("🗃️  Running database migrations...")
+	return sh.RunV("goose", "-dir", "internal/store/migrations", "sqlite3", "data.db", "up")
+}
+
+// MigrateDown rolls back the last migration
+func MigrateDown() error {
+	fmt.Println("🗃️  Rolling back last migration...")
+	return sh.RunV("goose", "-dir", "internal/store/migrations", "sqlite3", "data.db", "down")
+}
+
+// MigrateStatus shows migration status
+func MigrateStatus() error {
+	fmt.Println("🗃️  Checking migration status...")
+	return sh.RunV("goose", "-dir", "internal/store/migrations", "sqlite3", "data.db", "status")
+}
+
+// CI runs the complete CI pipeline
+func CI() error {
+	fmt.Println("🔄 Running complete CI pipeline...")
+	mg.SerialDeps(Generate, Fmt, Vet, Lint, Build, showBuildInfo)
 	return nil
 }
 
-
-
-// Docker builds a Docker image (optional)
-func Docker() error {
-	fmt.Println("🐳 Building Docker image...")
-	return sh.RunV("docker", "build", "-t", "go-web-server", ".")
+// Quality runs all quality checks
+func Quality() error {
+	fmt.Println("🔍 Running all quality checks...")
+	mg.Deps(Vet, Lint, VulnCheck)
+	return nil
 }
 
 // Help prints a help message with available commands
@@ -241,21 +257,27 @@ func Help() {
 Available commands:
 
 Development:
-  mage setup (s)        Install tools and dependencies
+  mage setup (s)        Install all development tools and dependencies
   mage generate (g)     Generate sqlc and templ code
   mage dev (d)          Start development server with hot reload
   mage run (r)          Build and run server
+  mage build (b)        Build production binary
 
+Database:
+  mage migrate (m)      Run database migrations up
+  mage migrate:down     Roll back last migration
+  mage migrate:status   Show migration status
 
-
-Quality & Production:
-  mage fmt (f)          Format and tidy Go code
+Quality:
+  mage fmt (f)          Format code with goimports and tidy modules
   mage vet (v)          Run go vet static analysis
+  mage lint (l)         Run golangci-lint comprehensive linting
   mage vulncheck (vc)   Check for security vulnerabilities
-  mage staticcheck (sc) Run advanced static analysis
-  mage lint (l)         Run all linters (vet + staticcheck + vulncheck)
-  mage ci               Complete CI pipeline with build info
-  mage docker           Build a Docker image (optional)
+  mage quality (q)      Run all quality checks (vet + lint + vulncheck)
+
+Production:
+  mage ci               Complete CI pipeline (generate + fmt + quality + build)
+  mage clean (c)        Clean build artifacts and temporary files
 
 Other:
   mage help (h)         Show this help message
@@ -293,15 +315,15 @@ func showBuildInfo() error {
 var Aliases = map[string]interface{}{
 	"b":  Build,
 	"g":  Generate,
-	
 	"f":  Fmt,
 	"v":  Vet,
+	"l":  Lint,
 	"vc": VulnCheck,
-	"sc": StaticCheck,
 	"r":  Run,
 	"d":  Dev,
 	"c":  Clean,
 	"s":  Setup,
-	"l":  Lint,
+	"q":  Quality,
+	"m":  Migrate,
 	"h":  Help,
 }

@@ -51,8 +51,8 @@ A production-ready template for modern web applications using **The Modern Go St
 | **Frontend**  | [HTMX](https://htmx.org/)                                   | Dynamic interactions without JavaScript |
 | **CSS**       | [Pico.css](https://picocss.com/)                            | Minimal, semantic CSS framework         |
 | **Assets**    | [Go Embed](https://pkg.go.dev/embed)                        | Single binary with embedded resources   |
-| **Config**    | Standard Library                                            | Environment-based configuration         |
-| **Migrations** | [golang-migrate](https://github.com/golang-migrate/migrate) | Database migration management           |
+| **Config**    | [Koanf](https://github.com/knadh/koanf)                     | Multi-source configuration management   |
+| **Migrations** | [Goose](https://github.com/pressly/goose)                   | Database migration management           |
 | **Build**     | [Mage](https://magefile.org/)                               | Go-based build automation               |
 
 
@@ -90,16 +90,24 @@ mage run (r)          # Build and run server
 
 
 
+**Database:**
+
+```bash
+mage migrate (m)      # Run database migrations up
+mage migrate:down     # Roll back last migration
+mage migrate:status   # Show migration status
+```
+
 **Quality & Production:**
 
 ```bash
-mage fmt (f)          # Format and tidy Go code
+mage fmt (f)          # Format code with goimports and tidy modules
 mage vet (v)          # Run go vet static analysis
+mage lint (l)         # Run golangci-lint comprehensive linting
 mage vulncheck (vc)   # Check for security vulnerabilities
-mage staticcheck (sc) # Run advanced static analysis
-mage lint (l)         # Run all linters
-mage ci               # Complete CI pipeline with build info
-mage docker           # Build a Docker image
+mage quality (q)      # Run all quality checks
+mage ci               # Complete CI pipeline
+mage clean (c)        # Clean build artifacts
 ```
 
 ## Applications
@@ -112,15 +120,19 @@ Interactive user management application demonstrating the full Modern Go Stack w
 
 ```sh
 go-web-server/
-├── .air.toml             # Hot reload configuration
-├── .github/workflows/    # CI/CD pipeline
 ├── cmd/web/              # Application entry point
 ├── internal/
-
-│   └── ui/               # Static assets (embedded)
+│   ├── config/           # Koanf configuration management
+│   ├── handler/          # HTTP handlers with Echo routes
+│   ├── middleware/       # Custom middleware (validation, errors)
+│   ├── store/            # Database layer with SQLC
+│   │   └── migrations/   # Goose database migrations
+│   ├── ui/               # Static assets (embedded)
+│   └── view/             # Templ templates and components
 ├── bin/                  # Compiled binaries
 ├── magefile.go          # Mage build automation
-├── sqlc.yaml            # SQLC configuration
+├── .golangci.yml        # Linter configuration
+└── sqlc.yaml            # SQLC configuration
 
 ```
 
@@ -136,15 +148,17 @@ The binary includes embedded Pico.css, HTMX, Templ templates, and SQLite databas
 
 ### Environment Variables
 
-- `PORT`: Server port (default: 8080)
-- `HOST`: Server host (default: "")
+Koanf supports multiple configuration sources (JSON, YAML, TOML files + environment variables):
+
+- `SERVER_PORT`: Server port (default: 8080)
+- `SERVER_HOST`: Server host (default: "")
 - `DATABASE_URL`: SQLite database file (default: data.db)
-- `ENVIRONMENT`: Environment mode (default: development)
-- `LOG_LEVEL`: Logging level - debug, info, warn, error (default: info)
-- `LOG_FORMAT`: Log format - text or json (default: text)
-- `DEBUG`: Enable debug mode (default: false)
-- `RUN_MIGRATIONS`: Auto-run database migrations (default: true)
-- `ENABLE_CORS`: Enable CORS middleware (default: true)
+- `DATABASE_RUN_MIGRATIONS`: Auto-run database migrations (default: true)
+- `APP_ENVIRONMENT`: Environment mode (default: development)
+- `APP_LOG_LEVEL`: Logging level - debug, info, warn, error (default: info)
+- `APP_LOG_FORMAT`: Log format - text or json (default: text)
+- `APP_DEBUG`: Enable debug mode (default: false)
+- `SECURITY_ENABLE_CORS`: Enable CORS middleware (default: true)
 
 ## Key Features Demonstrated
 
@@ -158,15 +172,17 @@ The binary includes embedded Pico.css, HTMX, Templ templates, and SQLite databas
 
 **Developer Experience:**
 - Hot reloading with Air
-
-- Static analysis (staticcheck, govulncheck)
-- Mage build automation
+- Request validation middleware
+- Comprehensive error handling
+- Static analysis (golangci-lint, govulncheck)
+- Mage build automation with goimports
 - Single-command CI pipeline
 
 **Production Ready:**
 - Security middleware & rate limiting
 - Graceful shutdown & request tracing  
-- Environment-based configuration
+- Multi-source configuration with Koanf
+- Goose database migrations
 - Single binary deployment (~10MB)
 - Zero external dependencies
 
