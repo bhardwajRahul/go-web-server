@@ -238,16 +238,15 @@ func TimeoutErrorHandler() echo.MiddlewareFunc {
 	}
 }
 
-// SecurityHeadersMiddleware adds security headers
+// SecurityHeadersMiddleware adds additional security headers not covered by Echo's secure middleware
 func SecurityHeadersMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			// Set security headers
-			c.Response().Header().Set("X-Content-Type-Options", "nosniff")
-			c.Response().Header().Set("X-Frame-Options", "DENY")
-			c.Response().Header().Set("X-XSS-Protection", "1; mode=block")
+			// Additional security headers not covered by Echo's SecureMiddleware
 			c.Response().Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 			c.Response().Header().Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+			c.Response().Header().Set("Cross-Origin-Opener-Policy", "same-origin")
+			c.Response().Header().Set("Cross-Origin-Embedder-Policy", "require-corp")
 
 			return next(c)
 		}

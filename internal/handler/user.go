@@ -24,6 +24,13 @@ func NewUserHandler(s *store.Store) *UserHandler {
 
 // Users renders the main user management page
 func (h *UserHandler) Users(c echo.Context) error {
+	// Check if this is an HTMX request for partial content
+	if c.Request().Header.Get("HX-Request") == "true" {
+		component := view.UsersContent()
+		return component.Render(c.Request().Context(), c.Response().Writer)
+	}
+
+	// Return full page with layout
 	component := view.Users()
 	return component.Render(c.Request().Context(), c.Response().Writer)
 }

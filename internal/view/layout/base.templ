@@ -23,10 +23,18 @@ templ Base(title string) {
 					--pico-primary-700: #3b82f6;
 				}
 				
-				/* Loading states for HTMX */
+				/* Smooth transitions and page loading */
+				* {
+					transition: none !important;
+				}
+				
+				body {
+					transition: opacity 0.3s ease-in-out !important;
+				}
+				
 				.htmx-request {
-					opacity: 0.7;
-					transition: opacity 0.2s;
+					opacity: 0.8;
+					transition: opacity 0.2s ease-in-out !important;
 				}
 				
 				.htmx-indicator {
@@ -35,6 +43,38 @@ templ Base(title string) {
 				
 				.htmx-request .htmx-indicator {
 					display: inline;
+				}
+				
+				/* Page transition overlay */
+				.page-loading {
+					position: fixed;
+					top: 0;
+					left: 0;
+					width: 100%;
+					height: 100%;
+					background: var(--pico-background-color);
+					z-index: 9999;
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					opacity: 0;
+					pointer-events: none;
+					transition: opacity 0.2s ease-in-out !important;
+				}
+				
+				.page-loading.active {
+					opacity: 1;
+					pointer-events: auto;
+				}
+				
+				/* Navigation link styling for HTMX */
+				nav a[hx-get] {
+					position: relative;
+					transition: all 0.2s ease-in-out !important;
+				}
+				
+				nav a[hx-get]:hover {
+					transform: translateY(-1px);
 				}
 				
 				/* Success/error flash messages */
@@ -105,8 +145,26 @@ templ Base(title string) {
 						</li>
 					</ul>
 					<ul>
-						<li><a href="/">Home</a></li>
-						<li><a href="/users">Users</a></li>
+						<li>
+							<a
+								href="/"
+								hx-get="/"
+								hx-target="main"
+								hx-swap="innerHTML"
+								hx-push-url="true"
+								hx-indicator="#page-loading"
+							>Home</a>
+						</li>
+						<li>
+							<a
+								href="/users"
+								hx-get="/users"
+								hx-target="main"
+								hx-swap="innerHTML"
+								hx-push-url="true"
+								hx-indicator="#page-loading"
+							>Users</a>
+						</li>
 						<li>
 							<details role="list">
 								<summary aria-haspopup="listbox" role="button">Theme</summary>
@@ -120,6 +178,13 @@ templ Base(title string) {
 					</ul>
 				</nav>
 			</header>
+			<div id="page-loading">
+				<div>
+					<article aria-busy="true">
+						<header><h4>Loading...</h4></header>
+					</article>
+				</div>
+			</div>
 			<main class="container">
 				<div id="flash-messages"></div>
 				{ children... }
@@ -160,27 +225,53 @@ templ Base(title string) {
 					setTheme(savedTheme);
 				});
 				
-				// HTMX configuration for better UX
+				// HTMX configuration for smooth page transitions
 				document.addEventListener('DOMContentLoaded', function() {
 					// Configure HTMX globally
 					htmx.config.globalViewTransitions = true;
-					htmx.config.defaultSwapStyle = 'outerHTML';
+					htmx.config.defaultSwapStyle = 'innerHTML';
 					htmx.config.requestClass = 'htmx-request';
+					htmx.config.timeout = 30000;
 					
-					// Add fade-in animation to new content
-					document.body.addEventListener('htmx:afterSwap', function(evt) {
-						evt.detail.target.classList.add('fade-in');
-					});
+					// Page loading indicator management
+					const pageLoading = document.getElementById('page-loading');
 					
-					// Handle flash messages
-					document.body.addEventListener('htmx:afterRequest', function(evt) {
-						if (evt.detail.xhr.status >= 200 && evt.detail.xhr.status < 300) {
-							showFlash('Operation completed successfully!', 'success');
+					// Show loading for page navigation
+					document.body.addEventListener('htmx:beforeRequest', function(evt) {
+						if (evt.detail.target.tagName === 'MAIN') {
+							pageLoading.classList.add('active');
 						}
 					});
 					
+					// Hide loading and add animations after swap
+					document.body.addEventListener('htmx:afterSwap', function(evt) {
+						if (evt.detail.target.tagName === 'MAIN') {
+							pageLoading.classList.remove('active');
+							evt.detail.target.classList.add('fade-in');
+							
+							// Re-initialize theme after page navigation
+							const savedTheme = localStorage.getItem('preferred-theme') || 'auto';
+							setTheme(savedTheme);
+						}
+					});
+					
+					// Handle errors
 					document.body.addEventListener('htmx:responseError', function(evt) {
-						showFlash('An error occurred. Please try again.', 'error');
+						pageLoading.classList.remove('active');
+						showFlash('Failed to load page. Please try again.', 'error');
+					});
+					
+					document.body.addEventListener('htmx:timeout', function(evt) {
+						pageLoading.classList.remove('active');
+						showFlash('Request timed out. Please try again.', 'error');
+					});
+					
+					// Handle successful operations
+					document.body.addEventListener('htmx:afterRequest', function(evt) {
+						if (evt.detail.xhr.status >= 200 && evt.detail.xhr.status < 300 && 
+						    evt.detail.target.tagName !== 'MAIN') {
+							showFlash('Operation completed successfully!', 'success');
+						}
 					});
 				});
 				

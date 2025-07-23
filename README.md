@@ -31,7 +31,7 @@ A production-ready template for modern web applications using **The Modern Go St
 **Key Features:**
 
 - **Echo + Templ + HTMX**: Modern web stack with type-safe templates and dynamic UX
-- **SQLC + SQLite**: Type-safe database operations with pure Go driver  
+- **SQLC + SQLite**: Type-safe database operations with pure Go driver
 - **Structured Logging**: Built-in slog with JSON output for production
 
 - **Production Security**: Rate limiting, CORS, secure headers, graceful shutdown
@@ -39,22 +39,21 @@ A production-ready template for modern web applications using **The Modern Go St
 
 ## Tech Stack
 
-| Layer         | Technology                                                  | Purpose                                 |
-| ------------- | ----------------------------------------------------------- | --------------------------------------- |
-| **Language**  | [Go 1.24](https://go.dev/doc/)                              | Latest performance & features           |
-| **Framework** | [Echo](https://echo.labstack.com/)                          | High-performance web framework          |
-| **Templates** | [Templ](https://templ.guide/)                               | Type-safe Go HTML components            |
-| **Logging**   | [slog](https://pkg.go.dev/log/slog)                         | Structured logging with JSON output     |
-| **Database**  | [SQLite](https://www.sqlite.org/)                           | Self-contained, serverless database     |
-| **Queries**   | [SQLC](https://sqlc.dev/)                                   | Generate type-safe Go from SQL          |
-| **DB Driver** | [modernc.org/sqlite](https://pkg.go.dev/modernc.org/sqlite) | Pure Go, CGO-free SQLite driver         |
-| **Frontend**  | [HTMX](https://htmx.org/)                                   | Dynamic interactions without JavaScript |
-| **CSS**       | [Pico.css](https://picocss.com/)                            | Minimal, semantic CSS framework         |
-| **Assets**    | [Go Embed](https://pkg.go.dev/embed)                        | Single binary with embedded resources   |
-| **Config**    | [Koanf](https://github.com/knadh/koanf)                     | Multi-source configuration management   |
+| Layer          | Technology                                                  | Purpose                                 |
+| -------------- | ----------------------------------------------------------- | --------------------------------------- |
+| **Language**   | [Go 1.24](https://go.dev/doc/)                              | Latest performance & features           |
+| **Framework**  | [Echo](https://echo.labstack.com/)                          | High-performance web framework          |
+| **Templates**  | [Templ](https://templ.guide/)                               | Type-safe Go HTML components            |
+| **Logging**    | [slog](https://pkg.go.dev/log/slog)                         | Structured logging with JSON output     |
+| **Database**   | [SQLite](https://www.sqlite.org/)                           | Self-contained, serverless database     |
+| **Queries**    | [SQLC](https://sqlc.dev/)                                   | Generate type-safe Go from SQL          |
+| **DB Driver**  | [modernc.org/sqlite](https://pkg.go.dev/modernc.org/sqlite) | Pure Go, CGO-free SQLite driver         |
+| **Frontend**   | [HTMX](https://htmx.org/)                                   | Dynamic interactions without JavaScript |
+| **CSS**        | [Pico.css](https://picocss.com/)                            | Minimal, semantic CSS framework         |
+| **Assets**     | [Go Embed](https://pkg.go.dev/embed)                        | Single binary with embedded resources   |
+| **Config**     | [Koanf](https://github.com/knadh/koanf)                     | Multi-source configuration management   |
 | **Migrations** | [Goose](https://github.com/pressly/goose)                   | Database migration management           |
-| **Build**     | [Mage](https://magefile.org/)                               | Go-based build automation               |
-
+| **Build**      | [Mage](https://magefile.org/)                               | Go-based build automation               |
 
 <p align="center">
   <img src="https://github.com/dunamismax/images/blob/main/gopher-mage.svg" alt="Gopher Mage" width="200" />
@@ -68,12 +67,24 @@ git clone https://github.com/dunamismax/go-web-server.git
 cd go-web-server
 go mod tidy
 
-# Install dependencies and run
+# Install development tools and dependencies
 mage setup
+
+# Start development server with hot reload
+mage dev
+
+# Or build and run production binary
 mage run
 
 # Server starts at http://localhost:8080
 ```
+
+**Requirements:**
+
+- Go 1.24+
+- Mage build tool (`go install github.com/magefile/mage@latest`)
+
+**Note:** First run of `mage setup` installs all development tools automatically.
 
 ## Mage Commands
 
@@ -88,14 +99,12 @@ mage dev (d)          # Start development server with hot reload
 mage run (r)          # Build and run server
 ```
 
-
-
 **Database:**
 
 ```bash
 mage migrate (m)      # Run database migrations up
-mage migrate:down     # Roll back last migration
-mage migrate:status   # Show migration status
+mage migrateDown      # Roll back last migration
+mage migrateStatus    # Show migration status
 ```
 
 **Quality & Production:**
@@ -141,7 +150,7 @@ go-web-server/
 ### Single Binary
 
 ```bash
-mage build  # Creates optimized binary in bin/server (~10MB)
+mage build  # Creates optimized binary in bin/server (~11MB)
 ```
 
 The binary includes embedded Pico.css, HTMX, Templ templates, and SQLite database. **Zero external dependencies**, single file deployment with instant startup.
@@ -163,7 +172,8 @@ Koanf supports multiple configuration sources (JSON, YAML, TOML files + environm
 ## Key Features Demonstrated
 
 **Modern Web Stack:**
-- Echo framework with comprehensive middleware  
+
+- Echo framework with comprehensive middleware
 - Type-safe Templ templates with components
 - HTMX dynamic interactions without JavaScript
 - Pico.css semantic styling with themes
@@ -171,6 +181,7 @@ Koanf supports multiple configuration sources (JSON, YAML, TOML files + environm
 - Structured logging with slog
 
 **Developer Experience:**
+
 - Hot reloading with Air
 - Request validation middleware
 - Comprehensive error handling
@@ -179,11 +190,12 @@ Koanf supports multiple configuration sources (JSON, YAML, TOML files + environm
 - Single-command CI pipeline
 
 **Production Ready:**
+
 - Security middleware & rate limiting
-- Graceful shutdown & request tracing  
+- Graceful shutdown & request tracing
 - Multi-source configuration with Koanf
 - Goose database migrations
-- Single binary deployment (~10MB)
+- Single binary deployment (~11MB)
 - Zero external dependencies
 
 <p align="center">

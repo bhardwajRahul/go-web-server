@@ -103,6 +103,9 @@ func main() {
 	// Validation error middleware
 	e.Use(middleware.ValidationErrorMiddleware())
 
+	// Timeout error middleware
+	e.Use(middleware.TimeoutErrorHandler())
+
 	// Request ID middleware for tracing
 	e.Use(echomiddleware.RequestID())
 
@@ -164,9 +167,7 @@ func main() {
 			return c.RealIP(), nil
 		},
 		ErrorHandler: func(context echo.Context, err error) error {
-			return context.JSON(http.StatusTooManyRequests, map[string]string{
-				"error": "rate limit exceeded",
-			})
+			return middleware.ErrTooManyRequests.WithInternal(err)
 		},
 	}))
 

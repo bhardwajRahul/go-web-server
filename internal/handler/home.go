@@ -15,6 +15,13 @@ func NewHomeHandler() *HomeHandler {
 }
 
 func (h *HomeHandler) Home(c echo.Context) error {
+	// Check if this is an HTMX request for partial content
+	if c.Request().Header.Get("HX-Request") == "true" {
+		component := view.HomeContent()
+		return component.Render(c.Request().Context(), c.Response().Writer)
+	}
+
+	// Return full page with layout
 	component := view.Home()
 	return component.Render(c.Request().Context(), c.Response().Writer)
 }
