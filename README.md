@@ -254,6 +254,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ---
 
-"In conclusion, the proposed "Modern Go Stack" is a powerful and elegant solution that aligns beautifully with Go's core principles. It is an excellent starting point for many new projects, and any decision to deviate from it should be driven by specific, demanding requirements." - Me
+"The "Modern Go Stack" is a powerful and elegant solution that aligns beautifully with Go's core principles. It is an excellent starting point for many new projects, and any decision to deviate from it should be driven by specific, demanding requirements." - Me
 
 ---
