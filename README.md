@@ -61,10 +61,6 @@ A production-ready template for modern web applications using **The Modern Go St
 
 ---
 
-<p align="center">
-  <img src="https://github.com/dunamismax/images/blob/main/golang/gopher-mage.svg" alt="Gopher Mage" width="150" />
-</p>
-
 ## Quick Start
 
 ```bash
@@ -95,6 +91,12 @@ mage run
 ## Documentation
 
 📚 **[Complete Documentation](docs/)** - Comprehensive guides for development, deployment, security, and architecture.
+
+---
+
+<p align="center">
+  <img src="https://github.com/dunamismax/images/blob/main/golang/gopher-mage.svg" alt="Gopher Mage" width="150" />
+</p>
 
 ## Mage Commands
 
@@ -160,6 +162,10 @@ go-web-server/
 └── sqlc.yaml            # SQLC configuration
 
 ```
+
+<p align="center">
+  <img src="https://github.com/dunamismax/images/blob/main/golang/gopher-aviator.jpg" alt="Go Gopher" width="400" />
+</p>
 
 ## Production Deployment
 
