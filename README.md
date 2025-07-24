@@ -59,6 +59,8 @@ A production-ready template for modern web applications using **The Modern Go St
 | **Build**      | [Mage](https://magefile.org/)                               | Go-based build automation              |
 | **Hot Reload** | [Air](https://github.com/air-verse/air)                     | Development server with live reload    |
 
+---
+
 <p align="center">
   <img src="https://github.com/dunamismax/images/blob/main/golang/gopher-mage.svg" alt="Gopher Mage" width="200" />
 </p>
