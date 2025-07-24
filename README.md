@@ -207,6 +207,8 @@ Koanf supports multiple configuration sources (JSON, YAML, TOML files + environm
 - Single binary deployment (~11MB) with embedded assets
 - Zero external dependencies and CGO-free compilation
 
+---
+
 <p align="center">
   <a href="https://buymeacoffee.com/dunamismax" target="_blank">
     <img src="https://github.com/dunamismax/images/blob/main/golang/buy-coffee-go.gif" alt="Buy Me A Coffee" style="height: 150px !important;" />
