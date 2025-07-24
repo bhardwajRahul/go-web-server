@@ -101,6 +101,12 @@ func main() {
 	// Security headers middleware
 	e.Use(middleware.SecurityHeadersMiddleware())
 
+	// Input sanitization middleware
+	e.Use(middleware.Sanitize())
+
+	// CSRF protection middleware
+	e.Use(middleware.CSRF())
+
 	// Validation error middleware
 	e.Use(middleware.ValidationErrorMiddleware())
 

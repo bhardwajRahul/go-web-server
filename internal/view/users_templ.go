@@ -5,14 +5,14 @@ package view
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
-import "github.com/a-h/templ"
-import templruntime "github.com/a-h/templ/runtime"
-
 import (
 	"database/sql"
+	"strconv"
+
+	"github.com/a-h/templ"
+	templruntime "github.com/a-h/templ/runtime"
 	"github.com/dunamismax/go-web-server/internal/store"
 	"github.com/dunamismax/go-web-server/internal/view/layout"
-	"strconv"
 )
 
 func Users() templ.Component {
@@ -465,72 +465,85 @@ func UserForm(user *store.User) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, " hx-target=\"#user-list-container\" hx-swap=\"innerHTML\" hx-on::after-request=\"if(event.detail.successful) document.getElementById('user-form-modal').innerHTML = ''\"><div class=\"grid\"><label for=\"name\">Name * <input type=\"text\" id=\"name\" name=\"name\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, " hx-target=\"#user-list-container\" hx-swap=\"innerHTML\" hx-on::after-request=\"if(event.detail.successful) document.getElementById('user-form-modal').innerHTML = ''\"><input type=\"hidden\" name=\"csrf_token\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var23 string
-		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(getUserName(user))
+		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(getCSRFToken())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 185, Col: 31}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 178, Col: 64}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "\" required placeholder=\"Enter full name\"></label> <label for=\"email\">Email * <input type=\"email\" id=\"email\" name=\"email\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "\"><div class=\"grid\"><label for=\"name\">Name * <input type=\"text\" id=\"name\" name=\"name\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var24 string
-		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(getUserEmail(user))
+		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(getUserName(user))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 196, Col: 32}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 186, Col: 31}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "\" required placeholder=\"user@example.com\"></label></div><label for=\"bio\">Bio <textarea id=\"bio\" name=\"bio\" placeholder=\"Tell us about yourself...\" rows=\"3\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "\" required placeholder=\"Enter full name\"></label> <label for=\"email\">Email * <input type=\"email\" id=\"email\" name=\"email\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var25 string
-		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(getUserBio(user))
+		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(getUserEmail(user))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 209, Col: 23}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 197, Col: 32}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "</textarea></label> <label for=\"avatar_url\">Avatar URL <input type=\"url\" id=\"avatar_url\" name=\"avatar_url\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\" required placeholder=\"user@example.com\"></label></div><label for=\"bio\">Bio <textarea id=\"bio\" name=\"bio\" placeholder=\"Tell us about yourself...\" rows=\"3\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var26 string
-		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(getUserAvatarUrl(user))
+		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(getUserBio(user))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 217, Col: 35}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 210, Col: 23}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "\" placeholder=\"https://example.com/avatar.jpg\"> <small>Provide a URL to an image for the user's avatar</small></label><footer><div role=\"group\"><button type=\"button\" class=\"secondary\" onclick=\"document.getElementById('user-form-modal').innerHTML = ''\">Cancel</button> <button type=\"submit\"><span>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "</textarea></label> <label for=\"avatar_url\">Avatar URL <input type=\"url\" id=\"avatar_url\" name=\"avatar_url\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var27 string
-		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(getSubmitButtonText(user))
+		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(getUserAvatarUrl(user))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 232, Col: 39}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 218, Col: 35}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "</span> <span class=\"htmx-indicator\" aria-hidden=\"true\">Loading...</span></button></div></footer></form></article>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "\" placeholder=\"https://example.com/avatar.jpg\"> <small>Provide a URL to an image for the user's avatar</small></label><footer><div role=\"group\"><button type=\"button\" class=\"secondary\" onclick=\"document.getElementById('user-form-modal').innerHTML = ''\">Cancel</button> <button type=\"submit\"><span>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var28 string
+		templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(getSubmitButtonText(user))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 233, Col: 39}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "</span> <span class=\"htmx-indicator\" aria-hidden=\"true\">Loading...</span></button></div></footer></form></article>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -554,17 +567,17 @@ func UserCount(count int64) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var28 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var28 == nil {
-			templ_7745c5c3_Var28 = templ.NopComponent
+		templ_7745c5c3_Var29 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var29 == nil {
+			templ_7745c5c3_Var29 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var29 string
-		templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.FormatInt(count, 10))
+		var templ_7745c5c3_Var30 string
+		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.FormatInt(count, 10))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 242, Col: 31}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 243, Col: 31}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -619,6 +632,12 @@ func getSubmitButtonText(user *store.User) string {
 		return "Update User"
 	}
 	return "Create User"
+}
+
+func getCSRFToken() string {
+	// This will be populated by the handler via context
+	// For now, return empty string - will be handled by middleware
+	return ""
 }
 
 var _ = templruntime.GeneratedTemplate

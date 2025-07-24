@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/dunamismax/go-web-server">
-    <img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&size=24&pause=1000&color=00ADD8&center=true&vCenter=true&width=900&lines=The+Modern+Go+Stack;Echo+v4+%2B+Templ+%2B+HTMX+2.x+%2B+Pico.css+v2;Type-Safe+SQL+with+SQLC+%26+Pure+Go+SQLite;Structured+Logging+with+slog+%26+JSON+Output;Hot+Reload+with+Air+%26+Mage+Build+Automation;Database+Migrations+with+Goose;Multi-Source+Configuration+with+Koanf;Production-Ready+Security+%26+Middleware;Single+Binary+Deployment+~11MB;Zero+External+Dependencies" alt="Typing SVG" />
+    <img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&size=24&pause=1000&color=00ADD8&center=true&vCenter=true&width=900&lines=The+Modern+Go+Stack;Echo+v4+Framework+with+Type-Safe+Templates;HTMX+2.x+Dynamic+UX+without+JavaScript;SQLC+Generated+Queries+with+Pure+Go+SQLite;CSRF+Protection+and+Input+Sanitization;Structured+Error+Handling+and+Request+Tracing;Hot+Reload+Development+with+Mage+Automation;Single+Binary+Deployment+at+11MB;Production-Ready+Security+Middleware;Zero+External+Dependencies" alt="Typing SVG" />
   </a>
 </p>
 
@@ -35,9 +35,9 @@ A production-ready template for modern web applications using **The Modern Go St
 
 - **Echo v4 + Templ + HTMX 2.x**: High-performance web framework with type-safe templates and dynamic UX
 - **SQLC + SQLite + Pure Go Driver**: Type-safe database operations with zero CGO dependencies
-- **Structured Logging**: Built-in slog with JSON output and configurable levels
+- **Enterprise Security**: CSRF protection, input sanitization, structured error handling, request tracing
 - **Mage Build System**: Go-based automation with comprehensive quality checks
-- **Production Security**: Rate limiting, CORS, secure headers, graceful shutdown, middleware
+- **Production Ready**: Rate limiting, CORS, secure headers, graceful shutdown
 - **Developer Experience**: Hot reload with Air, database migrations with Goose, multi-source config
 
 ## Tech Stack
@@ -92,6 +92,10 @@ mage run
 
 **Note:** First run of `mage setup` installs all development tools automatically.
 
+## Documentation
+
+📚 **[Complete Documentation](docs/)** - Comprehensive guides for development, deployment, security, and architecture.
+
 ## Mage Commands
 
 Run `mage help` to see all available commands and their aliases.
@@ -129,22 +133,23 @@ mage clean (c)        # Clean build artifacts
 
 ### Web Demo (`localhost:8080`)
 
-Interactive user management application demonstrating the complete Modern Go Stack with:
+Interactive user management application demonstrating:
 
-- CRUD operations with type-safe database queries
+- CRUD operations with type-safe database queries and CSRF protection
 - Real-time updates via HTMX with smooth page transitions
 - Responsive design with automatic dark/light theme switching
-- Custom middleware for security, validation, and error handling
+- Enterprise security with input sanitization and structured error handling
 
 ## Project Structure
 
 ```sh
 go-web-server/
 ├── cmd/web/              # Application entry point
+├── docs/                 # Complete documentation
 ├── internal/
 │   ├── config/           # Koanf configuration management
 │   ├── handler/          # HTTP handlers with Echo routes
-│   ├── middleware/       # Custom middleware (validation, errors)
+│   ├── middleware/       # Security, validation, error handling
 │   ├── store/            # Database layer with SQLC
 │   │   └── migrations/   # Goose database migrations
 │   ├── ui/               # Static assets (embedded)
@@ -194,7 +199,6 @@ Koanf supports multiple configuration sources (JSON, YAML, TOML files + environm
 **Developer Experience:**
 
 - Hot reloading with Air for rapid development
-- Custom request validation middleware with struct tags
 - Comprehensive error handling with structured logging
 - Static analysis suite (golangci-lint, govulncheck, go vet)
 - Mage build automation with goimports and templ formatting
@@ -202,10 +206,10 @@ Koanf supports multiple configuration sources (JSON, YAML, TOML files + environm
 
 **Production Ready:**
 
-- Security middleware stack with rate limiting and CORS
-- Graceful shutdown with timeout and request tracing
+- Enterprise security with CSRF protection and input sanitization
+- Structured error handling with request tracing and monitoring
 - Multi-source configuration with Koanf (JSON, YAML, ENV)
-- Database migrations with Goose (SQL and Go support)
+- Database migrations with Goose and graceful shutdown
 - Single binary deployment (~11MB) with embedded assets
 - Zero external dependencies and CGO-free compilation
 
