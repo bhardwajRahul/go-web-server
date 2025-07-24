@@ -403,7 +403,7 @@ func UserRow(user store.User) templ.Component {
 	})
 }
 
-func UserForm(user *store.User) templ.Component {
+func UserForm(user *store.User, csrfToken string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -470,9 +470,9 @@ func UserForm(user *store.User) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var23 string
-		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(getCSRFToken())
+		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(csrfToken)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 178, Col: 64}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 178, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
@@ -632,12 +632,6 @@ func getSubmitButtonText(user *store.User) string {
 		return "Update User"
 	}
 	return "Create User"
-}
-
-func getCSRFToken() string {
-	// This will be populated by the handler via context
-	// For now, return empty string - will be handled by middleware
-	return ""
 }
 
 var _ = templruntime.GeneratedTemplate

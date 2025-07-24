@@ -83,7 +83,7 @@ func (h *UserHandler) UserForm(c echo.Context) error {
 		c.Response().Header().Set("X-CSRF-Token", token)
 	}
 
-	component := view.UserForm(nil)
+	component := view.UserForm(nil, token)
 	return component.Render(c.Request().Context(), c.Response().Writer)
 }
 
@@ -119,7 +119,7 @@ func (h *UserHandler) EditUserForm(c echo.Context) error {
 		c.Response().Header().Set("X-CSRF-Token", token)
 	}
 
-	component := view.UserForm(&user)
+	component := view.UserForm(&user, token)
 	return component.Render(ctx, c.Response().Writer)
 }
 

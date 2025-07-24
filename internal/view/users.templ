@@ -155,7 +155,7 @@ templ UserRow(user store.User) {
 	</tr>
 }
 
-templ UserForm(user *store.User) {
+templ UserForm(user *store.User, csrfToken string) {
 	<article>
 		<header>
 			<h3>{ getFormTitle(user) }</h3>
@@ -175,7 +175,7 @@ templ UserForm(user *store.User) {
 			hx-swap="innerHTML"
 			hx-on::after-request="if(event.detail.successful) document.getElementById('user-form-modal').innerHTML = ''"
 		>
-			<input type="hidden" name="csrf_token" value={ getCSRFToken() }/>
+			<input type="hidden" name="csrf_token" value={ csrfToken }/>
 			<div class="grid">
 				<label for="name">
 					Name *
@@ -290,10 +290,4 @@ func getSubmitButtonText(user *store.User) string {
 		return "Update User"
 	}
 	return "Create User"
-}
-
-func getCSRFToken() string {
-	// This will be populated by the handler via context
-	// For now, return empty string - will be handled by middleware
-	return ""
 }
