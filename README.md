@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/dunamismax/images/blob/main/go-logo.png" alt="Go Web Server Template Logo" width="400" />
+  <img src="https://github.com/dunamismax/images/blob/main/golang/go-logo.png" alt="Go Web Server Template Logo" width="400" />
 </p>
 
 <p align="center">
@@ -60,7 +60,7 @@ A production-ready template for modern web applications using **The Modern Go St
 | **Hot Reload** | [Air](https://github.com/air-verse/air)                     | Development server with live reload    |
 
 <p align="center">
-  <img src="https://github.com/dunamismax/images/blob/main/gopher-mage.svg" alt="Gopher Mage" width="200" />
+  <img src="https://github.com/dunamismax/images/blob/main/golang/gopher-mage.svg" alt="Gopher Mage" width="200" />
 </p>
 
 ## Quick Start
@@ -209,7 +209,7 @@ Koanf supports multiple configuration sources (JSON, YAML, TOML files + environm
 
 <p align="center">
   <a href="https://buymeacoffee.com/dunamismax" target="_blank">
-    <img src="https://github.com/dunamismax/images/blob/main/buy-coffee-go.gif" alt="Buy Me A Coffee" style="height: 150px !important;" />
+    <img src="https://github.com/dunamismax/images/blob/main/golang/buy-coffee-go.gif" alt="Buy Me A Coffee" style="height: 150px !important;" />
   </a>
 </p>
 
@@ -233,5 +233,5 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 </p>
 
 <p align="center">
-  <img src="https://github.com/dunamismax/images/blob/main/gopher-running-jumping.gif" alt="Gopher Running and Jumping" width="400" />
+  <img src="https://github.com/dunamismax/images/blob/main/golang/gopher-running-jumping.gif" alt="Gopher Running and Jumping" width="400" />
 </p>
