@@ -163,6 +163,8 @@ go-web-server/
 
 ```
 
+---
+
 <p align="center">
   <img src="https://github.com/dunamismax/images/blob/main/golang/gopher-aviator.jpg" alt="Go Gopher" width="400" />
 </p>
