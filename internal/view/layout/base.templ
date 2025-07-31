@@ -9,6 +9,7 @@ templ Base(title string) {
 			<meta name="color-scheme" content="light dark"/>
 			<meta name="description" content="Modern Go Web Server Template with Echo, templ, HTMX, and Pico.css"/>
 			<title>{ title } - Go Web Server</title>
+			<link rel="icon" type="image/x-icon" href="/static/favicon.ico"/>
 			<link rel="stylesheet" href="/static/css/pico.min.css"/>
 			<script src="/static/js/htmx.min.js"></script>
 			<style>
@@ -62,6 +63,26 @@ templ Base(title string) {
 				
 				.htmx-request .htmx-indicator {
 					display: inline;
+				}
+				
+				/* CSS Spinner */
+				.css-spinner {
+					width: 16px;
+					height: 16px;
+					border: 2px solid var(--pico-color-grey-300);
+					border-top: 2px solid var(--pico-primary-600);
+					border-radius: 50%;
+					animation: css-spin 1s linear infinite;
+				}
+				
+				[data-theme="dark"] .css-spinner {
+					border-color: var(--pico-color-grey-600);
+					border-top-color: var(--pico-primary-600);
+				}
+				
+				@keyframes css-spin {
+					0% { transform: rotate(0deg); }
+					100% { transform: rotate(360deg); }
 				}
 				
 				/* Ultra-subtle page transition indicator */
@@ -332,6 +353,11 @@ templ Base(title string) {
 				// Flash message system
 				function showFlash(message, type) {
 					const flashContainer = document.getElementById('flash-messages');
+					if (!flashContainer) {
+						console.warn('Flash messages container not found');
+						return;
+					}
+					
 					const flash = document.createElement('div');
 					flash.className = `flash ${type} fade-in`;
 					flash.textContent = message;
