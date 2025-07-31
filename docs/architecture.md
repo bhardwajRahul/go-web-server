@@ -1,389 +1,151 @@
 # Architecture Overview
 
-This document provides a comprehensive overview of the Modern Go Web Server architecture, following The Modern Go Stack principles.
+System design and components of the Modern Go Web Server.
 
-## Philosophy
+## Architecture Principles
 
-The architecture is built on three core principles:
-
-1. **Pragmatic Simplicity** - Choose proven technologies over trendy ones
+1. **Pragmatic Simplicity** - Proven technologies over trendy ones
 2. **Production-First** - Every decision optimizes for production deployment
-3. **Developer Experience** - Minimize cognitive load and maximize productivity
+3. **Developer Experience** - Minimize cognitive load, maximize productivity
 
-## System Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Client (Browser)                         │
-│                                                             │
-│  ┌─────────────┐  ┌──────────────┐  ┌─────────────────┐    │
-│  │    HTML     │  │     HTMX     │  │    Pico.css     │    │
-│  │ (Semantic)  │  │ (Interactivity)│  │   (Styling)     │    │
-│  └─────────────┘  └──────────────┘  └─────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                         HTTP/HTTPS
-                              │
-┌─────────────────────────────────────────────────────────────┐
-│                  Load Balancer / Reverse Proxy             │
-│                     (Nginx/Cloudflare)                     │
-└─────────────────────────────────────────────────────────────┘
-                              │
-┌─────────────────────────────────────────────────────────────┐
-│                   Go Web Server                             │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │                Middleware Stack                     │    │
-│  │                                                     │    │
-│  │  ┌─────────────┐ ┌──────────────┐ ┌─────────────┐  │    │
-│  │  │   Security  │ │ Sanitization │ │    CSRF     │  │    │
-│  │  │   Headers   │ │     Input    │ │ Protection  │  │    │
-│  │  └─────────────┘ └──────────────┘ └─────────────┘  │    │
-│  │                                                     │    │
-│  │  ┌─────────────┐ ┌──────────────┐ ┌─────────────┐  │    │
-│  │  │Rate Limiting│ │   Request    │ │   Error     │  │    │
-│  │  │    & CORS   │ │   Logging    │ │  Handling   │  │    │
-│  │  └─────────────┘ └──────────────┘ └─────────────┘  │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                              │                              │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │                Echo Router                          │    │
-│  │                                                     │    │
-│  │  ┌─────────────┐ ┌──────────────┐ ┌─────────────┐  │    │
-│  │  │    Static   │ │    Web       │ │     API     │  │    │
-│  │  │   Assets    │ │   Routes     │ │   Routes    │  │    │
-│  │  └─────────────┘ └──────────────┘ └─────────────┘  │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                              │                              │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │                Handler Layer                        │    │
-│  │                                                     │    │
-│  │  ┌─────────────┐ ┌──────────────┐ ┌─────────────┐  │    │
-│  │  │    Home     │ │     User     │ │    API      │  │    │
-│  │  │   Handler   │ │   Handler    │ │  Handlers   │  │    │
-│  │  └─────────────┘ └──────────────┘ └─────────────┘  │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                              │                              │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │                 View Layer                          │    │
-│  │                                                     │    │
-│  │  ┌─────────────┐ ┌──────────────┐ ┌─────────────┐  │    │
-│  │  │   Templ     │ │   Layout     │ │ Components  │  │    │
-│  │  │ Templates   │ │  Templates   │ │  (Reusable) │  │    │
-│  │  └─────────────┘ └──────────────┘ └─────────────┘  │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                              │                              │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │                Store Layer                          │    │
-│  │                                                     │    │
-│  │  ┌─────────────┐ ┌──────────────┐ ┌─────────────┐  │    │
-│  │  │    SQLC     │ │  Database    │ │  Migration  │  │    │
-│  │  │ Generated   │ │  Connection  │ │  Management │  │    │
-│  │  │   Queries   │ │    Pool      │ │   (Goose)   │  │    │
-│  │  └─────────────┘ └──────────────┘ └─────────────┘  │    │
-│  └─────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
-                              │
-┌─────────────────────────────────────────────────────────────┐
-│                      SQLite Database                       │
-│                     (File-based)                           │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## Layer-by-Layer Breakdown
-
-### 1. Client Layer
-
-**HTML (Semantic)**
-
-- Clean, semantic HTML5 markup
-- Accessibility-first approach
-- Progressive enhancement ready
-
-**HTMX (Interactivity)**
-
-- Declarative JavaScript replacement
-- Server-driven UI updates
-- Seamless AJAX-like functionality without writing JavaScript
-
-**Pico.css (Styling)**
-
-- Minimal, semantic CSS framework
-- Automatic dark/light theme support
-- Beautiful defaults for HTML elements
-
-### 2. Middleware Stack
-
-**Security Middleware:**
-
-```go
-// Order matters - security first
-e.Use(middleware.RecoveryMiddleware())
-e.Use(middleware.SecurityHeadersMiddleware())
-e.Use(middleware.Sanitize())
-e.Use(middleware.CSRF())
-e.Use(middleware.ValidationErrorMiddleware())
-e.Use(middleware.TimeoutErrorHandler())
-```
-
-**Core Middleware:**
-
-```go
-// Request tracking and logging
-e.Use(echomiddleware.RequestID())
-e.Use(echomiddleware.RequestLogger())
-
-// Performance and security
-e.Use(echomiddleware.Secure())
-e.Use(echomiddleware.CORS())
-e.Use(echomiddleware.RateLimiter())
-e.Use(echomiddleware.Timeout())
-```
-
-### 3. Routing Layer
-
-**Route Organization:**
-
-```go
-// Static assets
-e.GET("/static/*", staticHandler)
-
-// Web pages (full HTML responses)
-e.GET("/", handlers.Home.Index)
-e.GET("/users", handlers.User.Users)
-
-// HTMX fragments (partial HTML responses)
-e.GET("/users/list", handlers.User.UserList)
-e.GET("/users/form", handlers.User.UserForm)
-
-// API endpoints (JSON responses)
-api := e.Group("/api")
-api.GET("/users/count", handlers.User.UserCount)
-
-// Form submissions (state-changing operations)
-e.POST("/users", handlers.User.CreateUser)    // CSRF required
-e.PUT("/users/:id", handlers.User.UpdateUser) // CSRF required
-```
-
-### 4. Handler Layer
-
-**Handler Structure:**
-
-```go
-type Handlers struct {
-    Home *HomeHandler
-    User *UserHandler
-    // Additional handlers...
-}
-
-type UserHandler struct {
-    store *store.Store  // Dependency injection
-}
-```
-
-**Handler Responsibilities:**
-
-- Request validation and sanitization
-- Business logic coordination
-- Error handling and response formatting
-- Context management and request tracing
-
-### 5. View Layer
-
-**Template Architecture:**
+## System Overview
 
 ```
-internal/view/
-├── layout/
-│   └── base.templ          # Base layout with HTML structure
-├── home.templ              # Home page templates
-├── users.templ             # User management templates
-└── components/             # Reusable components
-    ├── forms.templ
-    ├── tables.templ
-    └── modals.templ
+Browser (HTMX + Pico.css)
+         ↓
+    Load Balancer
+         ↓
+   Go Web Server
+         ↓
+    SQLite Database
 ```
 
-**Template Composition:**
+## Layer Architecture
 
-```go
-// Base layout
-templ Base(title string) {
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>{title}</title>
-        <link rel="stylesheet" href="/static/css/pico.min.css">
-    </head>
-    <body>
-        { children... }
-        <script src="/static/js/htmx.min.js"></script>
-    </body>
-    </html>
-}
-
-// Page template using layout
-templ Users() {
-    @Base("Users") {
-        @UsersContent()
-    }
-}
-```
-
-### 6. Store Layer
-
-**Store Architecture:**
-
-```go
-type Store struct {
-    *Queries    // SQLC generated queries (embedded)
-    db *sql.DB  // Database connection
-}
-
-// Generated by SQLC from SQL files
-type Queries struct {
-    db DBTX  // Database interface
-}
-```
-
-**Query Generation Workflow:**
+### 1. Request Flow
 
 ```
-1. Write SQL in queries.sql
-2. Define schema in schema.sql
-3. Run `sqlc generate`
-4. Type-safe Go methods are generated
-5. Use in handlers without SQL injection risk
+Request → Middleware Stack → Router → Handler → Store → Database
 ```
 
-### 7. Database Layer
+**Middleware Order** (from `cmd/web/main.go:96-184`):
 
-**SQLite Benefits:**
+1. Recovery & Security Headers
+2. Input Sanitization
+3. CSRF Protection
+4. Request ID & Logging
+5. Rate Limiting & CORS
+6. Timeout & Context
 
-- Zero configuration
-- ACID compliance
-- Excellent performance for read-heavy workloads
-- Perfect for single-server deployments
-- Easy backup and replication
-
-**Migration Management:**
+### 2. Component Structure
 
 ```
-internal/store/migrations/
-├── 20241231000001_initial_schema.sql
-├── 20241231000002_add_user_indexes.sql
-└── 20241231000003_user_profile_updates.sql
+cmd/web/main.go           # Entry point & server setup
+internal/
+├── config/              # Koanf configuration management
+├── handler/             # HTTP request handlers
+├── middleware/          # Security & validation middleware
+├── store/               # SQLC database layer
+├── ui/                  # Embedded static assets
+└── view/                # Templ templates
 ```
+
+## Technology Stack
+
+| Layer         | Technology                  | Purpose                         |
+| ------------- | --------------------------- | ------------------------------- |
+| **Server**    | Echo v4                     | HTTP framework with middleware  |
+| **Templates** | Templ                       | Type-safe Go HTML templates     |
+| **Frontend**  | HTMX 2.x                    | Dynamic interactions without JS |
+| **Styling**   | Pico.css v2                 | Semantic CSS with themes        |
+| **Database**  | SQLite + modernc.org/sqlite | Zero-CGO, embedded database     |
+| **Queries**   | SQLC                        | Generate type-safe Go from SQL  |
+| **Config**    | Koanf                       | Multi-source configuration      |
+| **Build**     | Mage                        | Go-based build automation       |
+| **Dev**       | Air                         | Hot reload development          |
 
 ## Data Flow
 
-### 1. Request Processing Flow
+### 1. HTMX Request Cycle
 
 ```
-1. Client Request
-   ├── Static Asset? → Serve from embedded files
-   ├── GET Request? → Render full page or fragment
-   └── POST/PUT/DELETE? → Process with CSRF validation
-
-2. Middleware Processing
-   ├── Security headers added
-   ├── Input sanitization applied
-   ├── CSRF token validated (if required)
-   ├── Rate limiting checked
-   └── Request logging initiated
-
-3. Route Matching
-   ├── Echo router finds handler
-   ├── Path parameters extracted
-   └── Handler method invoked
-
-4. Handler Processing
-   ├── Request context propagated
-   ├── Input validation performed
-   ├── Business logic executed
-   └── Response generated
-
-5. Response Rendering
-   ├── Template rendering (if HTML)
-   ├── JSON serialization (if API)
-   └── Error handling (if error)
+1. User Action → HTMX intercepts
+2. AJAX request → Server middleware stack
+3. Handler processes → Database query
+4. Template renders → HTML fragment
+5. HTMX swaps content → Triggers events
 ```
 
-### 2. Database Interaction Flow
+### 2. Database Interaction
 
 ```
-1. Handler Method
-   ├── Gets request context
-   ├── Validates input parameters
-   └── Calls store method
-
-2. Store Method (SQLC Generated)
-   ├── Prepares SQL statement
-   ├── Binds parameters safely
-   ├── Executes query
-   └── Scans results into Go structs
-
-3. Database Layer
-   ├── SQLite processes query
-   ├── Returns results
-   └── Connection returned to pool
-
-4. Response Processing
-   ├── Results passed to template
-   ├── Template rendered to HTML
-   └── Response sent to client
+1. Handler validates input
+2. Calls SQLC-generated store method
+3. Store executes parameterized query
+4. SQLite processes and returns results
+5. Results mapped to Go structs
+6. Passed to template for rendering
 ```
 
-### 3. HTMX Interaction Flow
+## Security Architecture
+
+### Defense in Depth
 
 ```
-1. User Interaction
-   ├── Button click or form submission
-   ├── HTMX intercepts event
-   └── AJAX request sent to server
+Input Layer:    Sanitization + Validation + Rate Limiting
+App Layer:      CSRF + Secure Headers + Error Handling
+Data Layer:     Parameterized Queries + Input Sanitization
+Transport:      HTTPS + HSTS + Secure Cookies
+```
 
-2. Server Processing
-   ├── Same middleware stack applied
-   ├── Handler processes request
-   └── Returns HTML fragment
+### Key Security Features
 
-3. Client Update
-   ├── HTMX receives HTML response
-   ├── Swaps content in DOM
-   └── Triggers custom events if specified
+- **CSRF Protection**: `internal/middleware/csrf.go` - Custom implementation with token rotation
+- **Input Sanitization**: `internal/middleware/sanitize.go` - XSS and SQL injection prevention
+- **Security Headers**: CSP, HSTS, X-Frame-Options, X-XSS-Protection
+- **Rate Limiting**: 20 requests/minute per IP with Echo middleware
+- **Error Handling**: Structured errors without information disclosure
 
-4. State Synchronization
-   ├── Other page elements can listen for events
-   ├── Counter updates, list refreshes, etc.
-   └── Page stays in sync without full reload
+## Database Design
+
+### Schema Management
+
+```
+internal/store/
+├── migrations/          # Goose database migrations
+├── schema.sql          # Current database schema
+├── queries.sql         # Source SQL queries
+├── queries.sql.go      # SQLC generated Go code
+└── models.go           # SQLC generated models
+```
+
+### Type Safety Flow
+
+```
+1. Write SQL in queries.sql
+2. Run `sqlc generate`
+3. Get type-safe Go methods
+4. Use in handlers without SQL injection risk
 ```
 
 ## Configuration Architecture
 
-### Multi-Source Configuration
+### Multi-Source Loading (Priority Order)
 
 ```go
-// Priority order (highest to lowest):
-1. Environment variables
+1. Environment variables (highest)
 2. Configuration files (JSON/YAML/TOML)
-3. Default values in code
-
-// Loading order:
-config := koanf.New(".")
-config.Load(structs.Provider(defaults))      // 3. Defaults
-config.Load(file.Provider("config.json"))    // 2. File
-config.Load(env.Provider())                  // 1. Environment
+3. Default values in code (lowest)
 ```
 
-### Environment-Specific Overrides
+### Production Overrides (`internal/config/config.go:108-114`)
 
 ```go
-// Production overrides automatically applied
-if cfg.App.Environment == "production" {
+if environment == "production" {
     cfg.App.Debug = false
     cfg.App.LogFormat = "json"
-    cfg.Security.AllowedOrigins = []string{}  // Remove wildcards
-    cfg.Database.RunMigrations = false        // Manual migration control
+    cfg.Security.AllowedOrigins = []string{}
+    cfg.Database.RunMigrations = false
 }
 ```
 
@@ -391,11 +153,10 @@ if cfg.App.Environment == "production" {
 
 ### Mage Build System
 
-```go
-// Build dependency graph
-Build -> Generate -> (generateSqlc, generateTempl)
-CI -> Generate, Fmt, Vet, Lint, Build
-Quality -> Vet, Lint, VulnCheck
+```
+mage ci → generate + fmt + vet + lint + build
+mage dev → generate + air (hot reload)
+mage quality → vet + lint + vulncheck
 ```
 
 ### Asset Embedding
@@ -405,130 +166,26 @@ Quality -> Vet, Lint, VulnCheck
 var StaticFiles embed.FS
 
 // Single binary contains:
-// - Go executable
-// - HTML templates (compiled)
-// - CSS stylesheets
-// - JavaScript files
+// - Go executable (~11MB)
+// - Compiled templates
+// - CSS/JS assets
 // - Database schema
-// - Migration files
 ```
-
-## Security Architecture
-
-### Defense in Depth
-
-```
-1. Input Layer
-   ├── Sanitization middleware
-   ├── Validation middleware
-   └── Rate limiting
-
-2. Application Layer
-   ├── CSRF protection
-   ├── Secure headers
-   └── Error handling that prevents information disclosure
-
-3. Data Layer
-   ├── Parameterized queries (SQLC)
-   ├── Input sanitization
-   └── Database file permissions
-
-4. Transport Layer
-   ├── HTTPS enforcement
-   ├── HSTS headers
-   └── Secure cookie settings
-```
-
-### Error Handling Architecture
-
-```go
-// Structured error types
-type AppError struct {
-    Type      ErrorType  // Categorized error types
-    Code      int        // HTTP status code
-    Message   string     // User-friendly message
-    Details   any        // Additional context
-    Internal  error      // Internal error (not exposed)
-    RequestID string     // Request tracing
-}
-
-// Error response structure
-type ErrorResponse struct {
-    Type      ErrorType `json:"type"`
-    Error     string    `json:"error"`
-    Message   string    `json:"message"`
-    Code      int       `json:"code"`
-    RequestID string    `json:"request_id"`
-    Timestamp string    `json:"timestamp"`
-}
-```
-
-## Scalability Considerations
-
-### Horizontal Scaling
-
-**Load Balancer Setup:**
-
-```nginx
-upstream go_servers {
-    server app1:8080;
-    server app2:8080;
-    server app3:8080;
-}
-
-server {
-    location / {
-        proxy_pass http://go_servers;
-    }
-}
-```
-
-**Database Considerations:**
-
-- SQLite works well for moderate traffic
-- For high scale, consider PostgreSQL with similar architecture
-- Read replicas can be added with minimal code changes
-
-### Vertical Scaling
-
-**Resource Optimization:**
-
-- Memory-efficient templates (compiled)
-- Connection pooling for database
-- Optimized static asset serving
-- Minimal garbage collection overhead
 
 ## Development Architecture
 
-### Hot Reload System
+### Hot Reload System (Air)
 
-```toml
-# .air.toml configuration
-[build]
-  cmd = "mage generate && go build -o ./tmp/server ./cmd/web"
-  include_ext = ["go", "templ", "sql"]
-  exclude_regex = ["_test.go", "_templ.go", ".sql.go"]
+```
+File Change → Air detects → Generate code → Rebuild → Restart server
 ```
 
 ### Code Generation Pipeline
 
 ```
-1. Schema Changes (schema.sql)
-   ├── Database structure updated
-   └── Migration files created
-
-2. Query Changes (queries.sql)
-   ├── SQLC generates type-safe Go code
-   └── Store methods automatically updated
-
-3. Template Changes (*.templ)
-   ├── Templ generates Go functions
-   └── Template compilation validated
-
-4. Hot Reload Trigger
-   ├── Air detects file changes
-   ├── Rebuild process initiated
-   └── Server restarted with new code
+SQL changes → SQLC generates Go code
+Template changes → Templ generates Go functions
+Build → Single binary with embedded assets
 ```
 
 ## Production Architecture
@@ -536,61 +193,82 @@ server {
 ### Single Binary Deployment
 
 ```
-Deployment Package:
-├── server (binary ~11MB)
-├── config.json (optional)
-└── data/ (database directory)
-
-Runtime Requirements:
-├── No external dependencies
-├── No framework installations
-├── No package managers
-└── Just the compiled binary
+bin/server                # ~11MB executable
+├── Embedded assets       # CSS, JS, templates
+├── Database schema       # SQLite schema
+└── Zero dependencies     # No external requirements
 ```
 
-### Monitoring Integration
+### Horizontal Scaling
+
+```
+Load Balancer
+├── App Instance 1:8080
+├── App Instance 2:8080
+└── App Instance 3:8080
+```
+
+**Scaling Considerations:**
+
+- SQLite suitable for moderate loads
+- Consider PostgreSQL for high-traffic
+- Stateless design enables easy horizontal scaling
+
+## Error Handling Architecture
+
+### Structured Error Types (`internal/middleware/errors.go`)
 
 ```go
-// Request tracing
-requestID := c.Response().Header().Get(echo.HeaderXRequestID)
-
-// Structured logging
-slog.Info("request processed",
-    "method", c.Request().Method,
-    "path", c.Request().URL.Path,
-    "status", c.Response().Status,
-    "duration", time.Since(start),
-    "request_id", requestID)
-
-// Error tracking
-slog.Error("application error",
-    "error", err,
-    "request_id", requestID,
-    "user_agent", c.Request().UserAgent(),
-    "remote_ip", c.RealIP())
+type AppError struct {
+    Type      ErrorType  // Categorized error types
+    Code      int        // HTTP status code
+    Message   string     // User-friendly message
+    Details   any        // Additional context
+    Internal  error      // Internal error (not exposed)
+    RequestID string     # Request tracing
+}
 ```
 
-## Architecture Benefits
+### Error Flow
 
-### Developer Experience
+```
+Error occurs → AppError created → Context added →
+Logged internally → Sanitized response → JSON sent to client
+```
 
-- **Fast feedback loop** with hot reload
-- **Type safety** throughout the stack
-- **Single language** (Go) for entire application
-- **Minimal configuration** required
+## Monitoring Architecture
 
-### Production Benefits
+### Request Tracing
 
-- **Single binary deployment** simplifies operations
-- **Zero external dependencies** reduces failure points
-- **Excellent performance** with minimal resource usage
-- **Built-in security** features
+```go
+// Every request gets unique ID
+requestID := c.Response().Header().Get(echo.HeaderXRequestID)
 
-### Maintenance Benefits
+// Used in logs and error responses
+slog.Info("request", "request_id", requestID, ...)
+```
 
-- **Code generation** reduces boilerplate
-- **Structured logging** aids debugging
-- **Comprehensive error handling** improves reliability
-- **Migration system** handles schema evolution
+### Structured Logging
 
-This architecture provides a solid foundation for building production-ready web applications while maintaining the simplicity and performance characteristics that make Go an excellent choice for web development.
+```go
+// Development: Text format for readability
+// Production: JSON format for log aggregation
+```
+
+## Performance Characteristics
+
+### Memory Efficiency
+
+- Compiled templates (no runtime parsing)
+- Connection pooling ready
+- Minimal garbage collection overhead
+- Embedded assets (no file I/O)
+
+### Request Latency
+
+- Zero-CGO database driver
+- Efficient middleware stack
+- Type-safe database queries
+- Minimal allocations in hot paths
+
+This architecture provides production-ready performance and security while maintaining the simplicity that makes Go excellent for web development.

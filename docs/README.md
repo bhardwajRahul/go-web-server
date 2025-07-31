@@ -1,33 +1,25 @@
-# Go Web Server Documentation
+# Documentation
 
-Welcome to the comprehensive documentation for the Modern Go Web Server template.
+Complete documentation for the Modern Go Web Server.
 
-## Table of Contents
+## Quick Reference
 
-- [API Documentation](./api.md) - Complete API reference and examples
-- [Deployment Guide](./deployment.md) - Production deployment instructions
-- [Security Configuration](./security.md) - Security features and configuration
-- [Architecture Overview](./architecture.md) - System design and components
-- [Development Guide](./development.md) - Local development setup
+- **[Development Guide](./development.md)** - Local setup and development workflow
+- **[API Reference](./api.md)** - HTTP endpoints and HTMX integration
+- **[Architecture](./architecture.md)** - System design and components
+- **[Security](./security.md)** - CSRF, sanitization, and security headers
+- **[Deployment](./deployment.md)** - Production deployment and configuration
 
-## Quick Start
+## Getting Started
 
-For immediate setup, see the main [README.md](../README.md) in the root directory.
+1. **Quick Start**: See the main [README.md](../README.md)
+2. **Development**: Follow the [Development Guide](./development.md)
+3. **Production**: Use the [Deployment Guide](./deployment.md)
 
-## Documentation Structure
+## Stack Overview
 
-This documentation follows The Modern Go Stack principles:
-
-- **Pragmatic Simplicity**: Clear, concise documentation without unnecessary complexity
-- **Production Focus**: Real-world deployment and security considerations
-- **Developer Experience**: Comprehensive guides for efficient development
-
-## Getting Help
-
-- Check the specific documentation sections for detailed information
-- Review the source code for implementation details
-- See the main README for quick start instructions
-
-## Contributing
-
-When contributing to this project, please update the relevant documentation to reflect your changes.
+- **Backend**: Echo v4 + SQLC + SQLite
+- **Frontend**: Templ + HTMX 2.x + Pico.css
+- **Security**: CSRF protection + input sanitization
+- **Build**: Mage automation + Air hot reload
+- **Deploy**: Single binary (~11MB) with zero dependencies

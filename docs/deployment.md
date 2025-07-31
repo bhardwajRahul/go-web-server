@@ -1,69 +1,56 @@
 # Deployment Guide
 
-This guide covers deploying the Modern Go Web Server in production environments.
+Production deployment instructions for the Go Web Server.
 
 ## Quick Deployment
 
-### 1. Build Production Binary
+### Build and Deploy
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-org/go-web-server.git
-cd go-web-server
-
-# Install build tools
-mage setup
-
-# Build optimized production binary
+# Build production binary
 mage build
-```
 
-The binary will be created at `bin/server` (~11MB, single file).
-
-### 2. Deploy Binary
-
-```bash
-# Copy binary to production server
-scp bin/server user@production-server:/opt/app/
-
-# Set executable permissions
+# Deploy to server
+scp bin/server user@server:/opt/app/
 chmod +x /opt/app/server
 
-# Run the server
+# Run with environment variables
+export APP_ENVIRONMENT=production
+export DATABASE_URL=/opt/app/data/production.db
 /opt/app/server
 ```
+
+The binary is ~11MB with zero external dependencies.
 
 ## Configuration
 
 ### Environment Variables
 
-Set these environment variables for production:
+**Production Settings:**
 
 ```bash
-# Server Configuration
-export SERVER_HOST="0.0.0.0"
-export SERVER_PORT="8080"
+# Server
+export SERVER_HOST=0.0.0.0
+export SERVER_PORT=8080
 
-# Database Configuration
-export DATABASE_URL="/opt/app/data/production.db"
-export DATABASE_RUN_MIGRATIONS="true"
+# Database
+export DATABASE_URL=/opt/app/data/production.db
+export DATABASE_RUN_MIGRATIONS=true
 
-# Application Configuration
-export APP_ENVIRONMENT="production"
-export APP_LOG_LEVEL="info"
-export APP_LOG_FORMAT="json"
-export APP_DEBUG="false"
+# Application
+export APP_ENVIRONMENT=production
+export APP_LOG_LEVEL=info
+export APP_LOG_FORMAT=json
+export APP_DEBUG=false
 
-# Security Configuration
-export SECURITY_ENABLE_CORS="true"
-export SECURITY_ALLOWED_ORIGINS="https://yourdomain.com"
+# Security
+export SECURITY_ENABLE_CORS=true
+export SECURITY_ALLOWED_ORIGINS=https://yourdomain.com
 ```
 
-### Configuration Files
+### Configuration File
 
-Alternatively, create a configuration file:
-
-**config.json:**
+`config.json`:
 
 ```json
 {
@@ -77,8 +64,7 @@ Alternatively, create a configuration file:
   "database": {
     "url": "/opt/app/data/production.db",
     "run_migrations": true,
-    "max_connections": 25,
-    "timeout": "30s"
+    "max_connections": 25
   },
   "app": {
     "environment": "production",
@@ -88,50 +74,10 @@ Alternatively, create a configuration file:
   },
   "security": {
     "enable_cors": true,
-    "allowed_origins": ["https://yourdomain.com"],
-    "trusted_proxies": ["127.0.0.1"]
-  },
-  "features": {
-    "enable_metrics": true,
-    "enable_pprof": false
+    "allowed_origins": ["https://yourdomain.com"]
   }
 }
 ```
-
-## Production Checklist
-
-### Security
-
-- [ ] Set `APP_ENVIRONMENT="production"`
-- [ ] Disable debug mode (`APP_DEBUG="false"`)
-- [ ] Configure specific CORS origins (not `*`)
-- [ ] Use HTTPS in production
-- [ ] Set secure cookie flags
-- [ ] Configure proper firewall rules
-- [ ] Review and update CSP headers
-
-### Performance
-
-- [ ] Use JSON logging (`APP_LOG_FORMAT="json"`)
-- [ ] Configure appropriate log levels
-- [ ] Set database connection limits
-- [ ] Configure request timeouts
-- [ ] Enable gzip compression (reverse proxy)
-
-### Monitoring
-
-- [ ] Set up log aggregation
-- [ ] Configure health checks
-- [ ] Monitor database file size
-- [ ] Set up alerts for errors
-- [ ] Track response times
-
-### Backup
-
-- [ ] Schedule database backups
-- [ ] Test backup restoration
-- [ ] Store backups securely
-- [ ] Document recovery procedures
 
 ## Deployment Methods
 
@@ -142,7 +88,6 @@ Create `/etc/systemd/system/go-web-server.service`:
 ```ini
 [Unit]
 Description=Go Web Server
-Documentation=https://github.com/your-org/go-web-server
 After=network.target
 
 [Service]
@@ -151,15 +96,13 @@ User=appuser
 Group=appuser
 WorkingDirectory=/opt/app
 ExecStart=/opt/app/server
-ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
 RestartSec=5
 
-# Security settings
+# Security
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
-ProtectHome=true
 ReadWritePaths=/opt/app/data
 
 # Environment
@@ -171,7 +114,7 @@ Environment=APP_LOG_FORMAT=json
 WantedBy=multi-user.target
 ```
 
-**Enable and start:**
+Enable and start:
 
 ```bash
 sudo systemctl daemon-reload
@@ -186,25 +129,21 @@ sudo systemctl status go-web-server
 
 ```dockerfile
 FROM golang:1.24-alpine AS builder
-
 WORKDIR /app
 COPY . .
-RUN apk add --no-cache git
-RUN go mod download
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o server ./cmd/web
+RUN apk add --no-cache git && \
+    go mod download && \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o server ./cmd/web
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates tzdata
 WORKDIR /root/
-
 COPY --from=builder /app/server .
-COPY --from=builder /app/internal/ui/static ./internal/ui/static
-
 EXPOSE 8080
 CMD ["./server"]
 ```
 
-**Build and run:**
+Build and run:
 
 ```bash
 docker build -t go-web-server .
@@ -263,9 +202,7 @@ services:
     restart: unless-stopped
 ```
 
-## Reverse Proxy Setup
-
-### Nginx Configuration
+## Reverse Proxy (Nginx)
 
 **nginx.conf:**
 
@@ -306,7 +243,6 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
 
-        # Timeouts
         proxy_connect_timeout 10s;
         proxy_send_timeout 30s;
         proxy_read_timeout 30s;
@@ -325,9 +261,9 @@ server {
 }
 ```
 
-## SSL/TLS Configuration
+## SSL/TLS Setup
 
-### Let's Encrypt with Certbot
+### Let's Encrypt (Certbot)
 
 ```bash
 # Install certbot
@@ -340,24 +276,11 @@ sudo certbot --nginx -d yourdomain.com
 0 12 * * * /usr/bin/certbot renew --quiet
 ```
 
-### Manual SSL Setup
-
-1. **Obtain SSL certificates** (from your CA)
-2. **Install certificates:**
-
-   ```bash
-   sudo cp yourdomain.com.crt /etc/nginx/ssl/
-   sudo cp yourdomain.com.key /etc/nginx/ssl/
-   sudo chmod 600 /etc/nginx/ssl/*
-   ```
-
-3. **Update nginx configuration** (see above)
-
 ## Database Management
 
-### Backup Strategy
+### Backup Script
 
-**Daily backup script:**
+**backup.sh:**
 
 ```bash
 #!/bin/bash
@@ -365,10 +288,9 @@ DATABASE_FILE="/opt/app/data/production.db"
 BACKUP_DIR="/opt/app/backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 
-# Create backup directory
 mkdir -p $BACKUP_DIR
 
-# Create backup
+# Create backup with SQLite
 sqlite3 $DATABASE_FILE ".backup $BACKUP_DIR/backup_$DATE.db"
 
 # Compress backup
@@ -380,20 +302,46 @@ find $BACKUP_DIR -name "backup_*.db.gz" -mtime +30 -delete
 echo "Backup completed: backup_$DATE.db.gz"
 ```
 
+Schedule with cron:
+
+```bash
+# Daily backup at 2 AM
+0 2 * * * /opt/app/backup.sh
+```
+
 ### Migration Management
 
 ```bash
-# Run migrations manually
-/opt/app/server -migrate
-
 # Check migration status
 goose -dir internal/store/migrations sqlite3 /opt/app/data/production.db status
 
-# Rollback last migration (if needed)
+# Run migrations manually
+goose -dir internal/store/migrations sqlite3 /opt/app/data/production.db up
+
+# Rollback (if needed)
 goose -dir internal/store/migrations sqlite3 /opt/app/data/production.db down
 ```
 
-## Monitoring and Logging
+## Monitoring & Logging
+
+### Health Checks
+
+**health-check.sh:**
+
+```bash
+#!/bin/bash
+HEALTH_URL="http://localhost:8080/health"
+RESPONSE=$(curl -s -w "%{http_code}" "$HEALTH_URL")
+HTTP_CODE="${RESPONSE: -3}"
+
+if [ "$HTTP_CODE" -eq 200 ]; then
+    echo "Service is healthy"
+    exit 0
+else
+    echo "Service is unhealthy: HTTP $HTTP_CODE"
+    exit 1
+fi
+```
 
 ### Log Management
 
@@ -405,7 +353,8 @@ sudo journalctl -u go-web-server -f
 
 # Configure log rotation
 sudo mkdir -p /etc/systemd/journald.conf.d
-echo -e "[Journal]\nSystemMaxUse=1G\nMaxRetentionSec=30day" | sudo tee /etc/systemd/journald.conf.d/go-web-server.conf
+echo -e "[Journal]\nSystemMaxUse=1G\nMaxRetentionSec=30day" | \
+sudo tee /etc/systemd/journald.conf.d/go-web-server.conf
 ```
 
 **With Docker:**
@@ -422,56 +371,72 @@ logging:
     max-file: "3"
 ```
 
-### Health Checks
+## Security Hardening
 
-**External monitoring:**
+### Production Checklist
+
+- [ ] Set `APP_ENVIRONMENT="production"`
+- [ ] Disable debug mode (`APP_DEBUG="false"`)
+- [ ] Configure specific CORS origins (not `*`)
+- [ ] Use HTTPS with HSTS headers
+- [ ] Set secure cookie settings
+- [ ] Configure proper firewall rules
+- [ ] Set database file permissions (`chmod 600`)
+- [ ] Run as non-root user
+- [ ] Enable comprehensive logging
+- [ ] Set up security monitoring
+
+### File Permissions
 
 ```bash
-# Simple health check
-curl -f http://localhost:8080/health || exit 1
+# Database permissions
+chmod 600 /opt/app/data/production.db
+chown appuser:appuser /opt/app/data/production.db
 
-# Detailed monitoring script
-#!/bin/bash
-HEALTH_URL="http://localhost:8080/health"
-RESPONSE=$(curl -s -w "%{http_code}" "$HEALTH_URL")
-HTTP_CODE="${RESPONSE: -3}"
+# Directory permissions
+chmod 700 /opt/app/data/
+chown appuser:appuser /opt/app/data/
 
-if [ "$HTTP_CODE" -eq 200 ]; then
-    echo "Service is healthy"
-    exit 0
-else
-    echo "Service is unhealthy: HTTP $HTTP_CODE"
-    exit 1
-fi
+# Binary permissions
+chmod 755 /opt/app/server
+chown appuser:appuser /opt/app/server
 ```
 
 ## Scaling Considerations
 
 ### Horizontal Scaling
 
-1. **Load Balancer Setup:**
+**Load Balancer Setup:**
 
-   - Use Nginx, HAProxy, or cloud load balancer
-   - Configure health checks
-   - Enable session sticky if needed
+- Use Nginx, HAProxy, or cloud load balancer
+- Configure health checks (`/health` endpoint)
+- Session sticky not required (stateless design)
 
-2. **Database Considerations:**
+**Database Considerations:**
 
-   - SQLite is suitable for moderate loads
-   - Consider PostgreSQL for high-traffic scenarios
-   - Implement read replicas if needed
+- SQLite suitable for moderate loads (thousands of concurrent users)
+- Consider PostgreSQL for high-traffic scenarios
+- Implement read replicas if needed
 
-3. **Static Asset Delivery:**
-   - Use CDN for static assets
-   - Configure proper cache headers
-   - Consider asset optimization
+### Performance Tuning
 
-### Vertical Scaling
+**Database Connection Pool:**
 
-- **Memory:** Monitor memory usage and adjust limits
-- **CPU:** Profile application for CPU bottlenecks
-- **Storage:** Monitor database file size and I/O
-- **Network:** Configure connection limits appropriately
+```bash
+export DATABASE_MAX_CONNECTIONS=25
+export DATABASE_TIMEOUT=30s
+```
+
+**Application Profiling:**
+
+```bash
+# Enable pprof temporarily
+export FEATURES_ENABLE_PPROF=true
+
+# Profile endpoints
+curl http://localhost:8080/debug/pprof/profile > cpu.prof
+go tool pprof cpu.prof
+```
 
 ## Troubleshooting
 
@@ -480,89 +445,24 @@ fi
 **Service won't start:**
 
 ```bash
-# Check service status
 sudo systemctl status go-web-server
-
-# Check logs
 sudo journalctl -u go-web-server -n 50
-
-# Check file permissions
 ls -la /opt/app/
 ```
 
 **Database issues:**
 
 ```bash
-# Check database file permissions
 ls -la /opt/app/data/
-
-# Verify database integrity
 sqlite3 /opt/app/data/production.db "PRAGMA integrity_check;"
-
-# Check migration status
-goose -dir internal/store/migrations sqlite3 /opt/app/data/production.db status
 ```
 
 **High memory usage:**
 
 ```bash
-# Monitor memory usage
 ps aux | grep server
-
-# Check for memory leaks
 curl http://localhost:8080/debug/pprof/heap > heap.prof
 go tool pprof heap.prof
 ```
 
-### Performance Optimization
-
-1. **Database Optimization:**
-
-   ```sql
-   -- Analyze query performance
-   EXPLAIN QUERY PLAN SELECT * FROM users WHERE email = ?;
-
-   -- Update statistics
-   PRAGMA optimize;
-   ```
-
-2. **Application Profiling:**
-
-   ```bash
-   # Enable pprof in production (temporarily)
-   export FEATURES_ENABLE_PPROF=true
-
-   # Profile CPU usage
-   curl http://localhost:8080/debug/pprof/profile > cpu.prof
-   go tool pprof cpu.prof
-   ```
-
-3. **Connection Tuning:**
-   - Adjust `DATABASE_MAX_CONNECTIONS`
-   - Configure appropriate timeouts
-   - Monitor connection pool usage
-
-## Security Hardening
-
-### System Level
-
-- **User permissions:** Run as non-root user
-- **File permissions:** Restrict access to binary and data
-- **Network:** Use firewall to limit port access
-- **Updates:** Keep system and dependencies updated
-
-### Application Level
-
-- **Environment:** Always use `production` environment
-- **Logging:** Don't log sensitive information
-- **Headers:** Configure security headers properly
-- **CORS:** Restrict origins to your domains only
-
-### Infrastructure Level
-
-- **SSL/TLS:** Use strong cipher suites
-- **WAF:** Consider Web Application Firewall
-- **DDoS:** Implement rate limiting and DDoS protection
-- **Monitoring:** Set up intrusion detection
-
-This deployment guide ensures your Modern Go Web Server runs reliably and securely in production environments.
+This deployment guide ensures your Go Web Server runs reliably and securely in production with comprehensive monitoring and backup strategies.

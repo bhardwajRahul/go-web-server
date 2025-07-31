@@ -1,180 +1,97 @@
 # Development Guide
 
-This guide covers setting up and working with the Modern Go Web Server in your local development environment.
+Local development setup and workflow for the Go Web Server.
 
-## Prerequisites
+## Quick Setup
 
-### Required Software
+### Prerequisites
 
 - **Go 1.24+** - [Download](https://golang.org/dl/)
 - **Git** - Version control
-- **Mage** - Build automation tool
 
-### Installing Mage
-
-```bash
-go install github.com/magefile/mage@latest
-```
-
-Verify installation:
+### Installation
 
 ```bash
-mage -version
-```
-
-## Initial Setup
-
-### 1. Clone Repository
-
-```bash
+# Clone and setup
 git clone https://github.com/your-org/go-web-server.git
 cd go-web-server
-```
 
-### 2. Install Dependencies and Tools
-
-```bash
-# Download Go module dependencies
+# Install tools and dependencies
 go mod tidy
-
-# Install all development tools
 mage setup
-```
 
-This installs:
-
-- `templ` - Template compiler
-- `sqlc` - SQL code generator
-- `air` - Hot reload development server
-- `golangci-lint` - Comprehensive linter
-- `govulncheck` - Vulnerability scanner
-- `goimports` - Enhanced Go formatter
-- `goose` - Database migration tool
-
-### 3. Generate Code
-
-```bash
-# Generate SQLC queries and Templ templates
-mage generate
-```
-
-### 4. Start Development Server
-
-```bash
-# Start with hot reload
+# Generate code and start development server
 mage dev
-
-# Or build and run manually
-mage run
 ```
 
-The server will start at `http://localhost:8080`.
+Server runs at `http://localhost:8080`
 
-## Development Workflow
+## Development Commands
 
-### Daily Development Commands
+### Daily Workflow
 
 ```bash
-# Start development with hot reload
-mage dev
-
-# Generate code after SQL/template changes
-mage generate
-
-# Format all code
-mage fmt
-
-# Run quality checks
-mage quality
-
-# Clean build artifacts
-mage clean
+mage dev          # Start with hot reload
+mage generate     # Generate SQLC + Templ code
+mage fmt          # Format all code
+mage quality      # Run vet + lint + vulncheck
+mage clean        # Clean build artifacts
 ```
 
-### Code Generation Workflow
+### Build Commands
 
-**When you modify SQL:**
+```bash
+mage build        # Production binary
+mage run          # Build and run
+mage ci           # Full CI pipeline
+```
 
-1. Edit `internal/store/queries.sql`
-2. Run `mage generate` or let Air auto-rebuild
-3. Generated code appears in `internal/store/queries.sql.go`
+### Database Commands
 
-**When you modify templates:**
+```bash
+mage migrate         # Run migrations up
+mage migrateDown     # Rollback last migration
+mage migrateStatus   # Show migration status
+```
 
-1. Edit `.templ` files in `internal/view/`
-2. Run `mage generate` or let Air auto-rebuild
-3. Generated code appears as `*_templ.go` files
-
-## Project Structure Deep Dive
+## Project Structure
 
 ```
 go-web-server/
-├── cmd/web/                    # Application entry point
-│   └── main.go                 # Server setup and configuration
-│
-├── internal/                   # Private application code
-│   ├── config/                 # Configuration management
-│   │   └── config.go           # Koanf-based config loading
-│   │
-│   ├── handler/                # HTTP request handlers
-│   │   ├── home.go             # Home page handlers
-│   │   ├── routes.go           # Route registration
-│   │   └── user.go             # User CRUD handlers
-│   │
-│   ├── middleware/             # Custom middleware
-│   │   ├── csrf.go             # CSRF protection
-│   │   ├── errors.go           # Error handling
-│   │   ├── sanitize.go         # Input sanitization
-│   │   └── validation.go       # Request validation
-│   │
-│   ├── store/                  # Database layer
-│   │   ├── db.go               # Database connection
-│   │   ├── migrations/         # Database migrations
-│   │   ├── models.go           # SQLC generated models
-│   │   ├── queries.sql         # SQL queries (source)
-│   │   ├── queries.sql.go      # SQLC generated code
-│   │   ├── schema.sql          # Database schema
-│   │   └── store.go            # Store implementation
-│   │
-│   ├── ui/                     # Static assets
-│   │   ├── embed.go            # Go embed directives
-│   │   └── static/             # Static files
-│   │       ├── css/
-│   │       └── js/
-│   │
-│   └── view/                   # Templates
-│       ├── home.templ          # Home page templates
-│       ├── home_templ.go       # Generated template code
-│       ├── layout/             # Layout templates
-│       ├── users.templ         # User management templates
-│       └── users_templ.go      # Generated template code
-│
-├── docs/                       # Documentation
-├── bin/                        # Compiled binaries
-├── tmp/                        # Temporary files (dev)
-├── .air.toml                   # Hot reload configuration
-├── .golangci.yml               # Linter configuration
-├── magefile.go                 # Build automation
-├── sqlc.yaml                   # SQLC configuration
-├── go.mod                      # Go module definition
-└── go.sum                      # Go module checksums
+├── cmd/web/main.go           # Application entry point
+├── internal/
+│   ├── config/config.go      # Configuration management
+│   ├── handler/              # HTTP request handlers
+│   │   ├── home.go          # Home page handlers
+│   │   ├── routes.go        # Route registration
+│   │   └── user.go          # User CRUD handlers
+│   ├── middleware/           # Custom middleware
+│   │   ├── csrf.go          # CSRF protection
+│   │   ├── errors.go        # Error handling
+│   │   ├── sanitize.go      # Input sanitization
+│   │   └── validation.go    # Request validation
+│   ├── store/               # Database layer
+│   │   ├── migrations/      # Goose migrations
+│   │   ├── queries.sql     # SQL queries (source)
+│   │   ├── queries.sql.go  # Generated Go code
+│   │   └── store.go        # Store implementation
+│   ├── ui/static/           # Static assets (embedded)
+│   └── view/                # Templ templates
+├── bin/                     # Compiled binaries
+├── magefile.go             # Build automation
+└── sqlc.yaml               # SQLC configuration
 ```
 
 ## Database Development
 
-### Working with Migrations
-
-**Create new migration:**
+### Creating Migrations
 
 ```bash
-# Create new migration file
-goose -dir internal/store/migrations create add_user_avatar sql
-
-# Edit the generated file
-vim internal/store/migrations/YYYYMMDD_add_user_avatar.sql
+# Create new migration
+goose -dir internal/store/migrations create add_feature sql
 ```
 
-**Migration file structure:**
+Migration file structure:
 
 ```sql
 -- +goose Up
@@ -186,22 +103,9 @@ DROP INDEX idx_users_avatar;
 ALTER TABLE users DROP COLUMN avatar_url;
 ```
 
-**Run migrations:**
-
-```bash
-# Apply all pending migrations
-mage migrate
-
-# Check migration status
-mage migrateStatus
-
-# Rollback last migration
-mage migrateDown
-```
-
 ### Writing SQL Queries
 
-**1. Add queries to `internal/store/queries.sql`:**
+Add to `internal/store/queries.sql`:
 
 ```sql
 -- name: GetActiveUsers :many
@@ -209,32 +113,26 @@ SELECT * FROM users
 WHERE is_active = 1
 ORDER BY created_at DESC;
 
--- name: GetUserWithStats :one
-SELECT
-    u.*,
-    COUNT(p.id) as post_count
-FROM users u
-LEFT JOIN posts p ON u.id = p.user_id
-WHERE u.id = ?
-GROUP BY u.id;
+-- name: CreateUser :one
+INSERT INTO users (email, name, bio, avatar_url)
+VALUES (?, ?, ?, ?)
+RETURNING *;
 ```
 
-**2. Generate Go code:**
+Generate Go code:
 
 ```bash
-mage generate
-# or
-sqlc generate
+mage generate  # or sqlc generate
 ```
 
-**3. Use in handlers:**
+Use in handlers:
 
 ```go
-func (h *UserHandler) GetActiveUsers(c echo.Context) error {
+func (h *UserHandler) ListActiveUsers(c echo.Context) error {
     ctx := c.Request().Context()
     users, err := h.store.GetActiveUsers(ctx)
     if err != nil {
-        return handleDatabaseError(err, c)
+        return handleError(err, c)
     }
 
     component := view.UserList(users)
@@ -246,7 +144,7 @@ func (h *UserHandler) GetActiveUsers(c echo.Context) error {
 
 ### Template Structure
 
-**Base layout (`internal/view/layout/base.templ`):**
+Base layout (`internal/view/layout/base.templ`):
 
 ```go
 package layout
@@ -255,28 +153,18 @@ templ Base(title string) {
     <!DOCTYPE html>
     <html lang="en">
     <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>{title} - Go Web Server</title>
         <link rel="stylesheet" href="/static/css/pico.min.css">
     </head>
     <body>
-        <nav>
-            <ul>
-                <li><a href="/">Home</a></li>
-                <li><a href="/users">Users</a></li>
-            </ul>
-        </nav>
-        <main>
-            { children... }
-        </main>
+        { children... }
         <script src="/static/js/htmx.min.js"></script>
     </body>
     </html>
 }
 ```
 
-**Page template:**
+Page template:
 
 ```go
 package view
@@ -291,53 +179,34 @@ templ Users() {
         </section>
     }
 }
-
-templ UserList() {
-    <div hx-get="/users/list" hx-trigger="load">
-        Loading users...
-    </div>
-}
 ```
 
-### HTMX Integration Patterns
+### HTMX Integration
 
-**Form submission with HTMX:**
+Form with CSRF:
 
 ```go
-templ UserForm(user *store.User) {
-    <form hx-post="/users"
-          hx-target="#user-list"
-          hx-swap="innerHTML">
-        <input type="hidden" name="csrf_token" value={ getCSRFToken() }/>
-
-        <label>
-            Name:
-            <input type="text" name="name" value={ getUserName(user) } required/>
-        </label>
-
-        <label>
-            Email:
-            <input type="email" name="email" value={ getUserEmail(user) } required/>
-        </label>
-
-        <button type="submit">
-            { getSubmitText(user) }
-        </button>
+templ UserForm(user *store.User, token string) {
+    <form hx-post="/users" hx-target="#user-list">
+        <input type="hidden" name="csrf_token" value={token}/>
+        <input type="text" name="name" required/>
+        <input type="email" name="email" required/>
+        <button type="submit">Create User</button>
     </form>
 }
 ```
 
-**Dynamic content updates:**
+Dynamic updates:
 
 ```go
 templ UserRow(user store.User) {
-    <tr id={ "user-" + strconv.FormatInt(user.ID, 10) }>
-        <td>{ user.Name }</td>
-        <td>{ user.Email }</td>
+    <tr id={"user-" + strconv.FormatInt(user.ID, 10)}>
+        <td>{user.Name}</td>
+        <td>{user.Email}</td>
         <td>
-            <button hx-delete={ "/users/" + strconv.FormatInt(user.ID, 10) }
+            <button hx-delete={"/users/" + strconv.FormatInt(user.ID, 10)}
                     hx-confirm="Delete this user?"
-                    hx-target={ "#user-" + strconv.FormatInt(user.ID, 10) }
+                    hx-target={"#user-" + strconv.FormatInt(user.ID, 10)}
                     hx-swap="outerHTML">
                 Delete
             </button>
@@ -348,17 +217,9 @@ templ UserRow(user store.User) {
 
 ## Handler Development
 
-### Handler Structure
+### Handler Pattern
 
 ```go
-type UserHandler struct {
-    store *store.Store
-}
-
-func NewUserHandler(s *store.Store) *UserHandler {
-    return &UserHandler{store: s}
-}
-
 func (h *UserHandler) CreateUser(c echo.Context) error {
     ctx := c.Request().Context()
 
@@ -397,14 +258,10 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
     // Success response
     slog.Info("User created", "user_id", user.ID, "email", email)
 
-    // Return updated user list for HTMX
+    // Return updated list for HTMX
     users, err := h.store.ListUsers(ctx)
     if err != nil {
-        return middleware.NewAppError(
-            middleware.ErrorTypeInternal,
-            http.StatusInternalServerError,
-            "Failed to fetch users",
-        ).WithContext(c).WithInternal(err)
+        return handleError(err, c)
     }
 
     component := view.UserList(users)
@@ -412,11 +269,10 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 }
 ```
 
-### Error Handling Patterns
-
-**Database errors:**
+### Error Handling
 
 ```go
+// Database errors
 user, err := h.store.GetUser(ctx, id)
 if err != nil {
     if errors.Is(err, sql.ErrNoRows) {
@@ -435,48 +291,35 @@ if err != nil {
 }
 ```
 
-**Validation errors:**
+## Configuration
 
-```go
-if !isValidEmail(email) {
-    return middleware.NewAppErrorWithDetails(
-        middleware.ErrorTypeValidation,
-        http.StatusBadRequest,
-        "Invalid email format",
-        map[string]string{"email": "Please provide a valid email address"},
-    ).WithContext(c)
-}
-```
+### Development Environment
 
-## Configuration Development
-
-### Environment Variables
-
-Create `.env` file for development:
+Create `.env` file:
 
 ```bash
-# Server Configuration
+# Server
 SERVER_PORT=8080
 SERVER_HOST=localhost
 
-# Database Configuration
+# Database
 DATABASE_URL=data/development.db
 DATABASE_RUN_MIGRATIONS=true
 
-# Application Configuration
+# Application
 APP_ENVIRONMENT=development
 APP_DEBUG=true
 APP_LOG_LEVEL=debug
 APP_LOG_FORMAT=text
 
-# Security Configuration (development)
+# Security (development)
 SECURITY_ENABLE_CORS=true
 SECURITY_ALLOWED_ORIGINS=*
 ```
 
-### Configuration Files
+### Configuration File
 
-**config.json (optional):**
+`config.json` (optional):
 
 ```json
 {
@@ -497,96 +340,31 @@ SECURITY_ALLOWED_ORIGINS=*
 }
 ```
 
-### Access Configuration in Code
-
-```go
-// In handlers
-func (h *Handler) SomeMethod(c echo.Context) error {
-    cfg := c.Get("config").(*config.Config)
-
-    if cfg.App.Debug {
-        slog.Debug("Debug information", "data", someData)
-    }
-
-    return nil
-}
-
-// Add config to context in main.go
-e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-    return func(c echo.Context) error {
-        c.Set("config", cfg)
-        return next(c)
-    }
-})
-```
-
-## Testing and Quality
-
-### Running Quality Checks
+## Quality Checks
 
 ```bash
-# Format code
-mage fmt
+# Individual checks
+mage fmt          # Format code with goimports
+mage vet          # Static analysis
+mage lint         # Comprehensive linting
+mage vulncheck    # Security vulnerability scan
 
-# Static analysis
-mage vet
-
-# Comprehensive linting
-mage lint
-
-# Security vulnerability scan
-mage vulncheck
-
-# Run all quality checks
-mage quality
-
-# Full CI pipeline
-mage ci
-```
-
-### Custom Linting Rules
-
-Edit `.golangci.yml` to customize linting:
-
-```yaml
-linters-settings:
-  revive:
-    rules:
-      - name: exported
-        severity: warning
-        disabled: false
-        arguments:
-          - "checkPrivateReceivers"
-          - "sayRepetitiveInsteadOfStutters"
-
-linters:
-  enable:
-    - errcheck
-    - govet
-    - staticcheck
-    - revive
-    - gosec
-    - misspell
+# Combined
+mage quality      # All quality checks
+mage ci           # Full CI pipeline
 ```
 
 ## Debugging
 
-### Logging Configuration
-
-**Development logging:**
+### Logging
 
 ```go
-// Text format for easy reading
+// Development - text format for readability
 logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
     Level: slog.LevelDebug,
 }))
 
-slog.SetDefault(logger)
-```
-
-**Structured debugging:**
-
-```go
+// Structured debugging
 slog.Debug("Processing request",
     "method", c.Request().Method,
     "path", c.Request().URL.Path,
@@ -596,52 +374,41 @@ slog.Debug("Processing request",
 
 ### Database Debugging
 
-**Query debugging:**
-
-```sql
--- Add to queries.sql for debugging
--- name: DebugUser :one
-SELECT *,
-       datetime(created_at) as created_at_formatted,
-       datetime(updated_at) as updated_at_formatted
-FROM users
-WHERE id = ?;
-```
-
-**SQLite debugging:**
-
 ```bash
-# Connect to database directly
+# Connect to database
 sqlite3 data/development.db
 
-# Useful SQLite commands
+# Useful commands
 .tables                          # List tables
-.schema users                    # Show table schema
-.headers on                      # Show column headers
-.mode column                     # Column display mode
+.schema users                    # Show schema
+.headers on                      # Show headers
+.mode column                     # Column display
 SELECT * FROM users LIMIT 5;    # Query data
 ```
 
-### Development Tools
+## Adding New Features
 
-**Air Configuration (`.air.toml`):**
+1. **Plan database changes** - Create migration if needed
+2. **Add SQL queries** - Write in `queries.sql`
+3. **Generate code** - `mage generate`
+4. **Create handlers** - Implement business logic
+5. **Add routes** - Register in `routes.go`
+6. **Create templates** - Build UI components
+7. **Test** - `mage dev` and verify functionality
+
+## Development Tools
+
+### Air Configuration (`.air.toml`)
 
 ```toml
 [build]
-  # Commands to run when building
   cmd = "mage generate && go build -o ./tmp/server ./cmd/web"
-
-  # File extensions to watch
   include_ext = ["go", "templ", "sql", "html", "css", "js"]
-
-  # Files to exclude from watching
   exclude_regex = ["_test.go", "_templ.go", ".sql.go"]
-
-  # Delay before rebuilding
   delay = 1000
 ```
 
-**VS Code Settings:**
+### VS Code Settings
 
 ```json
 {
@@ -657,98 +424,31 @@ SELECT * FROM users LIMIT 5;    # Query data
 }
 ```
 
-## Common Development Tasks
+## Common Issues
 
-### Adding a New Feature
-
-1. **Plan the feature:**
-
-   - Identify required database changes
-   - Design the API endpoints
-   - Plan the user interface
-
-2. **Database changes:**
-
-   ```bash
-   # Create migration
-   goose -dir internal/store/migrations create add_feature sql
-
-   # Edit migration file
-   # Run migration
-   mage migrate
-   ```
-
-3. **Add SQL queries:**
-
-   ```sql
-   -- Add to internal/store/queries.sql
-   -- name: CreateFeature :one
-   INSERT INTO features (name, description) VALUES (?, ?) RETURNING *;
-   ```
-
-4. **Generate code:**
-
-   ```bash
-   mage generate
-   ```
-
-5. **Create handlers:**
-
-   ```go
-   // Add to internal/handler/feature.go
-   func (h *FeatureHandler) CreateFeature(c echo.Context) error {
-       // Implementation
-   }
-   ```
-
-6. **Add routes:**
-
-   ```go
-   // In internal/handler/routes.go
-   e.POST("/features", handlers.Feature.CreateFeature)
-   ```
-
-7. **Create templates:**
-
-   ```go
-   // Add to internal/view/feature.templ
-   templ FeatureForm() {
-       // Template implementation
-   }
-   ```
-
-8. **Test the feature:**
-
-   ```bash
-   mage dev
-   # Test in browser
-   ```
-
-### Debugging Common Issues
-
-**Hot reload not working:**
+### Hot reload not working
 
 ```bash
-# Check Air is running
+# Check Air process
 ps aux | grep air
 
-# Restart Air
+# Restart development server
 mage dev
 
-# Check file extensions in .air.toml
+# Check .air.toml file extensions
 ```
 
-**SQLC generation fails:**
+### SQLC generation fails
 
 ```bash
-# Check SQL syntax in queries.sql
+# Check SQL syntax
 sqlc vet
 
-# Verify schema.sql is valid
+# Verify schema is valid
 sqlite3 :memory: '.read internal/store/schema.sql'
 ```
 
-**Template compilation errors:**
+### Template compilation errors
 
 ```bash
 # Check template syntax
@@ -757,12 +457,4 @@ templ generate
 # Look for missing imports or syntax errors
 ```
 
-**CSRF token issues:**
-
-```bash
-# Check middleware order in main.go
-# Verify forms include csrf_token field
-# Check cookie settings in browser dev tools
-```
-
-This development guide provides everything you need to work effectively with the Modern Go Web Server. The combination of hot reload, code generation, and comprehensive tooling creates an excellent developer experience while maintaining production-ready code quality.
+This development guide provides everything needed for effective local development with hot reload, code generation, and comprehensive tooling.

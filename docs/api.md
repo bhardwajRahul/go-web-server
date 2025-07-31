@@ -1,6 +1,6 @@
-# API Documentation
+# API Reference
 
-This document provides comprehensive API documentation for the Go Web Server.
+HTTP endpoints and HTMX integration for the Go Web Server.
 
 ## Base URL
 
@@ -10,47 +10,37 @@ http://localhost:8080
 
 ## Authentication
 
-Currently, the API does not require authentication. All endpoints are publicly accessible.
+No authentication required - this is a demo application.
 
 ## Headers
 
-### Required Headers
+**Required for state-changing operations:**
 
-- `Content-Type: application/x-www-form-urlencoded` (for form submissions)
-- `X-CSRF-Token: <token>` (for POST/PUT/PATCH/DELETE requests)
+- `X-CSRF-Token: <token>` (POST/PUT/PATCH/DELETE)
 
-### Response Headers
+**Response headers:**
 
-- `X-Request-ID: <uuid>` (for request tracing)
-- `HX-Trigger: <event>` (for HTMX events)
+- `X-Request-ID: <uuid>` (request tracing)
+- `HX-Trigger: <event>` (HTMX events)
 
-## Error Responses
-
-All API errors return structured JSON responses:
+## Error Format
 
 ```json
 {
-  "type": "validation|authentication|authorization|not_found|conflict|rate_limit|internal|external|timeout|csrf|sanitization",
-  "error": "HTTP Status Text",
+  "type": "validation|not_found|internal|csrf",
+  "error": "Bad Request",
   "message": "Detailed error description",
-  "details": {
-    "field": "validation error details"
-  },
   "code": 400,
-  "path": "/api/endpoint",
-  "method": "POST",
-  "request_id": "uuid-string",
+  "request_id": "uuid",
   "timestamp": "server-time"
 }
 ```
 
-## Health Check
+## Core Endpoints
 
-### GET /health
+### Health Check
 
-Returns server health status.
-
-**Response:**
+**GET /health**
 
 ```json
 {
@@ -58,240 +48,131 @@ Returns server health status.
   "service": "go-web-server",
   "version": "1.0.0",
   "uptime": "1h23m45s",
-  "timestamp": "2024-01-01T12:00:00Z",
-  "checks": {
-    "database": "ok",
-    "memory": "ok"
-  }
+  "checks": { "database": "ok", "memory": "ok" }
 }
 ```
 
-## Static Assets
+### Static Files
 
-### GET /static/\*
+**GET /static/\***
 
-Serves static files (CSS, JS, images).
-
-**Examples:**
-
-- `/static/css/pico.min.css`
-- `/static/js/htmx.min.js`
+- `/static/css/pico.min.css` - Pico.css framework
+- `/static/js/htmx.min.js` - HTMX library
 
 ## Web Pages
 
-### GET /
+### Home
 
-Home page with feature overview and interactive demos.
+**GET /** - Home page with feature demos
+**GET /demo** - Interactive HTMX demo content
 
-### GET /demo
+### Users
 
-Interactive demo content (HTMX partial).
+**GET /users** - User management page
 
-### GET /users
+## User API
 
-User management page with full layout.
-
-## User Management API
-
-### List Users
+### List Users (HTMX Fragment)
 
 **GET /users/list**
 
-Returns HTML fragment with user list.
+Returns HTML table with active users.
 
-**Response:** HTML table with user data
-
-### Get User Count
+### User Count
 
 **GET /api/users/count**
 
-Returns the number of active users.
+Returns plain text count: `42`
 
-**Response:** Plain text number (e.g., `42`)
+### User Forms
 
-### User Form
-
-**GET /users/form**
-
-Returns HTML form for creating a new user.
-
-**Response:** HTML form fragment
-
-### Edit User Form
-
-**GET /users/:id/edit**
-
-Returns HTML form for editing an existing user.
-
-**Parameters:**
-
-- `id` (path) - User ID (integer)
-
-**Response:** HTML form fragment populated with user data
-
-**Errors:**
-
-- `400` - Invalid user ID format
-- `404` - User not found
+**GET /users/form** - New user form
+**GET /users/:id/edit** - Edit user form (populated)
 
 ### Create User
 
 **POST /users**
 
-Creates a new user.
-
-**Headers:**
-
-- `X-CSRF-Token: <token>` (required)
-
 **Form Data:**
 
-- `name` (required) - User's full name
-- `email` (required) - User's email address
-- `bio` (optional) - User biography
-- `avatar_url` (optional) - URL to user's avatar image
+- `name` (required) - Full name
+- `email` (required) - Email address
+- `bio` (optional) - Biography
+- `avatar_url` (optional) - Avatar URL
 
-**Response:** HTML user list fragment
+**Headers:** `X-CSRF-Token` required
 
-**Errors:**
-
-- `400` - Validation failed (missing required fields)
-- `403` - Invalid CSRF token
-- `500` - Internal server error
-
-**Example:**
-
-```bash
-curl -X POST http://localhost:8080/users \
-  -H "X-CSRF-Token: abc123" \
-  -d "name=John Doe" \
-  -d "email=john@example.com" \
-  -d "bio=Software developer"
-```
+**Response:** Updated user list HTML
 
 ### Update User
 
 **PUT /users/:id**
 
-Updates an existing user.
-
-**Parameters:**
-
-- `id` (path) - User ID (integer)
-
-**Headers:**
-
-- `X-CSRF-Token: <token>` (required)
-
 **Form Data:**
 
-- `name` (required) - User's full name
-- `bio` (optional) - User biography
-- `avatar_url` (optional) - URL to user's avatar image
+- `name` (required) - Full name
+- `bio` (optional) - Biography
+- `avatar_url` (optional) - Avatar URL
 
-**Response:** HTML user list fragment
-
-**Errors:**
-
-- `400` - Invalid user ID format or validation failed
-- `403` - Invalid CSRF token
-- `404` - User not found
-- `500` - Internal server error
+**Headers:** `X-CSRF-Token` required
 
 ### Deactivate User
 
 **PATCH /users/:id/deactivate**
 
-Deactivates a user (soft delete).
+Soft delete - sets `is_active = false`
 
-**Parameters:**
-
-- `id` (path) - User ID (integer)
-
-**Headers:**
-
-- `X-CSRF-Token: <token>` (required)
-
-**Response:** HTML user row fragment (updated)
-
-**Errors:**
-
-- `400` - Invalid user ID format
-- `403` - Invalid CSRF token
-- `404` - User not found
-- `500` - Internal server error
+**Response:** Updated user row HTML
 
 ### Delete User
 
 **DELETE /users/:id**
 
-Permanently deletes a user.
+Permanent deletion.
 
-**Parameters:**
-
-- `id` (path) - User ID (integer)
-
-**Headers:**
-
-- `X-CSRF-Token: <token>` (required)
-
-**Response:** 204 No Content (empty response)
-
-**Errors:**
-
-- `400` - Invalid user ID format
-- `403` - Invalid CSRF token
-- `404` - User not found
-- `500` - Internal server error
+**Response:** `204 No Content`
 
 ## HTMX Integration
 
-This API is designed to work seamlessly with HTMX. Key features:
-
 ### Custom Events
 
-The API triggers custom HTMX events:
-
-- `userCreated` - After creating a user
-- `userUpdated` - After updating a user
-- `userDeactivated` - After deactivating a user
-- `userDeleted` - After deleting a user
+- `userCreated` - After creating user
+- `userUpdated` - After updating user
+- `userDeactivated` - After deactivating user
+- `userDeleted` - After deleting user
 
 ### CSRF Protection
 
-CSRF tokens are automatically managed:
+1. GET requests set CSRF cookie
+2. Forms include `csrf_token` field
+3. HTMX uses `X-CSRF-Token` header
+4. Server validates and rotates tokens
 
-- GET requests receive tokens via cookies
-- Forms must include `csrf_token` field
-- HTMX requests use `X-CSRF-Token` header
+### Example HTMX Usage
 
-### Request/Response Flow
+```html
+<!-- Form submission -->
+<form hx-post="/users" hx-target="#user-list">
+  <input type="hidden" name="csrf_token" value="{{token}}" />
+  <input name="name" required />
+  <button type="submit">Create</button>
+</form>
 
-1. Initial page load sets CSRF cookie
-2. HTMX requests include CSRF token in headers
-3. Server validates token and processes request
-4. Response includes new CSRF token for next request
-5. HTMX swaps content and triggers events
+<!-- Delete button -->
+<button
+  hx-delete="/users/123"
+  hx-confirm="Delete user?"
+  hx-target="#user-123"
+  hx-swap="outerHTML"
+>
+  Delete
+</button>
+```
 
-## Rate Limiting
+## Security Features
 
-- **Limit:** 20 requests per IP per minute
-- **Response:** 429 Too Many Requests
-- **Headers:** Standard rate limit headers included
-
-## Input Sanitization
-
-All form inputs are automatically sanitized:
-
-- HTML tags escaped
-- XSS vectors removed
-- SQL injection patterns blocked
-- Custom sanitization rules applied
-
-## Request Tracing
-
-Every request receives a unique ID for tracing:
-
-- Header: `X-Request-ID`
-- Included in error responses
-- Used in server logs
+- **Rate Limiting**: 20 requests/minute per IP
+- **Input Sanitization**: XSS and SQL injection protection
+- **CSRF Protection**: All state-changing operations
+- **Request Tracing**: Unique ID per request
+- **Error Sanitization**: No sensitive data in responses
