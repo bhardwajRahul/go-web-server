@@ -19,7 +19,7 @@ For immediate setup, see the main [README.md](../README.md) in the root director
 This documentation follows The Modern Go Stack principles:
 
 - **Pragmatic Simplicity**: Clear, concise documentation without unnecessary complexity
-- **Production Focus**: Real-world deployment and security considerations  
+- **Production Focus**: Real-world deployment and security considerations
 - **Developer Experience**: Comprehensive guides for efficient development
 
 ## Getting Help

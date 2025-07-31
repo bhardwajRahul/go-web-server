@@ -95,16 +95,19 @@ The architecture is built on three core principles:
 ### 1. Client Layer
 
 **HTML (Semantic)**
+
 - Clean, semantic HTML5 markup
 - Accessibility-first approach
 - Progressive enhancement ready
 
 **HTMX (Interactivity)**
+
 - Declarative JavaScript replacement
 - Server-driven UI updates
 - Seamless AJAX-like functionality without writing JavaScript
 
 **Pico.css (Styling)**
+
 - Minimal, semantic CSS framework
 - Automatic dark/light theme support
 - Beautiful defaults for HTML elements
@@ -112,6 +115,7 @@ The architecture is built on three core principles:
 ### 2. Middleware Stack
 
 **Security Middleware:**
+
 ```go
 // Order matters - security first
 e.Use(middleware.RecoveryMiddleware())
@@ -123,6 +127,7 @@ e.Use(middleware.TimeoutErrorHandler())
 ```
 
 **Core Middleware:**
+
 ```go
 // Request tracking and logging
 e.Use(echomiddleware.RequestID())
@@ -138,6 +143,7 @@ e.Use(echomiddleware.Timeout())
 ### 3. Routing Layer
 
 **Route Organization:**
+
 ```go
 // Static assets
 e.GET("/static/*", staticHandler)
@@ -162,6 +168,7 @@ e.PUT("/users/:id", handlers.User.UpdateUser) // CSRF required
 ### 4. Handler Layer
 
 **Handler Structure:**
+
 ```go
 type Handlers struct {
     Home *HomeHandler
@@ -175,6 +182,7 @@ type UserHandler struct {
 ```
 
 **Handler Responsibilities:**
+
 - Request validation and sanitization
 - Business logic coordination
 - Error handling and response formatting
@@ -183,6 +191,7 @@ type UserHandler struct {
 ### 5. View Layer
 
 **Template Architecture:**
+
 ```
 internal/view/
 ├── layout/
@@ -196,6 +205,7 @@ internal/view/
 ```
 
 **Template Composition:**
+
 ```go
 // Base layout
 templ Base(title string) {
@@ -223,6 +233,7 @@ templ Users() {
 ### 6. Store Layer
 
 **Store Architecture:**
+
 ```go
 type Store struct {
     *Queries    // SQLC generated queries (embedded)
@@ -236,6 +247,7 @@ type Queries struct {
 ```
 
 **Query Generation Workflow:**
+
 ```
 1. Write SQL in queries.sql
 2. Define schema in schema.sql
@@ -247,6 +259,7 @@ type Queries struct {
 ### 7. Database Layer
 
 **SQLite Benefits:**
+
 - Zero configuration
 - ACID compliance
 - Excellent performance for read-heavy workloads
@@ -254,6 +267,7 @@ type Queries struct {
 - Easy backup and replication
 
 **Migration Management:**
+
 ```
 internal/store/migrations/
 ├── 20241231000001_initial_schema.sql
@@ -409,7 +423,7 @@ var StaticFiles embed.FS
    ├── Validation middleware
    └── Rate limiting
 
-2. Application Layer  
+2. Application Layer
    ├── CSRF protection
    ├── Secure headers
    └── Error handling that prevents information disclosure
@@ -454,6 +468,7 @@ type ErrorResponse struct {
 ### Horizontal Scaling
 
 **Load Balancer Setup:**
+
 ```nginx
 upstream go_servers {
     server app1:8080;
@@ -469,6 +484,7 @@ server {
 ```
 
 **Database Considerations:**
+
 - SQLite works well for moderate traffic
 - For high scale, consider PostgreSQL with similar architecture
 - Read replicas can be added with minimal code changes
@@ -476,6 +492,7 @@ server {
 ### Vertical Scaling
 
 **Resource Optimization:**
+
 - Memory-efficient templates (compiled)
 - Connection pooling for database
 - Optimized static asset serving
@@ -500,7 +517,7 @@ server {
    ├── Database structure updated
    └── Migration files created
 
-2. Query Changes (queries.sql)  
+2. Query Changes (queries.sql)
    ├── SQLC generates type-safe Go code
    └── Store methods automatically updated
 
@@ -556,18 +573,21 @@ slog.Error("application error",
 ## Architecture Benefits
 
 ### Developer Experience
+
 - **Fast feedback loop** with hot reload
 - **Type safety** throughout the stack
 - **Single language** (Go) for entire application
 - **Minimal configuration** required
 
 ### Production Benefits
+
 - **Single binary deployment** simplifies operations
 - **Zero external dependencies** reduces failure points
 - **Excellent performance** with minimal resource usage
 - **Built-in security** features
 
 ### Maintenance Benefits
+
 - **Code generation** reduces boilerplate
 - **Structured logging** aids debugging
 - **Comprehensive error handling** improves reliability

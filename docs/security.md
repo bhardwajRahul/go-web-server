@@ -8,7 +8,7 @@ The security model follows defense-in-depth principles with multiple layers of p
 
 1. **Input Validation & Sanitization** - Prevents malicious input
 2. **CSRF Protection** - Prevents cross-site request forgery
-3. **Security Headers** - Protects against common web vulnerabilities  
+3. **Security Headers** - Protects against common web vulnerabilities
 4. **Rate Limiting** - Prevents abuse and DoS attacks
 5. **Structured Error Handling** - Prevents information disclosure
 6. **Request Tracing** - Enables security monitoring
@@ -22,6 +22,7 @@ Cross-Site Request Forgery (CSRF) protection is automatically enabled for all st
 ### Configuration
 
 **Default Configuration:**
+
 ```go
 CSRFConfig{
     TokenLength:    32,                    // Token length in bytes
@@ -36,6 +37,7 @@ CSRFConfig{
 ```
 
 **Production Configuration:**
+
 ```go
 CSRFConfig{
     CookieSecure:   true,                // HTTPS only
@@ -47,39 +49,41 @@ CSRFConfig{
 ### Token Management
 
 **For HTML Forms:**
+
 ```html
 <form method="POST" action="/users">
-    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-    <!-- other form fields -->
+  <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
+  <!-- other form fields -->
 </form>
 ```
 
 **For HTMX Requests:**
+
 ```html
-<button hx-post="/api/endpoint" 
-        hx-headers='{"X-CSRF-Token": "{{.CSRFToken}}"}'>
-    Submit
+<button hx-post="/api/endpoint" hx-headers='{"X-CSRF-Token": "{{.CSRFToken}}"}'>
+  Submit
 </button>
 ```
 
 **JavaScript/AJAX:**
+
 ```javascript
 // Get token from cookie
 function getCSRFToken() {
-    return document.cookie
-        .split('; ')
-        .find(row => row.startsWith('_csrf='))
-        ?.split('=')[1];
+  return document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("_csrf="))
+    ?.split("=")[1];
 }
 
 // Include in request headers
-fetch('/api/endpoint', {
-    method: 'POST',
-    headers: {
-        'X-CSRF-Token': getCSRFToken(),
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(data)
+fetch("/api/endpoint", {
+  method: "POST",
+  headers: {
+    "X-CSRF-Token": getCSRFToken(),
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify(data),
 });
 ```
 
@@ -104,17 +108,20 @@ All user input is automatically sanitized to prevent XSS, HTML injection, and ba
 ### Sanitization Features
 
 **HTML Sanitization:**
+
 - Escapes HTML special characters (`<`, `>`, `&`, `"`, `'`)
 - Removes potentially dangerous HTML tags
 - Preserves safe content while blocking malicious code
 
 **XSS Protection:**
+
 - Removes JavaScript: URLs and event handlers
 - Blocks script tags and other executable content
 - Sanitizes CSS and style attributes
 - Removes dangerous protocols (data:, vbscript:, etc.)
 
 **SQL Injection Prevention:**
+
 - Escapes SQL special characters
 - Removes SQL comment patterns (`--`, `/*`, `*/`)
 - Blocks dangerous SQL keywords in user input
@@ -123,6 +130,7 @@ All user input is automatically sanitized to prevent XSS, HTML injection, and ba
 ### Configuration
 
 **Default Configuration:**
+
 ```go
 SanitizeConfig{
     SanitizeHTML: true,
@@ -132,6 +140,7 @@ SanitizeConfig{
 ```
 
 **Custom Sanitization:**
+
 ```go
 config := middleware.SanitizeConfig{
     SanitizeHTML: true,
@@ -150,11 +159,12 @@ e.Use(middleware.SanitizeWithConfig(config))
 ```
 
 **Preset Configurations:**
+
 ```go
 // For HTML content
 e.Use(middleware.SanitizeWithConfig(middleware.HTMLSanitizeConfig))
 
-// For form inputs  
+// For form inputs
 e.Use(middleware.SanitizeWithConfig(middleware.FormSanitizeConfig))
 
 // For SQL-heavy applications
@@ -170,11 +180,11 @@ clean := middleware.SanitizeString(userInput, middleware.DefaultSanitizeConfig)
 // In handlers
 func (h *Handler) ProcessInput(c echo.Context) error {
     input := c.FormValue("user_input")
-    
+
     // Additional custom sanitization
     input = strings.TrimSpace(input)
     input = middleware.SanitizeString(input, middleware.FormSanitizeConfig)
-    
+
     // Process sanitized input
     return h.processCleanInput(input)
 }
@@ -190,7 +200,7 @@ The security headers middleware automatically applies:
 // Echo's built-in secure middleware
 SecureConfig{
     XSSProtection:         "1; mode=block",
-    ContentTypeNosniff:    "nosniff", 
+    ContentTypeNosniff:    "nosniff",
     XFrameOptions:         "DENY",
     HSTSMaxAge:            31536000,  // 1 year
     ContentSecurityPolicy: "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'",
@@ -206,19 +216,22 @@ SecureConfig{
 ### Content Security Policy (CSP)
 
 **Default CSP:**
+
 ```
-default-src 'self'; 
-style-src 'self' 'unsafe-inline'; 
+default-src 'self';
+style-src 'self' 'unsafe-inline';
 script-src 'self' 'unsafe-inline'
 ```
 
 **Stricter Production CSP:**
+
 ```go
 // In production, use nonces for inline scripts
 ContentSecurityPolicy: "default-src 'self'; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none';"
 ```
 
 **Custom CSP Configuration:**
+
 ```go
 secureConfig := echomiddleware.SecureConfig{
     ContentSecurityPolicy: "default-src 'self'; " +
@@ -238,11 +251,13 @@ e.Use(echomiddleware.SecureWithConfig(secureConfig))
 ### HSTS Configuration
 
 **Development:**
+
 ```go
 HSTSMaxAge: 0,  // Disabled for HTTP development
 ```
 
 **Production:**
+
 ```go
 HSTSMaxAge: 63072000,  // 2 years
 // Include subdomains and preload
@@ -277,7 +292,7 @@ func getCORSConfig(env string) echomiddleware.CORSConfig {
             },
             AllowMethods: []string{
                 http.MethodGet,
-                http.MethodPost, 
+                http.MethodPost,
                 http.MethodPut,
                 http.MethodPatch,
                 http.MethodDelete,
@@ -293,7 +308,7 @@ func getCORSConfig(env string) echomiddleware.CORSConfig {
             MaxAge: 3600,  // 1 hour
         }
     }
-    
+
     // Development configuration
     return echomiddleware.DefaultCORSConfig
 }
@@ -337,6 +352,7 @@ RateLimiterConfig{
 ### Custom Rate Limiting
 
 **Per-User Rate Limiting:**
+
 ```go
 rateLimiter := echomiddleware.RateLimiterWithConfig(echomiddleware.RateLimiterConfig{
     Store: echomiddleware.NewRateLimiterMemoryStore(100),  // 100 req/min per user
@@ -354,6 +370,7 @@ e.Use(rateLimiter)
 ```
 
 **Different Limits for Different Routes:**
+
 ```go
 // Strict rate limiting for auth endpoints
 authGroup := e.Group("/auth")
@@ -369,6 +386,7 @@ apiGroup.Use(echomiddleware.RateLimiterWithConfig(echomiddleware.RateLimiterConf
 ```
 
 **Redis-based Rate Limiting:**
+
 ```go
 import "github.com/go-redis/redis/v8"
 
@@ -388,6 +406,7 @@ rateLimiter := echomiddleware.RateLimiterWithConfig(echomiddleware.RateLimiterCo
 The error handling system prevents sensitive information disclosure:
 
 **Development vs Production:**
+
 ```go
 // Development - detailed errors
 if cfg.App.Environment == "development" {
@@ -405,6 +424,7 @@ if cfg.App.Environment == "production" {
 ```
 
 **Custom Error Responses:**
+
 ```go
 // Safe error for external users
 func (h *Handler) GetUser(c echo.Context) error {
@@ -412,7 +432,7 @@ func (h *Handler) GetUser(c echo.Context) error {
     if err != nil {
         // Log detailed error internally
         slog.Error("database error", "error", err, "user_id", id)
-        
+
         // Return generic error to user
         return middleware.NewAppError(
             middleware.ErrorTypeNotFound,
@@ -420,7 +440,7 @@ func (h *Handler) GetUser(c echo.Context) error {
             "User not found",  // No database details exposed
         ).WithContext(c)
     }
-    
+
     return c.JSON(http.StatusOK, user)
 }
 ```
@@ -428,29 +448,30 @@ func (h *Handler) GetUser(c echo.Context) error {
 ### Error Logging Security
 
 **Sensitive Data Filtering:**
+
 ```go
 func sanitizeForLogging(data map[string]interface{}) map[string]interface{} {
     sensitive := []string{"password", "token", "secret", "key", "authorization"}
-    
+
     cleaned := make(map[string]interface{})
     for k, v := range data {
         key := strings.ToLower(k)
         isSensitive := false
-        
+
         for _, pattern := range sensitive {
             if strings.Contains(key, pattern) {
                 isSensitive = true
                 break
             }
         }
-        
+
         if isSensitive {
             cleaned[k] = "[REDACTED]"
         } else {
             cleaned[k] = v
         }
     }
-    
+
     return cleaned
 }
 ```
@@ -460,16 +481,18 @@ func sanitizeForLogging(data map[string]interface{}) map[string]interface{} {
 ### Query Security
 
 **Parameterized Queries (SQLC):**
+
 ```sql
 -- queries.sql - Always use parameters
 -- name: GetUserByEmail :one
 SELECT * FROM users WHERE email = ? LIMIT 1;
 
--- name: CreateUser :one  
+-- name: CreateUser :one
 INSERT INTO users (email, name, bio) VALUES (?, ?, ?) RETURNING *;
 ```
 
 **Generated type-safe code prevents SQL injection:**
+
 ```go
 // This code is generated by SQLC and uses proper parameterization
 user, err := h.store.GetUserByEmail(ctx, email)
@@ -478,6 +501,7 @@ user, err := h.store.GetUserByEmail(ctx, email)
 ### Database File Security
 
 **File Permissions:**
+
 ```bash
 # Set restrictive permissions
 chmod 600 /opt/app/data/production.db
@@ -488,6 +512,7 @@ chmod 700 /opt/app/data/
 ```
 
 **Environment Configuration:**
+
 ```bash
 # Use absolute paths
 export DATABASE_URL="/opt/app/data/production.db"
@@ -516,11 +541,13 @@ cookie := &http.Cookie{
 ### Session Storage
 
 **Memory-based (development):**
+
 ```go
 sessions := make(map[string]*Session)
 ```
 
 **Redis-based (production):**
+
 ```go
 import "github.com/go-redis/redis/v8"
 
@@ -539,6 +566,7 @@ func (s *RedisSessionStore) Set(sessionID string, data *Session) error {
 ### TLS Settings
 
 **Minimum TLS Version:**
+
 ```go
 server.TLSConfig = &tls.Config{
     MinVersion: tls.VersionTLS12,
@@ -551,6 +579,7 @@ server.TLSConfig = &tls.Config{
 ```
 
 **Automatic HTTPS Redirect:**
+
 ```go
 // Redirect HTTP to HTTPS
 e.Pre(echomiddleware.HTTPSRedirect())
@@ -574,13 +603,13 @@ e.Use(echomiddleware.RequestID())
 // Access in handlers
 func (h *Handler) SecureEndpoint(c echo.Context) error {
     requestID := c.Response().Header().Get(echo.HeaderXRequestID)
-    
+
     slog.Info("security event",
         "event", "sensitive_access",
         "request_id", requestID,
         "user_ip", c.RealIP(),
         "user_agent", c.Request().UserAgent())
-        
+
     return nil
 }
 ```
@@ -611,6 +640,7 @@ func logSecurityEvent(eventType string, c echo.Context, details map[string]inter
 ### Intrusion Detection
 
 **Suspicious Pattern Detection:**
+
 ```go
 func detectSuspiciousInput(input string) bool {
     suspiciousPatterns := []string{
@@ -621,14 +651,14 @@ func detectSuspiciousInput(input string) bool {
         `../../../`,
         `%3Cscript`,
     }
-    
+
     lowerInput := strings.ToLower(input)
     for _, pattern := range suspiciousPatterns {
         if strings.Contains(lowerInput, pattern) {
             return true
         }
     }
-    
+
     return false
 }
 
@@ -647,7 +677,7 @@ func securityMonitoringMiddleware() echo.MiddlewareFunc {
                     }
                 }
             }
-            
+
             return next(c)
         }
     }
@@ -657,6 +687,7 @@ func securityMonitoringMiddleware() echo.MiddlewareFunc {
 ## Security Checklist
 
 ### Development
+
 - [ ] Enable CSRF protection for all forms
 - [ ] Use HTTPS in development when possible
 - [ ] Test input sanitization with malicious payloads
@@ -664,6 +695,7 @@ func securityMonitoringMiddleware() echo.MiddlewareFunc {
 - [ ] Test rate limiting functionality
 
 ### Production
+
 - [ ] Force HTTPS with HSTS headers
 - [ ] Configure strict CORS origins
 - [ ] Use secure cookie settings
@@ -676,6 +708,7 @@ func securityMonitoringMiddleware() echo.MiddlewareFunc {
 - [ ] Regular penetration testing
 
 ### Ongoing Maintenance
+
 - [ ] Monitor security logs regularly
 - [ ] Update dependencies for security patches
 - [ ] Review and rotate secrets

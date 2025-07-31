@@ -17,6 +17,7 @@ go install github.com/magefile/mage@latest
 ```
 
 Verify installation:
+
 ```bash
 mage -version
 ```
@@ -41,8 +42,9 @@ mage setup
 ```
 
 This installs:
+
 - `templ` - Template compiler
-- `sqlc` - SQL code generator  
+- `sqlc` - SQL code generator
 - `air` - Hot reload development server
 - `golangci-lint` - Comprehensive linter
 - `govulncheck` - Vulnerability scanner
@@ -92,13 +94,15 @@ mage clean
 ### Code Generation Workflow
 
 **When you modify SQL:**
+
 1. Edit `internal/store/queries.sql`
 2. Run `mage generate` or let Air auto-rebuild
 3. Generated code appears in `internal/store/queries.sql.go`
 
 **When you modify templates:**
+
 1. Edit `.templ` files in `internal/view/`
-2. Run `mage generate` or let Air auto-rebuild  
+2. Run `mage generate` or let Air auto-rebuild
 3. Generated code appears as `*_templ.go` files
 
 ## Project Structure Deep Dive
@@ -161,6 +165,7 @@ go-web-server/
 ### Working with Migrations
 
 **Create new migration:**
+
 ```bash
 # Create new migration file
 goose -dir internal/store/migrations create add_user_avatar sql
@@ -170,17 +175,19 @@ vim internal/store/migrations/YYYYMMDD_add_user_avatar.sql
 ```
 
 **Migration file structure:**
+
 ```sql
 -- +goose Up
 ALTER TABLE users ADD COLUMN avatar_url TEXT;
 CREATE INDEX idx_users_avatar ON users(avatar_url);
 
--- +goose Down  
+-- +goose Down
 DROP INDEX idx_users_avatar;
 ALTER TABLE users DROP COLUMN avatar_url;
 ```
 
 **Run migrations:**
+
 ```bash
 # Apply all pending migrations
 mage migrate
@@ -195,14 +202,15 @@ mage migrateDown
 ### Writing SQL Queries
 
 **1. Add queries to `internal/store/queries.sql`:**
+
 ```sql
 -- name: GetActiveUsers :many
-SELECT * FROM users 
-WHERE is_active = 1 
+SELECT * FROM users
+WHERE is_active = 1
 ORDER BY created_at DESC;
 
 -- name: GetUserWithStats :one
-SELECT 
+SELECT
     u.*,
     COUNT(p.id) as post_count
 FROM users u
@@ -212,6 +220,7 @@ GROUP BY u.id;
 ```
 
 **2. Generate Go code:**
+
 ```bash
 mage generate
 # or
@@ -219,6 +228,7 @@ sqlc generate
 ```
 
 **3. Use in handlers:**
+
 ```go
 func (h *UserHandler) GetActiveUsers(c echo.Context) error {
     ctx := c.Request().Context()
@@ -226,7 +236,7 @@ func (h *UserHandler) GetActiveUsers(c echo.Context) error {
     if err != nil {
         return handleDatabaseError(err, c)
     }
-    
+
     component := view.UserList(users)
     return component.Render(ctx, c.Response().Writer)
 }
@@ -237,6 +247,7 @@ func (h *UserHandler) GetActiveUsers(c echo.Context) error {
 ### Template Structure
 
 **Base layout (`internal/view/layout/base.templ`):**
+
 ```go
 package layout
 
@@ -266,6 +277,7 @@ templ Base(title string) {
 ```
 
 **Page template:**
+
 ```go
 package view
 
@@ -290,23 +302,24 @@ templ UserList() {
 ### HTMX Integration Patterns
 
 **Form submission with HTMX:**
+
 ```go
 templ UserForm(user *store.User) {
-    <form hx-post="/users" 
-          hx-target="#user-list" 
+    <form hx-post="/users"
+          hx-target="#user-list"
           hx-swap="innerHTML">
         <input type="hidden" name="csrf_token" value={ getCSRFToken() }/>
-        
+
         <label>
             Name:
             <input type="text" name="name" value={ getUserName(user) } required/>
         </label>
-        
+
         <label>
             Email:
             <input type="email" name="email" value={ getUserEmail(user) } required/>
         </label>
-        
+
         <button type="submit">
             { getSubmitText(user) }
         </button>
@@ -315,6 +328,7 @@ templ UserForm(user *store.User) {
 ```
 
 **Dynamic content updates:**
+
 ```go
 templ UserRow(user store.User) {
     <tr id={ "user-" + strconv.FormatInt(user.ID, 10) }>
@@ -347,11 +361,11 @@ func NewUserHandler(s *store.Store) *UserHandler {
 
 func (h *UserHandler) CreateUser(c echo.Context) error {
     ctx := c.Request().Context()
-    
+
     // Input validation
     name := c.FormValue("name")
     email := c.FormValue("email")
-    
+
     if name == "" || email == "" {
         return middleware.NewAppErrorWithDetails(
             middleware.ErrorTypeValidation,
@@ -363,13 +377,13 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
             },
         ).WithContext(c)
     }
-    
+
     // Database operation
     params := store.CreateUserParams{
         Name:  name,
         Email: email,
     }
-    
+
     user, err := h.store.CreateUser(ctx, params)
     if err != nil {
         slog.Error("Failed to create user", "error", err)
@@ -379,10 +393,10 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
             "Failed to create user",
         ).WithContext(c).WithInternal(err)
     }
-    
+
     // Success response
     slog.Info("User created", "user_id", user.ID, "email", email)
-    
+
     // Return updated user list for HTMX
     users, err := h.store.ListUsers(ctx)
     if err != nil {
@@ -392,7 +406,7 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
             "Failed to fetch users",
         ).WithContext(c).WithInternal(err)
     }
-    
+
     component := view.UserList(users)
     return component.Render(ctx, c.Response().Writer)
 }
@@ -401,6 +415,7 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 ### Error Handling Patterns
 
 **Database errors:**
+
 ```go
 user, err := h.store.GetUser(ctx, id)
 if err != nil {
@@ -411,7 +426,7 @@ if err != nil {
             "User not found",
         ).WithContext(c)
     }
-    
+
     return middleware.NewAppError(
         middleware.ErrorTypeInternal,
         http.StatusInternalServerError,
@@ -421,6 +436,7 @@ if err != nil {
 ```
 
 **Validation errors:**
+
 ```go
 if !isValidEmail(email) {
     return middleware.NewAppErrorWithDetails(
@@ -437,6 +453,7 @@ if !isValidEmail(email) {
 ### Environment Variables
 
 Create `.env` file for development:
+
 ```bash
 # Server Configuration
 SERVER_PORT=8080
@@ -460,6 +477,7 @@ SECURITY_ALLOWED_ORIGINS=*
 ### Configuration Files
 
 **config.json (optional):**
+
 ```json
 {
   "server": {
@@ -485,11 +503,11 @@ SECURITY_ALLOWED_ORIGINS=*
 // In handlers
 func (h *Handler) SomeMethod(c echo.Context) error {
     cfg := c.Get("config").(*config.Config)
-    
+
     if cfg.App.Debug {
         slog.Debug("Debug information", "data", someData)
     }
-    
+
     return nil
 }
 
@@ -556,6 +574,7 @@ linters:
 ### Logging Configuration
 
 **Development logging:**
+
 ```go
 // Text format for easy reading
 logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
@@ -566,6 +585,7 @@ slog.SetDefault(logger)
 ```
 
 **Structured debugging:**
+
 ```go
 slog.Debug("Processing request",
     "method", c.Request().Method,
@@ -577,24 +597,26 @@ slog.Debug("Processing request",
 ### Database Debugging
 
 **Query debugging:**
+
 ```sql
 -- Add to queries.sql for debugging
 -- name: DebugUser :one
-SELECT *, 
+SELECT *,
        datetime(created_at) as created_at_formatted,
        datetime(updated_at) as updated_at_formatted
-FROM users 
+FROM users
 WHERE id = ?;
 ```
 
 **SQLite debugging:**
+
 ```bash
 # Connect to database directly
 sqlite3 data/development.db
 
 # Useful SQLite commands
 .tables                          # List tables
-.schema users                    # Show table schema  
+.schema users                    # Show table schema
 .headers on                      # Show column headers
 .mode column                     # Column display mode
 SELECT * FROM users LIMIT 5;    # Query data
@@ -603,22 +625,24 @@ SELECT * FROM users LIMIT 5;    # Query data
 ### Development Tools
 
 **Air Configuration (`.air.toml`):**
+
 ```toml
 [build]
   # Commands to run when building
   cmd = "mage generate && go build -o ./tmp/server ./cmd/web"
-  
+
   # File extensions to watch
   include_ext = ["go", "templ", "sql", "html", "css", "js"]
-  
+
   # Files to exclude from watching
   exclude_regex = ["_test.go", "_templ.go", ".sql.go"]
-  
+
   # Delay before rebuilding
   delay = 1000
 ```
 
 **VS Code Settings:**
+
 ```json
 {
   "go.toolsManagement.autoUpdate": true,
@@ -638,21 +662,24 @@ SELECT * FROM users LIMIT 5;    # Query data
 ### Adding a New Feature
 
 1. **Plan the feature:**
+
    - Identify required database changes
    - Design the API endpoints
    - Plan the user interface
 
 2. **Database changes:**
+
    ```bash
    # Create migration
    goose -dir internal/store/migrations create add_feature sql
-   
+
    # Edit migration file
    # Run migration
    mage migrate
    ```
 
 3. **Add SQL queries:**
+
    ```sql
    -- Add to internal/store/queries.sql
    -- name: CreateFeature :one
@@ -660,11 +687,13 @@ SELECT * FROM users LIMIT 5;    # Query data
    ```
 
 4. **Generate code:**
+
    ```bash
    mage generate
    ```
 
 5. **Create handlers:**
+
    ```go
    // Add to internal/handler/feature.go
    func (h *FeatureHandler) CreateFeature(c echo.Context) error {
@@ -673,12 +702,14 @@ SELECT * FROM users LIMIT 5;    # Query data
    ```
 
 6. **Add routes:**
+
    ```go
    // In internal/handler/routes.go
    e.POST("/features", handlers.Feature.CreateFeature)
    ```
 
 7. **Create templates:**
+
    ```go
    // Add to internal/view/feature.templ
    templ FeatureForm() {
@@ -687,6 +718,7 @@ SELECT * FROM users LIMIT 5;    # Query data
    ```
 
 8. **Test the feature:**
+
    ```bash
    mage dev
    # Test in browser
@@ -695,6 +727,7 @@ SELECT * FROM users LIMIT 5;    # Query data
 ### Debugging Common Issues
 
 **Hot reload not working:**
+
 ```bash
 # Check Air is running
 ps aux | grep air
@@ -706,6 +739,7 @@ mage dev
 ```
 
 **SQLC generation fails:**
+
 ```bash
 # Check SQL syntax in queries.sql
 sqlc vet
@@ -715,6 +749,7 @@ sqlite3 :memory: '.read internal/store/schema.sql'
 ```
 
 **Template compilation errors:**
+
 ```bash
 # Check template syntax
 templ generate
@@ -723,6 +758,7 @@ templ generate
 ```
 
 **CSRF token issues:**
+
 ```bash
 # Check middleware order in main.go
 # Verify forms include csrf_token field

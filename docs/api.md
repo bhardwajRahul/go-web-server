@@ -51,6 +51,7 @@ All API errors return structured JSON responses:
 Returns server health status.
 
 **Response:**
+
 ```json
 {
   "status": "ok",
@@ -67,11 +68,12 @@ Returns server health status.
 
 ## Static Assets
 
-### GET /static/*
+### GET /static/\*
 
 Serves static files (CSS, JS, images).
 
 **Examples:**
+
 - `/static/css/pico.min.css`
 - `/static/js/htmx.min.js`
 
@@ -122,11 +124,13 @@ Returns HTML form for creating a new user.
 Returns HTML form for editing an existing user.
 
 **Parameters:**
+
 - `id` (path) - User ID (integer)
 
 **Response:** HTML form fragment populated with user data
 
 **Errors:**
+
 - `400` - Invalid user ID format
 - `404` - User not found
 
@@ -137,9 +141,11 @@ Returns HTML form for editing an existing user.
 Creates a new user.
 
 **Headers:**
+
 - `X-CSRF-Token: <token>` (required)
 
 **Form Data:**
+
 - `name` (required) - User's full name
 - `email` (required) - User's email address
 - `bio` (optional) - User biography
@@ -148,11 +154,13 @@ Creates a new user.
 **Response:** HTML user list fragment
 
 **Errors:**
+
 - `400` - Validation failed (missing required fields)
 - `403` - Invalid CSRF token
 - `500` - Internal server error
 
 **Example:**
+
 ```bash
 curl -X POST http://localhost:8080/users \
   -H "X-CSRF-Token: abc123" \
@@ -168,12 +176,15 @@ curl -X POST http://localhost:8080/users \
 Updates an existing user.
 
 **Parameters:**
+
 - `id` (path) - User ID (integer)
 
 **Headers:**
+
 - `X-CSRF-Token: <token>` (required)
 
 **Form Data:**
+
 - `name` (required) - User's full name
 - `bio` (optional) - User biography
 - `avatar_url` (optional) - URL to user's avatar image
@@ -181,6 +192,7 @@ Updates an existing user.
 **Response:** HTML user list fragment
 
 **Errors:**
+
 - `400` - Invalid user ID format or validation failed
 - `403` - Invalid CSRF token
 - `404` - User not found
@@ -193,14 +205,17 @@ Updates an existing user.
 Deactivates a user (soft delete).
 
 **Parameters:**
+
 - `id` (path) - User ID (integer)
 
 **Headers:**
+
 - `X-CSRF-Token: <token>` (required)
 
 **Response:** HTML user row fragment (updated)
 
 **Errors:**
+
 - `400` - Invalid user ID format
 - `403` - Invalid CSRF token
 - `404` - User not found
@@ -213,14 +228,17 @@ Deactivates a user (soft delete).
 Permanently deletes a user.
 
 **Parameters:**
+
 - `id` (path) - User ID (integer)
 
 **Headers:**
+
 - `X-CSRF-Token: <token>` (required)
 
 **Response:** 204 No Content (empty response)
 
 **Errors:**
+
 - `400` - Invalid user ID format
 - `403` - Invalid CSRF token
 - `404` - User not found
@@ -233,14 +251,16 @@ This API is designed to work seamlessly with HTMX. Key features:
 ### Custom Events
 
 The API triggers custom HTMX events:
+
 - `userCreated` - After creating a user
-- `userUpdated` - After updating a user  
+- `userUpdated` - After updating a user
 - `userDeactivated` - After deactivating a user
 - `userDeleted` - After deleting a user
 
 ### CSRF Protection
 
 CSRF tokens are automatically managed:
+
 - GET requests receive tokens via cookies
 - Forms must include `csrf_token` field
 - HTMX requests use `X-CSRF-Token` header
@@ -262,6 +282,7 @@ CSRF tokens are automatically managed:
 ## Input Sanitization
 
 All form inputs are automatically sanitized:
+
 - HTML tags escaped
 - XSS vectors removed
 - SQL injection patterns blocked
@@ -270,6 +291,7 @@ All form inputs are automatically sanitized:
 ## Request Tracing
 
 Every request receives a unique ID for tracing:
+
 - Header: `X-Request-ID`
 - Included in error responses
 - Used in server logs

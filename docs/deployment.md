@@ -44,7 +44,7 @@ Set these environment variables for production:
 export SERVER_HOST="0.0.0.0"
 export SERVER_PORT="8080"
 
-# Database Configuration  
+# Database Configuration
 export DATABASE_URL="/opt/app/data/production.db"
 export DATABASE_RUN_MIGRATIONS="true"
 
@@ -64,6 +64,7 @@ export SECURITY_ALLOWED_ORIGINS="https://yourdomain.com"
 Alternatively, create a configuration file:
 
 **config.json:**
+
 ```json
 {
   "server": {
@@ -100,6 +101,7 @@ Alternatively, create a configuration file:
 ## Production Checklist
 
 ### Security
+
 - [ ] Set `APP_ENVIRONMENT="production"`
 - [ ] Disable debug mode (`APP_DEBUG="false"`)
 - [ ] Configure specific CORS origins (not `*`)
@@ -109,6 +111,7 @@ Alternatively, create a configuration file:
 - [ ] Review and update CSP headers
 
 ### Performance
+
 - [ ] Use JSON logging (`APP_LOG_FORMAT="json"`)
 - [ ] Configure appropriate log levels
 - [ ] Set database connection limits
@@ -116,6 +119,7 @@ Alternatively, create a configuration file:
 - [ ] Enable gzip compression (reverse proxy)
 
 ### Monitoring
+
 - [ ] Set up log aggregation
 - [ ] Configure health checks
 - [ ] Monitor database file size
@@ -123,6 +127,7 @@ Alternatively, create a configuration file:
 - [ ] Track response times
 
 ### Backup
+
 - [ ] Schedule database backups
 - [ ] Test backup restoration
 - [ ] Store backups securely
@@ -167,6 +172,7 @@ WantedBy=multi-user.target
 ```
 
 **Enable and start:**
+
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable go-web-server
@@ -177,6 +183,7 @@ sudo systemctl status go-web-server
 ### 2. Docker Container
 
 **Dockerfile:**
+
 ```dockerfile
 FROM golang:1.24-alpine AS builder
 
@@ -198,6 +205,7 @@ CMD ["./server"]
 ```
 
 **Build and run:**
+
 ```bash
 docker build -t go-web-server .
 docker run -d \
@@ -212,8 +220,9 @@ docker run -d \
 ### 3. Docker Compose
 
 **docker-compose.yml:**
+
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   web:
@@ -228,7 +237,15 @@ services:
       - APP_LOG_FORMAT=json
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/health",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -251,6 +268,7 @@ services:
 ### Nginx Configuration
 
 **nginx.conf:**
+
 ```nginx
 upstream go_web_server {
     server 127.0.0.1:8080;
@@ -287,7 +305,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        
+
         # Timeouts
         proxy_connect_timeout 10s;
         proxy_send_timeout 30s;
@@ -326,11 +344,13 @@ sudo certbot --nginx -d yourdomain.com
 
 1. **Obtain SSL certificates** (from your CA)
 2. **Install certificates:**
+
    ```bash
    sudo cp yourdomain.com.crt /etc/nginx/ssl/
    sudo cp yourdomain.com.key /etc/nginx/ssl/
    sudo chmod 600 /etc/nginx/ssl/*
    ```
+
 3. **Update nginx configuration** (see above)
 
 ## Database Management
@@ -338,6 +358,7 @@ sudo certbot --nginx -d yourdomain.com
 ### Backup Strategy
 
 **Daily backup script:**
+
 ```bash
 #!/bin/bash
 DATABASE_FILE="/opt/app/data/production.db"
@@ -377,6 +398,7 @@ goose -dir internal/store/migrations sqlite3 /opt/app/data/production.db down
 ### Log Management
 
 **With systemd:**
+
 ```bash
 # View logs
 sudo journalctl -u go-web-server -f
@@ -387,6 +409,7 @@ echo -e "[Journal]\nSystemMaxUse=1G\nMaxRetentionSec=30day" | sudo tee /etc/syst
 ```
 
 **With Docker:**
+
 ```bash
 # View logs
 docker logs -f go-web-server
@@ -402,6 +425,7 @@ logging:
 ### Health Checks
 
 **External monitoring:**
+
 ```bash
 # Simple health check
 curl -f http://localhost:8080/health || exit 1
@@ -426,11 +450,13 @@ fi
 ### Horizontal Scaling
 
 1. **Load Balancer Setup:**
+
    - Use Nginx, HAProxy, or cloud load balancer
    - Configure health checks
    - Enable session sticky if needed
 
 2. **Database Considerations:**
+
    - SQLite is suitable for moderate loads
    - Consider PostgreSQL for high-traffic scenarios
    - Implement read replicas if needed
@@ -443,7 +469,7 @@ fi
 ### Vertical Scaling
 
 - **Memory:** Monitor memory usage and adjust limits
-- **CPU:** Profile application for CPU bottlenecks  
+- **CPU:** Profile application for CPU bottlenecks
 - **Storage:** Monitor database file size and I/O
 - **Network:** Configure connection limits appropriately
 
@@ -452,6 +478,7 @@ fi
 ### Common Issues
 
 **Service won't start:**
+
 ```bash
 # Check service status
 sudo systemctl status go-web-server
@@ -464,6 +491,7 @@ ls -la /opt/app/
 ```
 
 **Database issues:**
+
 ```bash
 # Check database file permissions
 ls -la /opt/app/data/
@@ -476,6 +504,7 @@ goose -dir internal/store/migrations sqlite3 /opt/app/data/production.db status
 ```
 
 **High memory usage:**
+
 ```bash
 # Monitor memory usage
 ps aux | grep server
@@ -488,19 +517,21 @@ go tool pprof heap.prof
 ### Performance Optimization
 
 1. **Database Optimization:**
+
    ```sql
    -- Analyze query performance
    EXPLAIN QUERY PLAN SELECT * FROM users WHERE email = ?;
-   
+
    -- Update statistics
    PRAGMA optimize;
    ```
 
 2. **Application Profiling:**
+
    ```bash
    # Enable pprof in production (temporarily)
    export FEATURES_ENABLE_PPROF=true
-   
+
    # Profile CPU usage
    curl http://localhost:8080/debug/pprof/profile > cpu.prof
    go tool pprof cpu.prof
