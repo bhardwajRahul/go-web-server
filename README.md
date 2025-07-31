@@ -109,6 +109,7 @@ mage setup (s)        # Install tools and dependencies
 mage generate (g)     # Generate sqlc and templ code
 mage dev (d)          # Start development server with hot reload
 mage run (r)          # Build and run server
+mage build (b)        # Build production binary
 ```
 
 **Database:**

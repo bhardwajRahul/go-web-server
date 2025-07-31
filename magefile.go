@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
@@ -47,11 +48,40 @@ func buildServer() error {
 }
 
 func getCurrentTime() string {
-	output, err := sh.Output("date", "-u", "+%Y-%m-%dT%H:%M:%SZ")
-	if err != nil {
-		return "unknown"
+	return time.Now().UTC().Format("2006-01-02T15:04:05Z")
+}
+
+// getGoBinaryPath finds the path to a Go binary, checking GOBIN, GOPATH/bin, and PATH
+func getGoBinaryPath(binaryName string) (string, error) {
+	// First check if it's in PATH
+	if err := sh.Run("which", binaryName); err == nil {
+		return binaryName, nil
 	}
-	return output
+
+	// Check GOBIN first
+	if gobin := os.Getenv("GOBIN"); gobin != "" {
+		binaryPath := filepath.Join(gobin, binaryName)
+		if _, err := os.Stat(binaryPath); err == nil {
+			return binaryPath, nil
+		}
+	}
+
+	// Check GOPATH/bin
+	gopath := os.Getenv("GOPATH")
+	if gopath == "" {
+		if home := os.Getenv("HOME"); home != "" {
+			gopath = filepath.Join(home, "go")
+		}
+	}
+
+	if gopath != "" {
+		binaryPath := filepath.Join(gopath, "bin", binaryName)
+		if _, err := os.Stat(binaryPath); err == nil {
+			return binaryPath, nil
+		}
+	}
+
+	return "", fmt.Errorf("%s not found in PATH, GOBIN, or GOPATH/bin", binaryName)
 }
 
 // Generate runs all code generation
@@ -63,12 +93,20 @@ func Generate() error {
 
 func generateSqlc() error {
 	fmt.Println("  📊 Generating sqlc code...")
-	return sh.RunV("sqlc", "generate")
+	sqlcPath, err := getGoBinaryPath("sqlc")
+	if err != nil {
+		return fmt.Errorf("sqlc not found: %w", err)
+	}
+	return sh.RunV(sqlcPath, "generate")
 }
 
 func generateTempl() error {
 	fmt.Println("  🎨 Generating templ code...")
-	return sh.RunV("templ", "generate")
+	templPath, err := getGoBinaryPath("templ")
+	if err != nil {
+		return fmt.Errorf("templ not found: %w", err)
+	}
+	return sh.RunV(templPath, "generate")
 }
 
 // Fmt formats and tidies code using goimports and standard tooling
@@ -82,25 +120,25 @@ func Fmt() error {
 
 	// Use goimports for better import management and formatting
 	fmt.Println("  📦 Running goimports...")
-	gopath := os.Getenv("GOPATH")
-	if gopath == "" {
-		if home := os.Getenv("HOME"); home != "" {
-			gopath = filepath.Join(home, "go")
-		}
-	}
-
-	goimportsPath := filepath.Join(gopath, "bin", "goimports")
-	if err := sh.RunV(goimportsPath, "-w", "."); err != nil {
-		fmt.Printf("Warning: goimports failed, falling back to go fmt: %v\n", err)
+	goimportsPath, err := getGoBinaryPath("goimports")
+	if err != nil {
+		fmt.Printf("Warning: goimports not found, falling back to go fmt: %v\n", err)
 		if err := sh.RunV("go", "fmt", "./..."); err != nil {
 			return fmt.Errorf("failed to format code: %w", err)
+		}
+	} else {
+		if err := sh.RunV(goimportsPath, "-w", "."); err != nil {
+			fmt.Printf("Warning: goimports failed, falling back to go fmt: %v\n", err)
+			if err := sh.RunV("go", "fmt", "./..."); err != nil {
+				return fmt.Errorf("failed to format code: %w", err)
+			}
 		}
 	}
 
 	// Format templ files if templ is available
-	if err := sh.Run("which", "templ"); err == nil {
+	if templPath, err := getGoBinaryPath("templ"); err == nil {
 		fmt.Println("  🎨 Formatting templ files...")
-		if err := sh.RunV("templ", "fmt", "."); err != nil {
+		if err := sh.RunV(templPath, "fmt", "."); err != nil {
 			fmt.Printf("Warning: failed to format templ files: %v\n", err)
 		}
 	}
@@ -117,22 +155,32 @@ func Vet() error {
 // VulnCheck scans for known vulnerabilities
 func VulnCheck() error {
 	fmt.Println("🛡️  Running vulnerability check...")
-	return sh.RunV("govulncheck", "./...")
+	govulncheckPath, err := getGoBinaryPath("govulncheck")
+	if err != nil {
+		return fmt.Errorf("govulncheck not found: %w", err)
+	}
+	return sh.RunV(govulncheckPath, "./...")
 }
 
 // Lint runs golangci-lint with comprehensive linting rules
 func Lint() error {
 	fmt.Println("🔬 Running golangci-lint...")
 
-	// Ensure golangci-lint is available
-	if err := sh.Run("which", "golangci-lint"); err != nil {
+	// Find golangci-lint binary
+	lintPath, err := getGoBinaryPath("golangci-lint")
+	if err != nil {
 		fmt.Println("Installing golangci-lint...")
 		if err := sh.RunV("go", "install", "github.com/golangci/golangci-lint/cmd/golangci-lint@latest"); err != nil {
 			return fmt.Errorf("failed to install golangci-lint: %w", err)
 		}
+		// Try to find it again after installation
+		lintPath, err = getGoBinaryPath("golangci-lint")
+		if err != nil {
+			return fmt.Errorf("golangci-lint not found after installation: %w", err)
+		}
 	}
 
-	return sh.RunV("golangci-lint", "run", "./...")
+	return sh.RunV(lintPath, "run", "./...")
 }
 
 // Run builds and runs the server
@@ -152,15 +200,21 @@ func Run() error {
 func Dev() error {
 	fmt.Println("🔥 Starting development server with hot reload...")
 
-	// Ensure air is available
-	if err := sh.Run("which", "air"); err != nil {
+	// Find air binary
+	airPath, err := getGoBinaryPath("air")
+	if err != nil {
 		fmt.Println("Installing air...")
 		if err := sh.RunV("go", "install", "github.com/air-verse/air@latest"); err != nil {
 			return fmt.Errorf("failed to install air: %w", err)
 		}
+		// Try to find it again after installation
+		airPath, err = getGoBinaryPath("air")
+		if err != nil {
+			return fmt.Errorf("air not found after installation: %w", err)
+		}
 	}
 
-	return sh.RunV("air")
+	return sh.RunV(airPath)
 }
 
 // Clean removes built binaries and generated files
@@ -220,19 +274,31 @@ func Setup() error {
 // Migrate runs database migrations up
 func Migrate() error {
 	fmt.Println("🗃️  Running database migrations...")
-	return sh.RunV("goose", "-dir", "internal/store/migrations", "sqlite3", "data.db", "up")
+	goosePath, err := getGoBinaryPath("goose")
+	if err != nil {
+		return fmt.Errorf("goose not found: %w", err)
+	}
+	return sh.RunV(goosePath, "-dir", "internal/store/migrations", "sqlite3", "data.db", "up")
 }
 
 // MigrateDown rolls back the last migration
 func MigrateDown() error {
 	fmt.Println("🗃️  Rolling back last migration...")
-	return sh.RunV("goose", "-dir", "internal/store/migrations", "sqlite3", "data.db", "down")
+	goosePath, err := getGoBinaryPath("goose")
+	if err != nil {
+		return fmt.Errorf("goose not found: %w", err)
+	}
+	return sh.RunV(goosePath, "-dir", "internal/store/migrations", "sqlite3", "data.db", "down")
 }
 
 // MigrateStatus shows migration status
 func MigrateStatus() error {
 	fmt.Println("🗃️  Checking migration status...")
-	return sh.RunV("goose", "-dir", "internal/store/migrations", "sqlite3", "data.db", "status")
+	goosePath, err := getGoBinaryPath("goose")
+	if err != nil {
+		return fmt.Errorf("goose not found: %w", err)
+	}
+	return sh.RunV(goosePath, "-dir", "internal/store/migrations", "sqlite3", "data.db", "status")
 }
 
 // CI runs the complete CI pipeline
@@ -265,8 +331,8 @@ Development:
 
 Database:
   mage migrate (m)      Run database migrations up
-  mage migrate:down     Roll back last migration
-  mage migrate:status   Show migration status
+  mage migrateDown      Roll back last migration
+  mage migrateStatus    Show migration status
 
 Quality:
   mage fmt (f)          Format code with goimports and tidy modules
