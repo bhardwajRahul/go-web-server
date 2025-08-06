@@ -162,7 +162,6 @@ func VulnCheck() error {
 	return sh.RunV(govulncheckPath, "./...")
 }
 
-
 // Lint runs golangci-lint with comprehensive linting rules
 func Lint() error {
 	fmt.Println("Running golangci-lint...")
@@ -181,7 +180,6 @@ func Lint() error {
 
 	return sh.RunV(lintPath, "run", "./...")
 }
-
 
 // Run builds and runs the server
 func Run() error {
@@ -285,13 +283,13 @@ func Setup() error {
 	fmt.Println("Setting up development environment...")
 
 	tools := map[string]string{
-		"templ":         "github.com/a-h/templ/cmd/templ@latest",
-		"sqlc":          "github.com/sqlc-dev/sqlc/cmd/sqlc@latest",
-		"govulncheck":   "golang.org/x/vuln/cmd/govulncheck@latest",
-		"air":           "github.com/air-verse/air@latest",
-		
-		"goimports":     "golang.org/x/tools/cmd/goimports@latest",
-		"goose":         "github.com/pressly/goose/v3/cmd/goose@latest",
+		"templ":       "github.com/a-h/templ/cmd/templ@latest",
+		"sqlc":        "github.com/sqlc-dev/sqlc/cmd/sqlc@latest",
+		"govulncheck": "golang.org/x/vuln/cmd/govulncheck@latest",
+		"air":         "github.com/air-verse/air@latest",
+
+		"goimports": "golang.org/x/tools/cmd/goimports@latest",
+		"goose":     "github.com/pressly/goose/v3/cmd/goose@latest",
 	}
 
 	for tool, pkg := range tools {

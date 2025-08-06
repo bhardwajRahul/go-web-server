@@ -113,7 +113,7 @@ Transport:      HTTPS + HSTS + Secure Cookies
 ### Single Binary Deployment
 
 ```
-bin/server                # ~11MB executable
+bin/server                # ~14MB executable
 ├── Embedded assets       # CSS, JS, templates
 ├── Database schema       # SQLite schema
 └── Zero dependencies     # No external requirements

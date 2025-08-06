@@ -17,7 +17,7 @@ Complete documentation for the Modern Go Stack web server.
 - Backend: Echo v4 + SQLC + SQLite (Pure Go)
 - Frontend: Templ v0.3.924 + HTMX 2.0.6 + Pico.css v2
 - Build: Mage + Air hot reload + Go 1.24+
-- Deploy: Single binary (~11MB), zero dependencies
+- Deploy: Single binary (~14MB), zero dependencies
 
 **Key Benefits:**
 

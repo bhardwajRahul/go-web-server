@@ -15,7 +15,7 @@ export DATABASE_URL=/opt/app/data/production.db
 /opt/app/server
 ```
 
-Binary is ~11MB with zero external dependencies.
+Binary is ~14MB with zero external dependencies.
 
 ## Ubuntu Server Setup
 

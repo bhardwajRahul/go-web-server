@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/dunamismax/go-web-server">
-    <img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&size=24&pause=1000&color=00ADD8&center=true&vCenter=true&width=900&lines=The+Modern+Go+Stack;Echo+v4+Framework+with+Type-Safe+Templates;HTMX+Dynamic+UX+without+JavaScript;SQLC+Generated+Queries+with+Pure+Go+SQLite;CSRF+Protection+and+Input+Sanitization;Structured+Error+Handling+and+Request+Tracing;Hot+Reload+Development+with+Mage+Automation;Single+Binary+Deployment+at+11MB;Production-Ready+Security+Middleware;Zero+External+Dependencies" alt="Typing SVG" />
+    <img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&size=24&pause=1000&color=00ADD8&center=true&vCenter=true&width=900&lines=The+Modern+Go+Stack;Echo+v4+Framework+with+Type-Safe+Templates;HTMX+Dynamic+UX+without+JavaScript;SQLC+Generated+Queries+with+Pure+Go+SQLite;CSRF+Protection+and+Input+Sanitization;Structured+Error+Handling+and+Request+Tracing;Hot+Reload+Development+with+Mage+Automation;Single+Binary+Deployment+at+14MB;Production-Ready+Security+Middleware;Zero+External+Dependencies" alt="Typing SVG" />
   </a>
 </p>
 
@@ -196,7 +196,7 @@ go-web-server/
 ## Single Binary Deployment
 
 ```bash
-mage build  # Creates optimized binary in bin/server (~11MB)
+mage build  # Creates optimized binary in bin/server (~14MB)
 ```
 
 The binary includes embedded Pico.css, HTMX, Templ templates, and SQLite database. **Zero external dependencies**, single file deployment with instant startup.
@@ -227,7 +227,7 @@ The binary includes embedded Pico.css, HTMX, Templ templates, and SQLite databas
 - Structured error handling with request tracing and monitoring
 - Multi-source configuration with Koanf (JSON, YAML, ENV)
 - Database migrations with Goose and graceful shutdown
-- Single binary deployment (~11MB) with embedded assets
+- Single binary deployment (~14MB) with embedded assets
 - Zero external dependencies and CGO-free compilation
 
 ---
