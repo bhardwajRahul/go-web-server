@@ -11,6 +11,12 @@ templ Home() {
 	}
 }
 
+templ HomeWithCSRF(csrfToken string) {
+	@layout.BaseWithCSRF("Home", csrfToken) {
+		@HomeContent()
+	}
+}
+
 templ HomeContent() {
 	<section>
 		<hgroup>

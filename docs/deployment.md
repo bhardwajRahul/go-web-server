@@ -1,42 +1,32 @@
 # Deployment Guide
 
-Production deployment for the Modern Go Stack using Caddy, Ubuntu, and Cloudflare.
+Production deployment for the Modern Go Stack using Ubuntu, Caddy, and Cloudflare.
 
 ## Quick Deployment
 
-### Build and Deploy
-
 ```bash
-# Build production binary
+# Build and deploy
 mage build
-
-# Deploy to Ubuntu server
 scp bin/server user@server:/opt/app/
-chmod +x /opt/app/server
 
-# Run with environment variables
+# Set environment and run
 export APP_ENVIRONMENT=production
 export DATABASE_URL=/opt/app/data/production.db
-export FEATURES_ENABLE_METRICS=true
 /opt/app/server
 ```
 
-The binary is ~11MB with zero external dependencies.
+Binary is ~11MB with zero external dependencies.
 
 ## Ubuntu Server Setup
 
 ### System Preparation
 
-**Update system:**
-
 ```bash
+# Update and create user
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y curl wget unzip sqlite3
-```
+sudo apt install -y sqlite3
 
-**Create application user:**
-
-```bash
+# Create application user
 sudo useradd -m -s /bin/bash appuser
 sudo mkdir -p /opt/app/{data,backups}
 sudo chown -R appuser:appuser /opt/app
@@ -44,15 +34,13 @@ sudo chown -R appuser:appuser /opt/app
 
 ### Application Installation
 
-**Deploy binary:**
-
 ```bash
-# Copy binary
+# Deploy binary
 sudo cp bin/server /opt/app/
 sudo chown appuser:appuser /opt/app/server
 sudo chmod +x /opt/app/server
 
-# Set secure permissions
+# Set permissions
 sudo chmod 700 /opt/app/data
 sudo chmod 755 /opt/app
 ```
@@ -80,46 +68,10 @@ APP_DEBUG=false
 
 # Security
 SECURITY_ENABLE_CORS=true
-SECURITY_ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+SECURITY_ALLOWED_ORIGINS=https://yourdomain.com
 
 # Features
 FEATURES_ENABLE_METRICS=true
-FEATURES_ENABLE_PPROF=false
-```
-
-### Configuration File
-
-Optional `/opt/app/config.json`:
-
-```json
-{
-  "server": {
-    "host": "0.0.0.0",
-    "port": "8080",
-    "read_timeout": "10s",
-    "write_timeout": "10s",
-    "shutdown_timeout": "30s"
-  },
-  "database": {
-    "url": "/opt/app/data/production.db",
-    "run_migrations": true,
-    "max_connections": 25
-  },
-  "app": {
-    "environment": "production",
-    "debug": false,
-    "log_level": "info",
-    "log_format": "json"
-  },
-  "security": {
-    "enable_cors": true,
-    "allowed_origins": ["https://yourdomain.com"]
-  },
-  "features": {
-    "enable_metrics": true,
-    "enable_pprof": false
-  }
-}
 ```
 
 ## Systemd Service
@@ -130,7 +82,7 @@ Create `/etc/systemd/system/go-web-server.service`:
 
 ```ini
 [Unit]
-Description=Go Web Server - Modern Stack
+Description=Go Web Server
 After=network.target
 
 [Service]
@@ -147,10 +99,6 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ReadWritePaths=/opt/app/data
-CapabilityBoundingSet=
-AmbientCapabilities=
-SystemCallFilter=@system-service
-SystemCallErrorNumber=EPERM
 
 # Environment
 EnvironmentFile=/opt/app/.env
@@ -162,15 +110,13 @@ WantedBy=multi-user.target
 ### Service Management
 
 ```bash
-# Enable and start service
+# Enable and start
 sudo systemctl daemon-reload
 sudo systemctl enable go-web-server
 sudo systemctl start go-web-server
 
-# Check status
+# Check status and logs
 sudo systemctl status go-web-server
-
-# View logs
 sudo journalctl -u go-web-server -f
 ```
 
@@ -178,44 +124,22 @@ sudo journalctl -u go-web-server -f
 
 ### Installation
 
-**Install Caddy on Ubuntu:**
-
 ```bash
+# Install Caddy on Ubuntu
 sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
-sudo apt update
-sudo apt install caddy
+sudo apt update && sudo apt install caddy
 ```
 
 ### Configuration
 
-**Basic Caddyfile** (`/etc/caddy/Caddyfile`):
+Create `/etc/caddy/Caddyfile`:
 
 ```caddyfile
 yourdomain.com {
     reverse_proxy localhost:8080
     encode gzip
-
-    # Security headers
-    header {
-        Strict-Transport-Security "max-age=31536000; includeSubDomains"
-        X-Content-Type-Options nosniff
-        X-Frame-Options DENY
-        X-XSS-Protection "1; mode=block"
-        Referrer-Policy "strict-origin-when-cross-origin"
-    }
-}
-```
-
-**Advanced Caddyfile** with caching and monitoring:
-
-```caddyfile
-yourdomain.com {
-    reverse_proxy localhost:8080
-
-    # Enable compression
-    encode gzip zstd
 
     # Cache static assets
     handle /static/* {
@@ -223,18 +147,10 @@ yourdomain.com {
         header Cache-Control "public, max-age=31536000"
     }
 
-    # Metrics endpoint (protect in production)
-    handle /metrics {
-        reverse_proxy localhost:8080
-        # Add IP whitelist or basic auth here
-        @internal_ips remote_ip 10.0.0.0/8 192.168.0.0/16
-        abort @internal_ips 403
-    }
-
-    # Health check
+    # Health check (no cache)
     handle /health {
         reverse_proxy localhost:8080
-        header Cache-Control "no-cache, no-store, must-revalidate"
+        header Cache-Control "no-cache"
     }
 
     # Security headers
@@ -242,9 +158,7 @@ yourdomain.com {
         Strict-Transport-Security "max-age=31536000; includeSubDomains"
         X-Content-Type-Options nosniff
         X-Frame-Options DENY
-        X-XSS-Protection "1; mode=block"
         Referrer-Policy "strict-origin-when-cross-origin"
-        Permissions-Policy "geolocation=(), microphone=(), camera=()"
     }
 
     # Logging
@@ -255,14 +169,12 @@ yourdomain.com {
 }
 ```
 
-**Benefits of Caddy:**
+**Benefits:**
 
-- Automatic HTTPS with Let's Encrypt certificates
-- HTTP/2 and HTTP/3 support out of the box
+- Automatic HTTPS with Let's Encrypt
+- HTTP/2 and HTTP/3 support
 - Zero-configuration TLS
 - Automatic certificate renewal
-- Built-in health checks
-- Easy configuration syntax
 
 ### Service Management
 
@@ -271,101 +183,57 @@ yourdomain.com {
 sudo systemctl enable caddy
 sudo systemctl start caddy
 
-# Check configuration
+# Validate configuration
 sudo caddy validate --config /etc/caddy/Caddyfile
 
-# Reload configuration
+# Reload after changes
 sudo systemctl reload caddy
-
-# View logs
-sudo journalctl -u caddy -f
 ```
 
 ## Cloudflare Integration
 
 ### DNS Setup
 
-**Steps:**
-
-1. Add your domain to Cloudflare
-2. Update nameservers to Cloudflare's
-3. Set up DNS records:
+1. Add domain to Cloudflare
+2. Update nameservers
+3. Set DNS records:
 
    ```
    A    @           your-server-ip
    A    www         your-server-ip
    ```
 
-4. Enable proxy (orange cloud) for both records
+4. Enable proxy (orange cloud)
 
-### SSL/TLS Configuration
-
-**Recommended Settings:**
+### SSL/TLS Settings
 
 - **SSL/TLS Mode**: "Full (strict)"
 - **Always Use HTTPS**: Enabled
-- **HSTS**: Enabled with max-age 31536000
+- **HSTS**: Enabled (max-age 31536000)
 - **Minimum TLS Version**: 1.2
 
-### Performance Optimization
-
-**Speed Settings:**
+### Performance
 
 - **Auto Minify**: Enable CSS, JavaScript, HTML
 - **Brotli Compression**: Enabled
-- **Rocket Loader**: Enabled for JavaScript optimization
-- **Browser Cache TTL**: 4 hours or higher
+- **Browser Cache TTL**: 4 hours
 
-**Caching Rules:**
+### Security
 
-```
-Rule: Static Assets
-Match: *yourdomain.com/static/*
-Settings:
-  - Cache Level: Cache Everything
-  - Edge Cache TTL: 1 month
-  - Browser Cache TTL: 1 month
-```
+- **Security Level**: Medium or High
+- **Bot Fight Mode**: Enabled
+- **Firewall Rules**:
 
-### Security Settings
-
-**Firewall Rules:**
-
-```
-Expression: (http.request.uri.path contains "/metrics")
-Action: Block
-```
-
-**Security Level**: Medium or High
-**Challenge Passage**: 30 minutes
-**Bot Fight Mode**: Enabled
-
-### Page Rules (Optional)
-
-**Static Assets Caching:**
-
-```
-URL: *yourdomain.com/static/*
-Settings:
-  - Cache Level: Cache Everything
-  - Edge Cache TTL: 1 month
-  - Browser Cache TTL: 1 month
-```
-
-**API Endpoints:**
-
-```
-URL: *yourdomain.com/api/*
-Settings:
-  - Cache Level: Bypass
-  - Security Level: High
-```
+  ```
+  Expression: (http.request.uri.path contains "/metrics")
+  Action: Block
+  ```
 
 ## Database Management
 
-### Backup Strategy
+### Automated Backup
 
-**Automated Backup Script** (`/opt/app/backup.sh`):
+Create `/opt/app/backup.sh`:
 
 ```bash
 #!/bin/bash
@@ -374,154 +242,76 @@ BACKUP_DIR="/opt/app/backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 
 mkdir -p $BACKUP_DIR
-
-# Create SQLite backup
 sqlite3 $DATABASE_FILE ".backup $BACKUP_DIR/backup_$DATE.db"
-
-# Compress backup
 gzip "$BACKUP_DIR/backup_$DATE.db"
 
 # Keep only last 30 days
 find $BACKUP_DIR -name "backup_*.db.gz" -mtime +30 -delete
-
-# Log backup completion
-echo "$(date): Backup completed: backup_$DATE.db.gz" >> $BACKUP_DIR/backup.log
 ```
 
-**Set permissions and schedule:**
+Set permissions and schedule:
 
 ```bash
 sudo chown appuser:appuser /opt/app/backup.sh
 sudo chmod +x /opt/app/backup.sh
 
-# Add to appuser's crontab
+# Add to crontab: 0 2 * * * /opt/app/backup.sh
 sudo -u appuser crontab -e
-# Add: 0 2 * * * /opt/app/backup.sh
 ```
 
 ### Database Maintenance
 
-**Manual backup:**
-
 ```bash
+# Manual backup
 sudo -u appuser sqlite3 /opt/app/data/production.db ".backup /opt/app/backups/manual_$(date +%Y%m%d).db"
-```
 
-**Database integrity check:**
-
-```bash
+# Integrity check
 sudo -u appuser sqlite3 /opt/app/data/production.db "PRAGMA integrity_check;"
 ```
 
-**Migration management:**
-
-```bash
-# Check migration status
-goose -dir internal/store/migrations sqlite3 /opt/app/data/production.db status
-
-# Run migrations manually (if needed)
-sudo -u appuser goose -dir internal/store/migrations sqlite3 /opt/app/data/production.db up
-```
-
-## Monitoring & Logging
+## Monitoring
 
 ### Health Monitoring
 
-**Health Check Script** (`/opt/app/health-check.sh`):
+Create `/opt/app/health-check.sh`:
 
 ```bash
 #!/bin/bash
-HEALTH_URL="http://localhost:8080/health"
-RESPONSE=$(curl -s -w "%{http_code}" "$HEALTH_URL")
+RESPONSE=$(curl -s -w "%{http_code}" "http://localhost:8080/health")
 HTTP_CODE="${RESPONSE: -3}"
 
 if [ "$HTTP_CODE" -eq 200 ]; then
-    echo "$(date): Service is healthy"
+    echo "$(date): Service healthy"
     exit 0
 else
-    echo "$(date): Service is unhealthy: HTTP $HTTP_CODE"
-    # Send alert (email, Slack, etc.)
+    echo "$(date): Service unhealthy: HTTP $HTTP_CODE"
     exit 1
 fi
 ```
 
-**Schedule health checks:**
-
-```bash
-# Add to cron for monitoring
-# */5 * * * * /opt/app/health-check.sh >> /var/log/health-check.log 2>&1
-```
+Schedule: `*/5 * * * * /opt/app/health-check.sh >> /var/log/health-check.log 2>&1`
 
 ### Log Management
 
-**Systemd log configuration:**
-
 ```bash
-sudo mkdir -p /etc/systemd/journald.conf.d
-echo -e "[Journal]\nSystemMaxUse=1G\nMaxRetentionSec=30day" | \
-sudo tee /etc/systemd/journald.conf.d/go-web-server.conf
-
-sudo systemctl restart systemd-journald
-```
-
-**View application logs:**
-
-```bash
-# Real-time logs
+# View application logs
 sudo journalctl -u go-web-server -f
 
-# Logs from last hour
-sudo journalctl -u go-web-server --since "1 hour ago"
-
-# JSON formatted logs
-sudo journalctl -u go-web-server -o json
-```
-
-**Caddy logs:**
-
-```bash
-# Caddy access logs
+# View Caddy logs
 sudo tail -f /var/log/caddy/yourdomain.com.log
-
-# Caddy error logs
-sudo journalctl -u caddy -f
 ```
 
 ## Security Hardening
 
-### Production Checklist
-
-- [ ] Set `APP_ENVIRONMENT="production"`
-- [ ] Disable debug mode (`APP_DEBUG="false"`)
-- [ ] Configure specific CORS origins (not `*`)
-- [ ] Use HTTPS with HSTS headers
-- [ ] Set secure cookie settings
-- [ ] Configure proper firewall rules
-- [ ] Set database file permissions (`chmod 600`)
-- [ ] Run as non-root user (appuser)
-- [ ] Enable comprehensive logging
-- [ ] Set up security monitoring
-
-### Firewall Configuration
-
-**UFW (Ubuntu Firewall):**
+### Firewall
 
 ```bash
-# Enable firewall
+# Enable UFW
 sudo ufw enable
-
-# Allow SSH (be careful!)
 sudo ufw allow ssh
-
-# Allow HTTP and HTTPS (Caddy)
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
-
-# Deny direct access to application port
-sudo ufw deny 8080/tcp
-
-# Check status
-sudo ufw status verbose
+sudo ufw deny 8080/tcp  # Block direct access
 ```
 
 ### File Permissions
@@ -531,73 +321,22 @@ sudo ufw status verbose
 sudo chmod 755 /opt/app/server
 sudo chown appuser:appuser /opt/app/server
 
-# Database permissions
+# Database
 sudo chmod 600 /opt/app/data/production.db
 sudo chown appuser:appuser /opt/app/data/production.db
 
-# Directory permissions
-sudo chmod 700 /opt/app/data/
-sudo chown appuser:appuser /opt/app/data/
-
-# Configuration files
+# Configuration
 sudo chmod 600 /opt/app/.env
 sudo chown appuser:appuser /opt/app/.env
 ```
 
-## Performance Tuning
-
-### Application Configuration
-
-**Database Connection Pool:**
-
-```bash
-export DATABASE_MAX_CONNECTIONS=25
-export DATABASE_TIMEOUT=30s
-```
-
-**Server Timeouts:**
-
-```json
-{
-  "server": {
-    "read_timeout": "10s",
-    "write_timeout": "10s",
-    "shutdown_timeout": "30s"
-  }
-}
-```
-
-### System Optimization
-
-**Kernel parameters** (`/etc/sysctl.conf`):
-
-```
-# Network optimizations
-net.core.rmem_max = 134217728
-net.core.wmem_max = 134217728
-net.ipv4.tcp_rmem = 4096 32768 134217728
-net.ipv4.tcp_wmem = 4096 32768 134217728
-
-# File descriptor limits
-fs.file-max = 2097152
-```
-
-**Apply changes:**
-
-```bash
-sudo sysctl -p
-```
-
 ## Troubleshooting
-
-### Common Issues
 
 **Service won't start:**
 
 ```bash
 sudo systemctl status go-web-server
 sudo journalctl -u go-web-server -n 50
-ls -la /opt/app/
 ```
 
 **Database issues:**
@@ -614,11 +353,4 @@ sudo caddy validate --config /etc/caddy/Caddyfile
 sudo journalctl -u caddy -n 50
 ```
 
-**High memory usage:**
-
-```bash
-ps aux | grep server
-curl http://localhost:8080/debug/pprof/heap > heap.prof
-```
-
-This deployment guide ensures your Modern Go Stack application runs reliably and securely in production with Ubuntu, Caddy, and Cloudflare integration.
+This deployment guide ensures reliable and secure production operation with Ubuntu, Caddy, and Cloudflare integration.

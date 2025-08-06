@@ -13,6 +13,12 @@ templ Users() {
 	}
 }
 
+templ UsersWithCSRF(csrfToken string) {
+	@layout.BaseWithCSRF("Users", csrfToken) {
+		@UsersContent()
+	}
+}
+
 templ UsersContent() {
 	<section>
 		<hgroup>

@@ -26,7 +26,7 @@ func NewUserHandler(s *store.Store) *UserHandler {
 
 // Users renders the main user management page
 func (h *UserHandler) Users(c echo.Context) error {
-	// Set CSRF token in response header for initial requests
+	// Get CSRF token for initial requests
 	token := middleware.GetCSRFToken(c)
 	if token != "" {
 		c.Response().Header().Set("X-CSRF-Token", token)
@@ -38,7 +38,13 @@ func (h *UserHandler) Users(c echo.Context) error {
 		return component.Render(c.Request().Context(), c.Response().Writer)
 	}
 
-	// Return full page with layout
+	// Return full page with layout and CSRF token
+	if token != "" {
+		component := view.UsersWithCSRF(token)
+		return component.Render(c.Request().Context(), c.Response().Writer)
+	}
+
+	// Fallback to basic template
 	component := view.Users()
 	return component.Render(c.Request().Context(), c.Response().Writer)
 }
@@ -46,6 +52,13 @@ func (h *UserHandler) Users(c echo.Context) error {
 // UserList returns the list of users as HTML fragment
 func (h *UserHandler) UserList(c echo.Context) error {
 	ctx := c.Request().Context()
+
+	// Set CSRF token in response header for HTMX to pick up
+	token := middleware.GetCSRFToken(c)
+	if token != "" {
+		c.Response().Header().Set("X-CSRF-Token", token)
+	}
+
 	users, err := h.store.ListUsers(ctx)
 	if err != nil {
 		slog.Error("Failed to fetch users",
@@ -65,6 +78,13 @@ func (h *UserHandler) UserList(c echo.Context) error {
 // UserCount returns the count of active users
 func (h *UserHandler) UserCount(c echo.Context) error {
 	ctx := c.Request().Context()
+
+	// Set CSRF token in response header for HTMX to pick up
+	token := middleware.GetCSRFToken(c)
+	if token != "" {
+		c.Response().Header().Set("X-CSRF-Token", token)
+	}
+
 	count, err := h.store.CountUsers(ctx)
 	if err != nil {
 		slog.Error("Failed to count users",

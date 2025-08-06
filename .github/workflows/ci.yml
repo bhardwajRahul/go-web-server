@@ -23,8 +23,11 @@ jobs:
     - name: Run Setup
       run: mage setup
 
+    - name: Generate Code
+      run: mage generate
+
     - name: Run Quality
       run: mage quality
 
-    - name: Run CI
-      run: mage ci
+    - name: Run Build
+      run: mage build

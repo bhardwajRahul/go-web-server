@@ -35,7 +35,13 @@ func (h *HomeHandler) Home(c echo.Context) error {
 		return component.Render(c.Request().Context(), c.Response().Writer)
 	}
 
-	// Return full page with layout
+	// Return full page with layout and CSRF token
+	if token != "" {
+		component := view.HomeWithCSRF(token)
+		return component.Render(c.Request().Context(), c.Response().Writer)
+	}
+
+	// Fallback to basic template
 	component := view.Home()
 	return component.Render(c.Request().Context(), c.Response().Writer)
 }

@@ -1,8 +1,12 @@
 package layout
 
 templ Base(title string) {
+	@BaseWithCSRF(title, "")
+}
+
+templ BaseWithCSRF(title, csrfToken string) {
 	<!DOCTYPE html>
-	<html lang="en" data-theme="auto">
+	<html lang="en" data-theme="dark">
 		<head>
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -13,6 +17,9 @@ templ Base(title string) {
 			<link rel="stylesheet" href="/static/css/pico.min.css"/>
 			<script src="/static/js/htmx.min.js"></script>
 			<meta name="csrf-header" content="X-CSRF-Token"/>
+			if csrfToken != "" {
+				<meta name="csrf-token" content={ csrfToken }/>
+			}
 			<meta name="htmx-config" content='{"globalViewTransitions": true, "requestClass": "htmx-request", "timeout": 10000}'/>
 			<style>
 				/* Custom theme enhancements */
@@ -274,7 +281,7 @@ templ Base(title string) {
 				
 				// Initialize theme on page load
 				document.addEventListener('DOMContentLoaded', function() {
-					const savedTheme = localStorage.getItem('preferred-theme') || 'auto';
+					const savedTheme = localStorage.getItem('preferred-theme') || 'dark';
 					setTheme(savedTheme);
 				});
 				
@@ -290,6 +297,34 @@ templ Base(title string) {
 					
 					// Track current CSRF token
 					let currentCSRFToken = null;
+					
+					// Initialize CSRF token from page load or fetch it
+					const initializeCSRFToken = () => {
+						// First try to get token from a meta tag (set by server)
+						const metaToken = document.querySelector('meta[name="csrf-token"]');
+						if (metaToken) {
+							currentCSRFToken = metaToken.getAttribute('content');
+							return;
+						}
+						
+						// If no meta token, make a request to get one
+						fetch('/users', {
+							method: 'GET',
+							headers: {
+								'X-Requested-With': 'XMLHttpRequest'
+							}
+						}).then(response => {
+							const token = response.headers.get('X-CSRF-Token');
+							if (token) {
+								currentCSRFToken = token;
+							}
+						}).catch(e => {
+							console.warn('Failed to initialize CSRF token:', e);
+						});
+					};
+					
+					// Initialize CSRF token on page load
+					initializeCSRFToken();
 					
 					// Configure CSRF token handling
 					document.body.addEventListener('htmx:configRequest', function(evt) {
@@ -344,7 +379,7 @@ templ Base(title string) {
 							});
 							
 							// Re-initialize theme
-							const savedTheme = localStorage.getItem('preferred-theme') || 'auto';
+							const savedTheme = localStorage.getItem('preferred-theme') || 'dark';
 							setTheme(savedTheme);
 						}
 					});
@@ -360,11 +395,13 @@ templ Base(title string) {
 						showFlash('Request timed out. Please try again.', 'error');
 					});
 					
-					// Handle successful operations (but not for demo area or main content)
+					// Handle successful operations (only for actual user actions, not data loading)
 					document.body.addEventListener('htmx:afterRequest', function(evt) {
 						if (evt.detail.xhr.status >= 200 && evt.detail.xhr.status < 300 && 
 						    evt.detail.target.tagName !== 'MAIN' &&
-						    evt.detail.target.id !== 'demo-area') {
+						    evt.detail.target.id !== 'demo-area' &&
+						    // Only show flash for write operations (POST, PUT, PATCH, DELETE)
+						    ['POST', 'PUT', 'PATCH', 'DELETE'].includes(evt.detail.xhr.method || evt.detail.requestConfig.verb)) {
 							showFlash('Operation completed successfully!', 'success');
 						}
 					});
@@ -395,11 +432,33 @@ templ Base(title string) {
 						}, 5000);
 					};
 					
-					if (document.getElementById('flash-messages')) {
-						showFlashMessage();
+					// Use a more robust method to ensure DOM is ready
+					const tryShowFlash = () => {
+						const flashContainer = document.getElementById('flash-messages');
+						if (flashContainer) {
+							showFlashMessage();
+						} else {
+							// Retry up to 10 times with increasing delays
+							let attempts = 0;
+							const checkForContainer = () => {
+								attempts++;
+								const container = document.getElementById('flash-messages');
+								if (container) {
+									showFlashMessage();
+								} else if (attempts < 10) {
+									setTimeout(checkForContainer, attempts * 50);
+								} else {
+									console.warn('Flash messages container not found after multiple attempts');
+								}
+							};
+							setTimeout(checkForContainer, 50);
+						}
+					};
+					
+					if (document.readyState === 'loading') {
+						document.addEventListener('DOMContentLoaded', tryShowFlash);
 					} else {
-						// Wait for DOM to be ready
-						setTimeout(showFlashMessage, 100);
+						tryShowFlash();
 					}
 				}
 			</script>

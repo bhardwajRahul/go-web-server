@@ -7,19 +7,12 @@ run:
   timeout: 5m
   issues-exit-code: 1
   tests: true
-  skip-dirs:
-    - bin
-    - tmp
-    - vendor
-  skip-files:
-    - ".*_templ.go$"  # Skip generated templ files
-    - "queries.sql.go"  # Skip generated sqlc files
+  go: "1.24"
 
 output:
-  format: colored-text
+  format: colored-line-number
   print-issued-lines: true
   print-linter-name: true
-  uniq-by-line: true
   sort-results: true
 
 linters-settings:
@@ -36,7 +29,6 @@ linters-settings:
 
   # Gofmt settings
   gofumpt:
-    lang-version: "1.24"
     extra-rules: true
 
   # Goimports settings
@@ -111,6 +103,13 @@ linters:
 
 issues:
   exclude-use-default: false
+  exclude-files:
+    - ".*_templ.go$"  # Skip generated templ files
+    - "queries.sql.go"  # Skip generated sqlc files
+  exclude-dirs:
+    - bin
+    - tmp
+    - vendor
   exclude-rules:
     # Exclude some linters from running on tests files
     - path: _test\.go
