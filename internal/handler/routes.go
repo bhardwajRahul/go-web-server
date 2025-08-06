@@ -20,7 +20,7 @@ type Handlers struct {
 // NewHandlers creates a new handlers instance with the given store.
 func NewHandlers(s *store.Store) *Handlers {
 	return &Handlers{
-		Home: NewHomeHandler(),
+		Home: NewHomeHandler(s),
 		User: NewUserHandler(s),
 	}
 }

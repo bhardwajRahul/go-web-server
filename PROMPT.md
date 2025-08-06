@@ -14,8 +14,9 @@
 
 - **Language:** Go 1.24+
 - **Framework:** Echo v4
-- **Templates & Frontend:** Templ & HTMX 2.x
-- **Data Layer:** SQLC with a pure Go SQLite driver (`modernc.org/sqlite`).
+- **Templates & Frontend:** Templ v0.3.850 & HTMX 2.0.6
+- **Data Layer:** SQLC v1.29.0 with a pure Go SQLite driver (`modernc.org/sqlite`).
+- **Metrics:** Prometheus for observability and performance monitoring.
 - **Build & Quality:** Mage for automation, `golangci-lint` for linting, and `govulncheck` for security.
 - **Deployment:** Single, self-contained, statically-linked binary.
 

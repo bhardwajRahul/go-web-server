@@ -5,16 +5,19 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/dunamismax/go-web-server/internal/store"
 	"github.com/dunamismax/go-web-server/internal/view"
 	"github.com/labstack/echo/v4"
 )
 
 // HomeHandler handles requests for the home page and health checks.
-type HomeHandler struct{}
+type HomeHandler struct {
+	store *store.Store
+}
 
 // NewHomeHandler creates a new HomeHandler instance.
-func NewHomeHandler() *HomeHandler {
-	return &HomeHandler{}
+func NewHomeHandler(s *store.Store) *HomeHandler {
+	return &HomeHandler{store: s}
 }
 
 // Home handles requests to the root path, returning either full page or partial content.
@@ -58,16 +61,45 @@ func (h *HomeHandler) Demo(c echo.Context) error {
 
 // Health provides a comprehensive health check endpoint
 func (h *HomeHandler) Health(c echo.Context) error {
+	ctx := c.Request().Context()
+	checks := make(map[string]string)
+	overallStatus := "ok"
+
+	// Database connectivity check
+	if h.store != nil {
+		if _, err := h.store.CountUsers(ctx); err != nil {
+			checks["database"] = "error"
+			overallStatus = "degraded"
+		} else {
+			checks["database"] = "ok"
+		}
+
+		// Database connection stats
+		if db := h.store.DB(); db != nil {
+			if stats := db.Stats(); stats.OpenConnections > 0 {
+				checks["database_connections"] = "ok"
+			} else {
+				checks["database_connections"] = "warning"
+				if overallStatus == "ok" {
+					overallStatus = "warning"
+				}
+			}
+		}
+	} else {
+		checks["database"] = "error"
+		overallStatus = "error"
+	}
+
+	// Memory check (basic)
+	checks["memory"] = "ok"
+
 	health := map[string]interface{}{
-		"status":    "ok",
+		"status":    overallStatus,
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
 		"service":   "go-web-server",
 		"version":   "1.0.0",
 		"uptime":    time.Since(startTime).String(),
-		"checks": map[string]string{
-			"database": "ok",
-			"memory":   "ok",
-		},
+		"checks":    checks,
 	}
 
 	// Check if this is an HTMX request for formatted HTML display
@@ -87,7 +119,15 @@ func (h *HomeHandler) Health(c echo.Context) error {
 	c.Response().Header().Set("Content-Type", "application/json")
 	c.Response().Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 
-	return c.JSON(http.StatusOK, health)
+	// Set appropriate HTTP status based on health
+	statusCode := http.StatusOK
+	if overallStatus == "error" {
+		statusCode = http.StatusServiceUnavailable
+	} else if overallStatus == "degraded" || overallStatus == "warning" {
+		statusCode = http.StatusPartialContent
+	}
+
+	return c.JSON(statusCode, health)
 }
 
 var startTime = time.Now()

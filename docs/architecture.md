@@ -11,13 +11,17 @@ System design and components of the Modern Go Web Server.
 ## System Overview
 
 ```
-Browser (HTMX + Pico.css)
+Browser (HTMX 2.0.6 + Pico.css v2)
          ↓
-    Load Balancer
+    Caddy (Reverse Proxy + HTTPS)
          ↓
-   Go Web Server
+   Cloudflare (CDN + Security)
          ↓
-    SQLite Database
+   Go Web Server (Echo v4)
+         ↓
+    SQLite Database (Pure Go)
+         ↓
+    Prometheus Metrics
 ```
 
 ## Layer Architecture
@@ -26,6 +30,9 @@ Browser (HTMX + Pico.css)
 
 ```
 Request → Middleware Stack → Router → Handler → Store → Database
+                ↓                    ↓        ↓
+           Prometheus          Templ      SQLC
+            Metrics           Templates   Queries
 ```
 
 **Middleware Order** (from `cmd/web/main.go:96-184`):

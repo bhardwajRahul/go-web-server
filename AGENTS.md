@@ -14,11 +14,12 @@ Follow a **Plan → Code → Iterate → Deploy** workflow anchored in performan
 
 - **Language**: Go 1.24+
 - **Framework**: Echo v4
-- **Templates**: Templ (Type-Safe HTML Components)
-- **Frontend**: HTMX 2.x (Dynamic UI)
+- **Templates**: Templ v0.3.850 (Type-Safe HTML Components)
+- **Frontend**: HTMX 2.0.6 (Dynamic UI)
 - **CSS**: Pico.css v2 (Semantic & Minimal)
 - **Database**: SQLite (via `modernc.org/sqlite` Pure Go Driver)
-- **Queries**: SQLC (Type-Safe Go from SQL)
+- **Queries**: SQLC v1.29.0 (Type-Safe Go from SQL)
+- **Metrics**: Prometheus (Performance Monitoring)
 - **Migrations**: Goose
 - **Build/Automation**: Mage
 - **Hot Reload**: Air
@@ -212,6 +213,55 @@ When providing code solutions, include:
 - Mixing business logic into Templ components or HTTP handlers.
 - Adding CGO dependencies, which breaks the single-binary goal.
 - Introducing a client-side JS framework instead of using HTMX.
+
+---
+
+## Production Deployment & Integration
+
+### Reverse Proxy & CDN Integration
+
+**Caddy Integration:**
+- Automatic HTTPS with Let's Encrypt certificates
+- HTTP/2 and HTTP/3 support out of the box
+- Reverse proxy configuration for Go backend
+- Static asset serving optimization
+
+**Cloudflare Integration:**
+- DNS management and CDN acceleration
+- Built-in GZIP compression and caching
+- DDoS protection and security features
+- Analytics and performance monitoring
+- Edge computing capabilities for future scaling
+
+### Observability & Monitoring
+
+**Prometheus Metrics:**
+- HTTP request metrics (duration, status, method)
+- Database connection and query metrics
+- HTMX-specific interaction tracking
+- CSRF token generation and validation metrics
+- User activity and business metrics
+- Application health and uptime tracking
+
+**Health Monitoring:**
+- Enhanced `/health` endpoint with database connectivity checks
+- Connection pool monitoring and alerting
+- Degraded state detection for partial failures
+- HTTP status codes reflecting actual system health
+
+### Performance Optimizations
+
+**Single Binary Deployment:**
+- Embedded static assets (CSS, JS, images)
+- Zero external dependencies
+- Instant startup and minimal resource usage
+- Cross-platform compilation support
+
+**Hot Reload Development:**
+- Optimized `.air.toml` configuration
+- Automatic code generation triggers
+- Efficient file watching and exclusions
+- Fast development iteration cycles
 
 ---
 

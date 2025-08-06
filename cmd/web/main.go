@@ -18,6 +18,7 @@ import (
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 	"github.com/pressly/goose/v3"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	_ "modernc.org/sqlite"
 )
 
@@ -49,6 +50,12 @@ func main() {
 		"go_version", "1.24+",
 		"port", cfg.Server.Port,
 		"debug", cfg.App.Debug)
+
+	// Initialize metrics if enabled
+	if cfg.Features.EnableMetrics {
+		middleware.InitializeMetrics("1.0.0", "1.24+", cfg.App.Environment)
+		slog.Info("Prometheus metrics enabled", "endpoint", "/metrics")
+	}
 
 	// Initialize database store
 	store, err := store.NewStore(cfg.Database.URL)
@@ -115,6 +122,11 @@ func main() {
 
 	// Request ID middleware for tracing
 	e.Use(echomiddleware.RequestID())
+
+	// Prometheus metrics middleware (if enabled)
+	if cfg.Features.EnableMetrics {
+		e.Use(middleware.PrometheusMiddleware())
+	}
 
 	// Structured logging middleware
 	e.Use(echomiddleware.RequestLoggerWithConfig(echomiddleware.RequestLoggerConfig{
@@ -196,6 +208,11 @@ func main() {
 	if err := handler.RegisterRoutes(e, handlers); err != nil {
 		slog.Error("failed to register routes", "error", err)
 		os.Exit(1)
+	}
+
+	// Add metrics endpoint if enabled
+	if cfg.Features.EnableMetrics {
+		e.GET("/metrics", echo.WrapHandler(promhttp.Handler()))
 	}
 
 	// Graceful shutdown

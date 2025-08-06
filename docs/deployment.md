@@ -17,6 +17,7 @@ chmod +x /opt/app/server
 # Run with environment variables
 export APP_ENVIRONMENT=production
 export DATABASE_URL=/opt/app/data/production.db
+export FEATURES_ENABLE_METRICS=true
 /opt/app/server
 ```
 
@@ -75,6 +76,10 @@ export SECURITY_ALLOWED_ORIGINS=https://yourdomain.com
   "security": {
     "enable_cors": true,
     "allowed_origins": ["https://yourdomain.com"]
+  },
+  "features": {
+    "enable_metrics": true,
+    "enable_pprof": false
   }
 }
 ```
@@ -259,6 +264,81 @@ server {
         access_log off;
     }
 }
+```
+
+## Reverse Proxy (Caddy) - Recommended
+
+[Caddy](https://caddyserver.com/) provides automatic HTTPS and simpler configuration:
+
+**Caddyfile:**
+
+```caddyfile
+# Basic configuration
+yourdomain.com {
+    reverse_proxy localhost:8080
+    encode gzip
+}
+
+# Advanced configuration with caching
+yourdomain.com {
+    reverse_proxy localhost:8080
+    
+    # Enable compression
+    encode gzip zstd
+    
+    # Cache static assets
+    handle /static/* {
+        reverse_proxy localhost:8080
+        header Cache-Control "public, max-age=31536000"
+    }
+    
+    # Metrics endpoint (protect in production)
+    handle /metrics {
+        reverse_proxy localhost:8080
+        # Add authentication here in production
+    }
+    
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+}
+```
+
+**Benefits:**
+- Automatic HTTPS with Let's Encrypt
+- HTTP/2 and HTTP/3 support
+- Zero-configuration TLS
+- Automatic certificate renewal
+- Built-in health checks
+
+## Cloudflare Integration
+
+Optimize with [Cloudflare](https://cloudflare.com/) for global performance:
+
+**Setup Steps:**
+1. Add your domain to Cloudflare
+2. Update nameservers to Cloudflare's
+3. Set SSL/TLS mode to "Full (strict)"
+4. Enable proxy (orange cloud) for your domain
+
+**Recommended Settings:**
+- **Speed > Optimization**: Enable Auto Minify for CSS, JavaScript, HTML
+- **Speed > Optimization**: Enable Brotli compression
+- **Caching > Configuration**: Set Browser Cache TTL to "4 hours" or higher
+- **Security > Settings**: Set Security Level to "Medium" or "High"
+- **Network**: Enable HTTP/3 and 0-RTT Connection Resumption
+
+**Page Rules (optional):**
+```
+*yourdomain.com/static/*
+- Cache Level: Cache Everything
+- Edge Cache TTL: 1 month
+- Browser Cache TTL: 1 month
 ```
 
 ## SSL/TLS Setup

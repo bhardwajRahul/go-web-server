@@ -71,6 +71,9 @@ func (h *UserHandler) UserCount(c echo.Context) error {
 		).WithContext(c).WithInternal(err)
 	}
 
+	// Update metrics
+	middleware.UpdateActiveUsers(count)
+
 	component := view.UserCount(count)
 	return component.Render(ctx, c.Response().Writer)
 }
@@ -180,6 +183,9 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 		"name", name,
 		"email", email,
 		"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
+
+	// Record metrics
+	middleware.RecordUserCreated()
 
 	// Trigger custom event for HTMX
 	c.Response().Header().Set("HX-Trigger", "userCreated")

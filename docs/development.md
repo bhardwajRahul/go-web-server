@@ -315,6 +315,10 @@ APP_LOG_FORMAT=text
 # Security (development)
 SECURITY_ENABLE_CORS=true
 SECURITY_ALLOWED_ORIGINS=*
+
+# Features (development)
+FEATURES_ENABLE_METRICS=true
+FEATURES_ENABLE_PPROF=true
 ```
 
 ### Configuration File
@@ -336,6 +340,10 @@ SECURITY_ALLOWED_ORIGINS=*
   "database": {
     "url": "data/development.db",
     "run_migrations": true
+  },
+  "features": {
+    "enable_metrics": true,
+    "enable_pprof": true
   }
 }
 ```
@@ -384,6 +392,41 @@ sqlite3 data/development.db
 .headers on                      # Show headers
 .mode column                     # Column display
 SELECT * FROM users LIMIT 5;    # Query data
+```
+
+### Metrics Monitoring
+
+**Development Endpoints:**
+
+```bash
+# Application metrics (Prometheus format)
+curl http://localhost:8080/metrics
+
+# Health check with database connectivity
+curl http://localhost:8080/health
+
+# Enhanced health information
+curl http://localhost:8080/health | jq .
+```
+
+**Key Metrics Available:**
+- `http_requests_total` - HTTP request count by method, path, status
+- `http_request_duration_seconds` - Request latency histograms  
+- `http_requests_in_flight` - Current active requests
+- `database_connections_active` - Active database connections
+- `database_queries_total` - Database query count by operation
+- `htmx_requests_total` - HTMX-specific request tracking
+- `csrf_tokens_generated_total` - CSRF token generation rate
+- `users_created_total` - Business metric tracking
+
+**Development Monitoring:**
+
+```bash
+# Simple monitoring setup with basic tools
+watch -n 5 'curl -s http://localhost:8080/health | jq ".checks"'
+
+# Monitor HTTP metrics
+watch -n 2 'curl -s http://localhost:8080/metrics | grep http_requests_total'
 ```
 
 ## Adding New Features
