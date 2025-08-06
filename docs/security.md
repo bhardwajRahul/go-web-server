@@ -1,10 +1,10 @@
 # Security Guide
 
-Comprehensive security features and configuration for the Go Web Server.
+Comprehensive security features and implementation for the Modern Go Stack.
 
 ## Security Architecture
 
-Defense-in-depth with multiple protection layers:
+Defense-in-depth approach with multiple protection layers:
 
 1. **Input Sanitization** - XSS and SQL injection prevention
 2. **CSRF Protection** - Cross-site request forgery prevention
@@ -15,9 +15,9 @@ Defense-in-depth with multiple protection layers:
 
 ## CSRF Protection
 
-### Overview
+### Implementation Overview
 
-Automatic CSRF protection for all state-changing operations (POST/PUT/PATCH/DELETE) using custom middleware in `internal/middleware/csrf.go`.
+Custom CSRF middleware in `internal/middleware/csrf.go` protects all state-changing operations (POST/PUT/PATCH/DELETE).
 
 ### Configuration
 
@@ -45,7 +45,7 @@ CSRFConfig{
 }
 ```
 
-### Token Usage
+### Token Usage Patterns
 
 **HTML Forms:**
 
@@ -84,24 +84,19 @@ fetch("/api/endpoint", {
 });
 ```
 
-### Token Security Features
+### Security Features
 
-- **Constant-time comparison** prevents timing attacks
-- **Token rotation** on each state-changing request
-- **Multiple extraction sources** (header, form, query)
-- **Secure cookie settings** with SameSite protection
+- **Constant-time comparison** - Prevents timing attacks
+- **Token rotation** - New token generated on each state-changing request
+- **Multiple extraction sources** - Header, form, or query parameter
+- **Secure cookie settings** - HttpOnly, SameSite, Secure flags
+- **Cryptographically secure tokens** - Using `crypto/rand`
 
 ## Input Sanitization
 
 ### Automatic Protection
 
-All user input is sanitized via `internal/middleware/sanitize.go` to prevent:
-
-- **HTML Injection** - Escapes `<`, `>`, `&`, `"`, `'`
-- **XSS Attacks** - Removes JavaScript URLs, event handlers, script tags
-- **SQL Injection** - Basic pattern blocking (primary protection is parameterized queries)
-
-### Sanitization Features
+All user input sanitized via `internal/middleware/sanitize.go`:
 
 **HTML Sanitization:**
 
@@ -113,7 +108,6 @@ input = html.EscapeString(input)
 **XSS Protection:**
 
 ```go
-// Removes dangerous patterns
 dangerous := []string{
     "javascript:", "vbscript:", "data:", "blob:",
     "<script", "</script>", "<iframe", "onload=", "onclick="
@@ -123,7 +117,6 @@ dangerous := []string{
 **SQL Injection Prevention:**
 
 ```go
-// Removes SQL comment patterns and dangerous keywords
 sqlComments := []string{"--", "/*", "*/", "#"}
 dangerousPatterns := []string{
     "union select", "drop table", "delete from", "exec("
@@ -199,7 +192,7 @@ ContentSecurityPolicy: "default-src 'self'; " +
                       "frame-ancestors 'none';"
 ```
 
-Note: `'unsafe-inline'` is needed for HTMX attributes like `hx-post`. Consider using nonces for stricter security.
+Note: `'unsafe-inline'` needed for HTMX attributes like `hx-post`. Consider using nonces for stricter security.
 
 ### HSTS Configuration
 
@@ -300,7 +293,7 @@ authGroup.Use(echomiddleware.RateLimiterWithConfig(echomiddleware.RateLimiterCon
 
 ### Information Disclosure Prevention
 
-Structured error handling prevents sensitive information leakage:
+Structured error handling in `internal/middleware/errors.go` prevents sensitive information leakage:
 
 ```go
 // Development - detailed errors
@@ -411,7 +404,7 @@ CookieSecure:   true,                          // HTTPS only in production
 
 ### Request Tracing
 
-Every request gets a unique ID for security monitoring:
+Every request gets unique ID for security monitoring:
 
 ```go
 // Request ID middleware
@@ -495,4 +488,4 @@ func detectSuspiciousInput(input string) bool {
 - [ ] Test incident response procedures
 - [ ] Keep security documentation current
 
-This security configuration provides comprehensive protection while maintaining the performance and simplicity that makes Go excellent for web development.
+This security implementation provides comprehensive protection while maintaining the performance and simplicity of the Modern Go Stack.

@@ -1,17 +1,17 @@
 # Architecture Overview
 
-System design and components of the Modern Go Web Server.
+System design and components of the Modern Go Stack web server.
 
-## Architecture Principles
+## Design Principles
 
 1. **Pragmatic Simplicity** - Proven technologies over trendy ones
-2. **Production-First** - Every decision optimizes for production deployment
+2. **Production-First** - Every decision optimizes for deployment and operations
 3. **Developer Experience** - Minimize cognitive load, maximize productivity
 
 ## System Overview
 
 ```
-Browser (HTMX 2.0.6 + Pico.css v2)
+Browser (HTMX 2.x + Pico.css v2)
          ↓
     Caddy (Reverse Proxy + HTTPS)
          ↓
@@ -24,9 +24,9 @@ Browser (HTMX 2.0.6 + Pico.css v2)
     Prometheus Metrics
 ```
 
-## Layer Architecture
+## Request Flow Architecture
 
-### 1. Request Flow
+### 1. Request Processing Pipeline
 
 ```
 Request → Middleware Stack → Router → Handler → Store → Database
@@ -35,21 +35,30 @@ Request → Middleware Stack → Router → Handler → Store → Database
             Metrics           Templates   Queries
 ```
 
-**Middleware Order** (from `cmd/web/main.go:96-184`):
+**Middleware Order** (15 layers from `cmd/web/main.go`):
 
-1. Recovery & Security Headers
-2. Input Sanitization
-3. CSRF Protection
-4. Request ID & Logging
-5. Rate Limiting & CORS
-6. Timeout & Context
+1. **Recovery** - Panic recovery with structured logging
+2. **Security Headers** - Additional security headers
+3. **Input Sanitization** - XSS and SQL injection prevention
+4. **CSRF Protection** - Token validation and rotation
+5. **Validation Errors** - Convert validation errors to structured responses
+6. **Timeout Handling** - Timeout error conversion
+7. **Request ID** - Unique request tracing
+8. **Prometheus Metrics** - Request metrics collection (optional)
+9. **Structured Logging** - Request/response logging
+10. **Echo Security** - XSS, CSRF, HSTS headers
+11. **CORS** - Cross-origin request handling (configurable)
+12. **Rate Limiting** - 20 requests/minute per IP
+13. **Timeout** - Request timeout enforcement
+14. **Environment Context** - Add environment to context
+15. **Handler Execution** - Business logic
 
 ### 2. Component Structure
 
 ```
 cmd/web/main.go           # Entry point & server setup
 internal/
-├── config/              # Koanf configuration management
+├── config/              # Koanf multi-source configuration
 ├── handler/             # HTTP request handlers
 ├── middleware/          # Security & validation middleware
 ├── store/               # SQLC database layer
@@ -57,21 +66,21 @@ internal/
 └── view/                # Templ templates
 ```
 
-## Technology Stack
+## Technology Stack Architecture
 
 | Layer         | Technology                  | Purpose                         |
 | ------------- | --------------------------- | ------------------------------- |
 | **Server**    | Echo v4                     | HTTP framework with middleware  |
-| **Templates** | Templ                       | Type-safe Go HTML templates     |
-| **Frontend**  | HTMX 2.x                    | Dynamic interactions without JS |
+| **Templates** | Templ v0.3.850              | Type-safe Go HTML templates     |
+| **Frontend**  | HTMX 2.0.6                  | Dynamic interactions without JS |
 | **Styling**   | Pico.css v2                 | Semantic CSS with themes        |
 | **Database**  | SQLite + modernc.org/sqlite | Zero-CGO, embedded database     |
-| **Queries**   | SQLC                        | Generate type-safe Go from SQL  |
+| **Queries**   | SQLC v1.29.0                | Generate type-safe Go from SQL  |
 | **Config**    | Koanf                       | Multi-source configuration      |
 | **Build**     | Mage                        | Go-based build automation       |
 | **Dev**       | Air                         | Hot reload development          |
 
-## Data Flow
+## Data Flow Architecture
 
 ### 1. HTMX Request Cycle
 
@@ -83,7 +92,7 @@ internal/
 5. HTMX swaps content → Triggers events
 ```
 
-### 2. Database Interaction
+### 2. Database Interaction Flow
 
 ```
 1. Handler validates input
@@ -107,13 +116,13 @@ Transport:      HTTPS + HSTS + Secure Cookies
 
 ### Key Security Features
 
-- **CSRF Protection**: `internal/middleware/csrf.go` - Custom implementation with token rotation
-- **Input Sanitization**: `internal/middleware/sanitize.go` - XSS and SQL injection prevention
+- **CSRF Protection**: Custom implementation with token rotation (`internal/middleware/csrf.go`)
+- **Input Sanitization**: XSS and SQL injection prevention (`internal/middleware/sanitize.go`)
 - **Security Headers**: CSP, HSTS, X-Frame-Options, X-XSS-Protection
-- **Rate Limiting**: 20 requests/minute per IP with Echo middleware
-- **Error Handling**: Structured errors without information disclosure
+- **Rate Limiting**: 20 requests/minute per IP with memory store
+- **Error Handling**: Structured errors without information disclosure (`internal/middleware/errors.go`)
 
-## Database Design
+## Database Architecture
 
 ### Schema Management
 
@@ -140,12 +149,14 @@ internal/store/
 ### Multi-Source Loading (Priority Order)
 
 ```go
-1. Environment variables (highest)
+1. Environment variables (highest priority)
 2. Configuration files (JSON/YAML/TOML)
-3. Default values in code (lowest)
+3. Default values in code (lowest priority)
 ```
 
-### Production Overrides (`internal/config/config.go:108-114`)
+### Production Overrides
+
+Automatic production mode detection in `internal/config/config.go`:
 
 ```go
 if environment == "production" {
@@ -209,7 +220,7 @@ bin/server                # ~11MB executable
 ### Horizontal Scaling
 
 ```
-Load Balancer
+Caddy Load Balancer
 ├── App Instance 1:8080
 ├── App Instance 2:8080
 └── App Instance 3:8080
@@ -217,13 +228,16 @@ Load Balancer
 
 **Scaling Considerations:**
 
-- SQLite suitable for moderate loads
-- Consider PostgreSQL for high-traffic
+- SQLite suitable for moderate loads (thousands of concurrent users)
+- Consider PostgreSQL for high-traffic scenarios
 - Stateless design enables easy horizontal scaling
+- Session data stored in cookies (not server memory)
 
 ## Error Handling Architecture
 
-### Structured Error Types (`internal/middleware/errors.go`)
+### Structured Error Types
+
+From `internal/middleware/errors.go`:
 
 ```go
 type AppError struct {
@@ -232,7 +246,10 @@ type AppError struct {
     Message   string     // User-friendly message
     Details   any        // Additional context
     Internal  error      // Internal error (not exposed)
-    RequestID string     # Request tracing
+    RequestID string     // Request tracing
+    Timestamp string     // Error timestamp
+    Path      string     // Request path
+    Method    string     // HTTP method
 }
 ```
 
@@ -262,20 +279,70 @@ slog.Info("request", "request_id", requestID, ...)
 // Production: JSON format for log aggregation
 ```
 
+### Metrics Collection
+
+**Prometheus Integration:**
+
+- HTTP request metrics (duration, status, method)
+- Database connection and query metrics
+- HTMX-specific interaction tracking
+- CSRF token generation and validation metrics
+- User activity and business metrics
+- Application health and uptime tracking
+
 ## Performance Characteristics
 
 ### Memory Efficiency
 
-- Compiled templates (no runtime parsing)
-- Connection pooling ready
-- Minimal garbage collection overhead
-- Embedded assets (no file I/O)
+- **Compiled templates** - No runtime parsing overhead
+- **Connection pooling** - SQLite connection management
+- **Minimal garbage collection** - Careful memory allocation
+- **Embedded assets** - No file I/O for static content
 
 ### Request Latency
 
-- Zero-CGO database driver
-- Efficient middleware stack
-- Type-safe database queries
-- Minimal allocations in hot paths
+- **Zero-CGO database driver** - Pure Go SQLite implementation
+- **Efficient middleware stack** - Optimized processing order
+- **Type-safe database queries** - No reflection overhead
+- **Minimal allocations** - Optimized hot paths
 
-This architecture provides production-ready performance and security while maintaining the simplicity that makes Go excellent for web development.
+### Concurrency Model
+
+- **Goroutine per request** - Standard Go HTTP server model
+- **Context-aware operations** - Proper cancellation support
+- **Database connection pooling** - Managed by Go's sql package
+- **Graceful shutdown** - Clean connection termination
+
+## Template Architecture
+
+### Templ Integration
+
+```go
+// Type-safe component definition
+templ UserList(users []User) {
+    <table>
+        for _, user := range users {
+            @UserRow(user)
+        }
+    </table>
+}
+
+// Compiled to efficient Go code
+func UserList(users []User) templ.Component {
+    return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+        // Optimized rendering code
+    })
+}
+```
+
+### HTMX Integration Pattern
+
+```go
+// Server-side event triggering
+c.Response().Header().Set("HX-Trigger", "userCreated")
+
+// Client-side reactive updates
+hx-trigger="userCreated from:body"
+```
+
+This architecture provides production-ready performance and security while maintaining the simplicity and developer experience that makes Go excellent for web development.

@@ -1,6 +1,6 @@
 # Development Guide
 
-Local development setup and workflow for the Go Web Server.
+Local development setup and workflow for the Modern Go Stack.
 
 ## Quick Setup
 
@@ -13,7 +13,7 @@ Local development setup and workflow for the Go Web Server.
 
 ```bash
 # Clone and setup
-git clone https://github.com/your-org/go-web-server.git
+git clone https://github.com/dunamismax/go-web-server.git
 cd go-web-server
 
 # Install tools and dependencies
@@ -169,7 +169,7 @@ Page template:
 ```go
 package view
 
-import "github.com/your-org/go-web-server/internal/view/layout"
+import "github.com/dunamismax/go-web-server/internal/view/layout"
 
 templ Users() {
     @layout.Base("User Management") {
@@ -410,8 +410,9 @@ curl http://localhost:8080/health | jq .
 ```
 
 **Key Metrics Available:**
+
 - `http_requests_total` - HTTP request count by method, path, status
-- `http_request_duration_seconds` - Request latency histograms  
+- `http_request_duration_seconds` - Request latency histograms
 - `http_requests_in_flight` - Current active requests
 - `database_connections_active` - Active database connections
 - `database_queries_total` - Database query count by operation
