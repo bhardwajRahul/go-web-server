@@ -8,9 +8,10 @@ run:
   go: "1.24"
 
 output:
-  format: colored-line-number
-  print-issued-lines: true
-  print-linter-name: true
+  formats:
+    - format: colored-line-number
+      print-issued-lines: true
+      print-linter-name: true
   sort-results: true
 
 linters-settings:
@@ -39,10 +40,6 @@ linters-settings:
     disable:
       - fieldalignment  # Can be too strict for readability
 
-  # Ineffassign settings
-  ineffassign:
-    check-exported: true
-
   # Misspell settings
   misspell:
     locale: US
@@ -56,10 +53,6 @@ linters-settings:
   # Unparam settings
   unparam:
     check-exported: true
-
-  # Unused settings
-  unused:
-    check-exported: false
 
   # Whitespace settings
   whitespace:
@@ -75,7 +68,7 @@ linters-settings:
 
   # Documentation linters
   revive:
-    min-confidence: 0.8
+    confidence: 0.8
     rules:
       - name: exported
         severity: warning
@@ -86,10 +79,9 @@ linters-settings:
 
 linters:
   enable:
-    # Default enabled linters
+    # Core linters
     - errcheck      # Check for unchecked errors
     - govet         # Go vet analysis
-    - ineffassign   # Detect ineffectual assignments
     - staticcheck   # Static analysis
     - unused        # Check for unused code
 
@@ -98,6 +90,8 @@ linters:
     - gosec         # Security analysis
     - misspell      # Fix common spelling mistakes
     - revive        # Fast, configurable linter
+    - gofumpt       # Stricter gofmt
+    - goimports     # Organize imports
 
 issues:
   exclude-use-default: false
