@@ -33,8 +33,8 @@ A production-ready template for modern web applications using **The Modern Go St
 
 **Key Features:**
 
-- **Echo v4 + Templ v0.3.924 + HTMX 2.0.6**: High-performance web framework with type-safe templates and dynamic UX
-- **SQLC v1.29.0 + SQLite + Pure Go Driver**: Type-safe database operations with zero CGO dependencies
+- **Echo v4 + Templ + HTMX**: High-performance web framework with type-safe templates and dynamic UX
+- **SQLC + SQLite + Pure Go Driver**: Type-safe database operations with zero CGO dependencies
 - **Prometheus Metrics**: Comprehensive observability and performance monitoring
 - **Enterprise Security**: CSRF protection, input sanitization, structured error handling, request tracing
 - **Mage Build System**: Go-based automation with comprehensive quality checks
@@ -47,12 +47,12 @@ A production-ready template for modern web applications using **The Modern Go St
 | -------------- | ----------------------------------------------------------- | -------------------------------------- |
 | **Language**   | [Go 1.24+](https://go.dev/doc/)                             | Latest performance & language features |
 | **Framework**  | [Echo v4](https://echo.labstack.com/)                       | High-performance web framework         |
-| **Templates**  | [Templ v0.3.924](https://templ.guide/)                      | Type-safe Go HTML components           |
-| **Frontend**   | [HTMX 2.0.6](https://htmx.org/)                             | Dynamic interactions with smooth UX    |
+| **Templates**  | [Templ](https://templ.guide/)                      | Type-safe Go HTML components           |
+| **Frontend**   | [HTMX](https://htmx.org/)                             | Dynamic interactions with smooth UX    |
 | **CSS**        | [Pico.css v2](https://picocss.com/)                         | Semantic CSS with dark/light themes    |
 | **Logging**    | [slog](https://pkg.go.dev/log/slog)                         | Structured logging with JSON output    |
 | **Database**   | [SQLite](https://www.sqlite.org/)                           | Self-contained, serverless database    |
-| **Queries**    | [SQLC v1.29.0](https://sqlc.dev/)                           | Generate type-safe Go from SQL         |
+| **Queries**    | [SQLC](https://sqlc.dev/)                           | Generate type-safe Go from SQL         |
 | **Metrics**    | [Prometheus](https://prometheus.io/)                        | Performance monitoring & observability |
 | **DB Driver**  | [modernc.org/sqlite](https://pkg.go.dev/modernc.org/sqlite) | Pure Go, CGO-free SQLite driver        |
 | **Assets**     | [Go Embed](https://pkg.go.dev/embed)                        | Single binary with embedded resources  |
@@ -203,11 +203,11 @@ The binary includes embedded Pico.css, HTMX, Templ templates, and SQLite databas
 
 **Modern Web Stack:**
 
-- Echo v4 framework with comprehensive middleware stack
-- Type-safe Templ v0.3.924 templates with reusable components
-- HTMX 2.0.6 dynamic interactions with smooth page transitions
-- Pico.css v2 semantic styling with automatic dark/light themes
-- SQLC v1.29.0 type-safe database queries with pure Go SQLite driver
+- Echo framework with comprehensive middleware stack
+- Type-safe Templ templates with reusable components
+- HTMX dynamic interactions with smooth page transitions
+- Pico.css semantic styling with automatic dark/light themes
+- SQLC type-safe database queries with pure Go SQLite driver
 - Structured logging with slog and configurable JSON output
 - Prometheus metrics for observability and performance monitoring
 
