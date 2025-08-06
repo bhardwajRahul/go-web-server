@@ -252,7 +252,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 <p align="center">
   <strong>The Modern Go Stack</strong><br>
-  <sub>Echo v4 • Templ • HTMX 2.x • Pico.css v2 • SQLC • SQLite • slog • Koanf • Goose • Mage • Air</sub>
+  <sub>Echo • Templ • HTMX • Pico.css • SQLC • SQLite • slog • Koanf • Goose • Mage • Air</sub>
 </p>
 
 <p align="center">
