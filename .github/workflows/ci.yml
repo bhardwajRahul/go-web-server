@@ -1,0 +1,29 @@
+name: Go CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Install Mage
+        run: go install github.com/magefile/mage@latest
+
+      - name: Install Dependencies
+        run: mage setup
+
+      - name: Run CI Pipeline
+        run: mage ci
