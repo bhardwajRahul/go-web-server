@@ -26,8 +26,14 @@ jobs:
     - name: Generate Code
       run: mage generate
 
-    - name: Run Quality
-      run: mage quality
+    - name: Run Vet and VulnCheck
+      run: mage vet && mage vulncheck
+      
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v6
+      with:
+        version: latest
+        args: --timeout=5m
 
     - name: Run Build
       run: mage build

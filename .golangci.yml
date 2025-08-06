@@ -1,8 +1,6 @@
 # golangci-lint configuration for Modern Go Web Server
 # This configuration follows best practices for Go 1.24+ development
 
-version: 2
-
 run:
   timeout: 5m
   issues-exit-code: 1
