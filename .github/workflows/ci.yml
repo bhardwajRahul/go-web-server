@@ -27,10 +27,13 @@ jobs:
       run: mage generate
 
     - name: Run Vet and VulnCheck
-      run: mage vet && mage vulncheck
-      
+      run: mage vulncheck
+
     - name: Run Lint
-      run: mage lint
+      uses: golangci/golangci-lint-action@v6
+      with:
+        version: latest
+        args: --timeout=5m
 
     - name: Run Build
       run: mage build

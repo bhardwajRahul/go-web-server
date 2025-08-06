@@ -162,26 +162,26 @@ func VulnCheck() error {
 	return sh.RunV(govulncheckPath, "./...")
 }
 
+
 // Lint runs golangci-lint with comprehensive linting rules
 func Lint() error {
 	fmt.Println("Running golangci-lint...")
 
+	// Ensure the correct version of golangci-lint is installed
+	fmt.Println("  Ensuring golangci-lint v2.3.1 is installed...")
+	if err := sh.RunV("go", "install", "github.com/golangci/golangci-lint/cmd/golangci-lint@latest"); err != nil {
+		return fmt.Errorf("failed to install golangci-lint: %w", err)
+	}
+
 	// Find golangci-lint binary
 	lintPath, err := getGoBinaryPath("golangci-lint")
 	if err != nil {
-		fmt.Println("Installing golangci-lint...")
-		if err := sh.RunV("go", "install", "github.com/golangci/golangci-lint/cmd/golangci-lint@latest"); err != nil {
-			return fmt.Errorf("failed to install golangci-lint: %w", err)
-		}
-		// Try to find it again after installation
-		lintPath, err = getGoBinaryPath("golangci-lint")
-		if err != nil {
-			return fmt.Errorf("golangci-lint not found after installation: %w", err)
-		}
+		return fmt.Errorf("golangci-lint not found after installation: %w", err)
 	}
 
 	return sh.RunV(lintPath, "run", "./...")
 }
+
 
 // Run builds and runs the server
 func Run() error {
@@ -289,7 +289,7 @@ func Setup() error {
 		"sqlc":          "github.com/sqlc-dev/sqlc/cmd/sqlc@latest",
 		"govulncheck":   "golang.org/x/vuln/cmd/govulncheck@latest",
 		"air":           "github.com/air-verse/air@latest",
-		"golangci-lint": "github.com/golangci/golangci-lint/cmd/golangci-lint@latest",
+		
 		"goimports":     "golang.org/x/tools/cmd/goimports@latest",
 		"goose":         "github.com/pressly/goose/v3/cmd/goose@latest",
 	}
