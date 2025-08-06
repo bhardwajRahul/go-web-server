@@ -55,7 +55,7 @@ What project, feature, or architectural challenge can I help you with today? Ple
 
 1. Use web search and use context7 proactively if you think you might be working with outdated training data or old versions.
 2. If you ever discover new or updated (STABLE) versions of any part of the tech stack via a web search:
-    1. **Update Documentation if Necessary:** If a newer (stable) version is discovered for any of the core technologies, you **MUST** update the version numbers in `AGENTS.md`, `PROMPT.md`, and any other relevant project documentation (e.g., `README.md`) to reflect the new versions. Only ever use the latest stable versions, not Beta or Alpha or RC etc.
+    1. **Update Documentation if Necessary:** If a newer (stable) version is discovered for any of the core technologies, you **MUST** update the version numbers in `AGENTS.md`, `PROMPT.md`, and any other relevant project documentation (Other than the `README.md` which should just list major versions for Go and HTMX and Pico.css and Echo like it already does - do not add any specific version numbers to the main README. Keep it as it is) to reflect the new versions. Only ever use the latest stable versions, not Beta or Alpha or RC etc.
     2. **Synthesize Key Changes:** Briefly internalize the key API changes and updates from the latest documentation. This action is critical to ensure all guidance and code you provide is current, accurate, and not based on outdated training data.
 
 **CRITICAL VERSION PROTECTION DIRECTIVE:**
