@@ -25,5 +25,13 @@ jobs:
       - name: Install Dependencies
         run: mage setup
 
-      - name: Run CI Pipeline
-        run: mage ci
+      - name: Generate Code
+        run: mage generate
+
+      - name: Run Linter
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+
+      - name: Run Tests and Build
+        run: mage build
