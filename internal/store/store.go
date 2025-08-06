@@ -11,7 +11,8 @@ import (
 // Store provides all functions to execute db queries.
 type Store struct {
 	*Queries // Embed sqlc-generated queries
-	db       *sql.DB
+
+	db *sql.DB
 }
 
 // NewStore creates a new store instance with database connection.

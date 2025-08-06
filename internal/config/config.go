@@ -85,6 +85,7 @@ func New() *Config {
 				slog.Warn("failed to load config file", "file", configFile.path, "error", err)
 			} else {
 				slog.Info("loaded configuration from file", "file", configFile.path)
+
 				break
 			}
 		}
@@ -172,7 +173,7 @@ func getDefaults() Config {
 	}
 }
 
-// GetLogLevel converts the string log level to slog.Level
+// GetLogLevel converts the string log level to slog.Level.
 func (c *Config) GetLogLevel() slog.Level {
 	switch strings.ToLower(c.App.LogLevel) {
 	case "debug":

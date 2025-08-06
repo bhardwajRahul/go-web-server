@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	// HTTP metrics
+	// HTTP metrics.
 	httpRequestsTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "http_requests_total",
@@ -35,7 +35,7 @@ var (
 		},
 	)
 
-	// Database metrics
+	// Database metrics.
 	databaseConnectionsActive = promauto.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "database_connections_active",
@@ -67,7 +67,7 @@ var (
 		[]string{"operation", "table", "status"},
 	)
 
-	// Application metrics
+	// Application metrics.
 	applicationInfo = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "application_info",
@@ -83,7 +83,7 @@ var (
 		},
 	)
 
-	// HTMX specific metrics
+	// HTMX specific metrics.
 	htmxRequestsTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "htmx_requests_total",
@@ -92,7 +92,7 @@ var (
 		[]string{"trigger", "target", "swap"},
 	)
 
-	// CSRF metrics
+	// CSRF metrics.
 	csrfTokensGenerated = promauto.NewCounter(
 		prometheus.CounterOpts{
 			Name: "csrf_tokens_generated_total",
@@ -107,7 +107,7 @@ var (
 		},
 	)
 
-	// User activity metrics
+	// User activity metrics.
 	usersCreatedTotal = promauto.NewCounter(
 		prometheus.CounterOpts{
 			Name: "users_created_total",
@@ -123,7 +123,7 @@ var (
 	)
 )
 
-// PrometheusMiddleware creates HTTP metrics middleware
+// PrometheusMiddleware creates HTTP metrics middleware.
 func PrometheusMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -158,19 +158,19 @@ func PrometheusMiddleware() echo.MiddlewareFunc {
 	}
 }
 
-// InitializeMetrics initializes application metrics with static information
+// InitializeMetrics initializes application metrics with static information.
 func InitializeMetrics(version, goVersion, environment string) {
 	applicationInfo.WithLabelValues(version, goVersion, environment).Set(1)
 	applicationStartTime.Set(float64(time.Now().Unix()))
 }
 
-// UpdateDatabaseMetrics updates database connection metrics
+// UpdateDatabaseMetrics updates database connection metrics.
 func UpdateDatabaseMetrics(active, idle int) {
 	databaseConnectionsActive.Set(float64(active))
 	databaseConnectionsIdle.Set(float64(idle))
 }
 
-// RecordDatabaseQuery records database query metrics
+// RecordDatabaseQuery records database query metrics.
 func RecordDatabaseQuery(operation, table string, duration time.Duration, err error) {
 	status := "success"
 	if err != nil {
@@ -181,22 +181,22 @@ func RecordDatabaseQuery(operation, table string, duration time.Duration, err er
 	databaseQueryDuration.WithLabelValues(operation, table).Observe(duration.Seconds())
 }
 
-// RecordCSRFTokenGenerated increments CSRF token generation counter
+// RecordCSRFTokenGenerated increments CSRF token generation counter.
 func RecordCSRFTokenGenerated() {
 	csrfTokensGenerated.Inc()
 }
 
-// RecordCSRFValidationFailure increments CSRF validation failure counter
+// RecordCSRFValidationFailure increments CSRF validation failure counter.
 func RecordCSRFValidationFailure() {
 	csrfValidationFailures.Inc()
 }
 
-// RecordUserCreated increments user creation counter
+// RecordUserCreated increments user creation counter.
 func RecordUserCreated() {
 	usersCreatedTotal.Inc()
 }
 
-// UpdateActiveUsers updates the active users gauge
+// UpdateActiveUsers updates the active users gauge.
 func UpdateActiveUsers(count int64) {
 	usersActiveTotal.Set(float64(count))
 }

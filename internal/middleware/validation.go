@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -11,12 +12,12 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// Validator interface for custom validation
+// Validator interface for custom validation.
 type Validator interface {
 	Validate() error
 }
 
-// ValidationError represents a validation error with field information
+// ValidationError represents a validation error with field information.
 type ValidationError struct {
 	Field   string `json:"field"`
 	Message string `json:"message"`
@@ -27,7 +28,7 @@ func (ve ValidationError) Error() string {
 	return fmt.Sprintf("validation failed for field '%s': %s", ve.Field, ve.Message)
 }
 
-// ValidationErrors is a slice of validation errors
+// ValidationErrors is a slice of validation errors.
 type ValidationErrors []ValidationError
 
 func (ve ValidationErrors) Error() string {
@@ -39,10 +40,11 @@ func (ve ValidationErrors) Error() string {
 	for _, err := range ve {
 		messages = append(messages, err.Error())
 	}
+
 	return strings.Join(messages, "; ")
 }
 
-// ValidateStruct validates a struct using reflection and validate tags
+// ValidateStruct validates a struct using reflection and validate tags.
 func ValidateStruct(s any) ValidationErrors {
 	var errors ValidationErrors
 
@@ -89,13 +91,13 @@ func ValidateStruct(s any) ValidationErrors {
 	return errors
 }
 
-// ValidationRule represents a single validation rule
+// ValidationRule represents a single validation rule.
 type ValidationRule struct {
 	Name  string
 	Param string
 }
 
-// parseValidationRules parses validation tag into rules
+// parseValidationRules parses validation tag into rules.
 func parseValidationRules(tag string) []ValidationRule {
 	var rules []ValidationRule
 
@@ -122,7 +124,7 @@ func parseValidationRules(tag string) []ValidationRule {
 	return rules
 }
 
-// validateRule validates a single rule against a field value
+// validateRule validates a single rule against a field value.
 func validateRule(fieldName string, value any, rule ValidationRule) *ValidationError {
 	switch rule.Name {
 	case "required":
@@ -142,7 +144,7 @@ func validateRule(fieldName string, value any, rule ValidationRule) *ValidationE
 	return nil
 }
 
-// validateRequired checks if a field is required
+// validateRequired checks if a field is required.
 func validateRequired(fieldName string, value any) *ValidationError {
 	if isZeroValue(value) {
 		return &ValidationError{
@@ -151,10 +153,11 @@ func validateRequired(fieldName string, value any) *ValidationError {
 			Value:   value,
 		}
 	}
+
 	return nil
 }
 
-// validateMin validates minimum length/value
+// validateMin validates minimum length/value.
 func validateMin(fieldName string, value any, param string) *ValidationError {
 	minVal, err := strconv.Atoi(param)
 	if err != nil {
@@ -187,7 +190,7 @@ func validateMin(fieldName string, value any, param string) *ValidationError {
 	return nil
 }
 
-// validateMax validates maximum length/value
+// validateMax validates maximum length/value.
 func validateMax(fieldName string, value any, param string) *ValidationError {
 	maxVal, err := strconv.Atoi(param)
 	if err != nil {
@@ -220,7 +223,7 @@ func validateMax(fieldName string, value any, param string) *ValidationError {
 	return nil
 }
 
-// validateEmail validates email format
+// validateEmail validates email format.
 func validateEmail(fieldName string, value any) *ValidationError {
 	str, ok := value.(string)
 	if !ok {
@@ -241,7 +244,7 @@ func validateEmail(fieldName string, value any) *ValidationError {
 	return nil
 }
 
-// validateURL validates URL format
+// validateURL validates URL format.
 func validateURL(fieldName string, value any) *ValidationError {
 	str, ok := value.(string)
 	if !ok {
@@ -262,7 +265,7 @@ func validateURL(fieldName string, value any) *ValidationError {
 	return nil
 }
 
-// validateOneOf validates that value is one of allowed values
+// validateOneOf validates that value is one of allowed values.
 func validateOneOf(fieldName string, value any, param string) *ValidationError {
 	allowedValues := strings.Split(param, " ")
 	valueStr := fmt.Sprintf("%v", value)
@@ -275,12 +278,12 @@ func validateOneOf(fieldName string, value any, param string) *ValidationError {
 
 	return &ValidationError{
 		Field:   fieldName,
-		Message: fmt.Sprintf("value must be one of: %s", param),
+		Message: "value must be one of: " + param,
 		Value:   value,
 	}
 }
 
-// isZeroValue checks if a value is zero/empty
+// isZeroValue checks if a value is zero/empty.
 func isZeroValue(value any) bool {
 	if value == nil {
 		return true
@@ -307,7 +310,7 @@ func isZeroValue(value any) bool {
 	return false
 }
 
-// getFieldName gets the field name for validation (prefers json tag)
+// getFieldName gets the field name for validation (prefers json tag).
 func getFieldName(field reflect.StructField) string {
 	jsonTag := field.Tag.Get("json")
 	if jsonTag != "" && jsonTag != "-" {
@@ -320,7 +323,7 @@ func getFieldName(field reflect.StructField) string {
 	return strings.ToLower(field.Name)
 }
 
-// ValidateAndBind is an Echo middleware that validates request body
+// ValidateAndBind is an Echo middleware that validates request body.
 func ValidateAndBind(target any) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -335,6 +338,7 @@ func ValidateAndBind(target any) echo.MiddlewareFunc {
 			// Bind request data
 			if err := c.Bind(instance); err != nil {
 				slog.Error("failed to bind request data", "error", err)
+
 				return echo.NewHTTPError(http.StatusBadRequest, map[string]any{
 					"error":   "invalid request format",
 					"details": err.Error(),
@@ -345,6 +349,7 @@ func ValidateAndBind(target any) echo.MiddlewareFunc {
 			if validator, ok := instance.(Validator); ok {
 				if err := validator.Validate(); err != nil {
 					slog.Warn("custom validation failed", "error", err)
+
 					return echo.NewHTTPError(http.StatusBadRequest, map[string]any{
 						"error":   "validation failed",
 						"details": err.Error(),
@@ -355,6 +360,7 @@ func ValidateAndBind(target any) echo.MiddlewareFunc {
 			// Run struct validation
 			if validationErrors := ValidateStruct(instance); len(validationErrors) > 0 {
 				slog.Warn("struct validation failed", "errors", validationErrors)
+
 				return echo.NewHTTPError(http.StatusBadRequest, map[string]any{
 					"error":  "validation failed",
 					"fields": validationErrors,
@@ -369,16 +375,16 @@ func ValidateAndBind(target any) echo.MiddlewareFunc {
 	}
 }
 
-// GetValidated retrieves validated data from context
+// GetValidated retrieves validated data from context.
 func GetValidated[T any](c echo.Context) (*T, error) {
 	validated := c.Get("validated")
 	if validated == nil {
-		return nil, fmt.Errorf("no validated data found in context")
+		return nil, errors.New("no validated data found in context")
 	}
 
 	data, ok := validated.(*T)
 	if !ok {
-		return nil, fmt.Errorf("validated data is not of expected type")
+		return nil, errors.New("validated data is not of expected type")
 	}
 
 	return data, nil

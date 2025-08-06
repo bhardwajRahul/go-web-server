@@ -11,6 +11,13 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+const (
+	// HtmxRequestHeader is a constant for the HX-Request header value.
+	HtmxRequestHeader = "true"
+	statusError       = "error"
+	statusWarning     = "warning"
+)
+
 // HomeHandler handles requests for the home page and health checks.
 type HomeHandler struct {
 	store *store.Store
@@ -30,23 +37,26 @@ func (h *HomeHandler) Home(c echo.Context) error {
 	}
 
 	// Check if this is an HTMX request for partial content
-	if c.Request().Header.Get("HX-Request") == "true" {
+	if c.Request().Header.Get("HX-Request") == htmxRequestHeader {
 		component := view.HomeContent()
+
 		return component.Render(c.Request().Context(), c.Response().Writer)
 	}
 
 	// Return full page with layout and CSRF token
 	if token != "" {
 		component := view.HomeWithCSRF(token)
+
 		return component.Render(c.Request().Context(), c.Response().Writer)
 	}
 
 	// Fallback to basic template
 	component := view.Home()
+
 	return component.Render(c.Request().Context(), c.Response().Writer)
 }
 
-// Demo provides a demonstration of HTMX functionality
+// Demo provides a demonstration of HTMX functionality.
 func (h *HomeHandler) Demo(c echo.Context) error {
 	demoData := struct {
 		Message    string
@@ -61,18 +71,21 @@ func (h *HomeHandler) Demo(c echo.Context) error {
 	}
 
 	// Check if this is an HTMX request for formatted HTML display
-	if c.Request().Header.Get("HX-Request") == "true" {
+	if c.Request().Header.Get("HX-Request") == htmxRequestHeader {
 		c.Response().Header().Set("Content-Type", "text/html; charset=utf-8")
+
 		component := view.DemoContent(demoData.Message, demoData.Features, demoData.ServerTime, demoData.RequestID)
+
 		return component.Render(c.Request().Context(), c.Response().Writer)
 	}
 
 	// Set response headers for JSON response
 	c.Response().Header().Set("Content-Type", "application/json")
+
 	return c.JSON(http.StatusOK, demoData)
 }
 
-// Health provides a comprehensive health check endpoint
+// Health provides a comprehensive health check endpoint.
 func (h *HomeHandler) Health(c echo.Context) error {
 	ctx := c.Request().Context()
 	checks := make(map[string]string)
@@ -81,7 +94,7 @@ func (h *HomeHandler) Health(c echo.Context) error {
 	// Database connectivity check
 	if h.store != nil {
 		if _, err := h.store.CountUsers(ctx); err != nil {
-			checks["database"] = "error"
+			checks["database"] = statusError
 			overallStatus = "degraded"
 		} else {
 			checks["database"] = "ok"
@@ -92,15 +105,16 @@ func (h *HomeHandler) Health(c echo.Context) error {
 			if stats := db.Stats(); stats.OpenConnections > 0 {
 				checks["database_connections"] = "ok"
 			} else {
-				checks["database_connections"] = "warning"
+				checks["database_connections"] = statusWarning
+
 				if overallStatus == "ok" {
 					overallStatus = "warning"
 				}
 			}
 		}
 	} else {
-		checks["database"] = "error"
-		overallStatus = "error"
+		checks["database"] = statusError
+		overallStatus = statusError
 	}
 
 	// Memory check (basic)
@@ -116,7 +130,7 @@ func (h *HomeHandler) Health(c echo.Context) error {
 	}
 
 	// Check if this is an HTMX request for formatted HTML display
-	if c.Request().Header.Get("HX-Request") == "true" {
+	if c.Request().Header.Get("HX-Request") == htmxRequestHeader {
 		component := view.HealthCheck(
 			health["status"].(string),
 			health["service"].(string),
@@ -125,6 +139,7 @@ func (h *HomeHandler) Health(c echo.Context) error {
 			health["timestamp"].(string),
 			health["checks"].(map[string]string),
 		)
+
 		return component.Render(c.Request().Context(), c.Response().Writer)
 	}
 
@@ -134,10 +149,11 @@ func (h *HomeHandler) Health(c echo.Context) error {
 
 	// Set appropriate HTTP status based on health
 	var statusCode int
+
 	switch overallStatus {
-	case "error":
+	case statusError:
 		statusCode = http.StatusServiceUnavailable
-	case "degraded", "warning":
+	case "degraded", statusWarning:
 		statusCode = http.StatusPartialContent
 	default:
 		statusCode = http.StatusOK

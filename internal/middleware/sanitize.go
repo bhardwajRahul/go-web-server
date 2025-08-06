@@ -9,7 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// SanitizeConfig defines the configuration for input sanitization
+// SanitizeConfig defines the configuration for input sanitization.
 type SanitizeConfig struct {
 	// SanitizeHTML enables HTML sanitization
 	SanitizeHTML bool
@@ -21,19 +21,19 @@ type SanitizeConfig struct {
 	CustomSanitizers []func(string) string
 }
 
-// DefaultSanitizeConfig is the default sanitization config
+// DefaultSanitizeConfig is the default sanitization config.
 var DefaultSanitizeConfig = SanitizeConfig{
 	SanitizeHTML: true,
 	SanitizeSQL:  true,
 	SanitizeXSS:  true,
 }
 
-// Sanitize returns input sanitization middleware
+// Sanitize returns input sanitization middleware.
 func Sanitize() echo.MiddlewareFunc {
 	return SanitizeWithConfig(DefaultSanitizeConfig)
 }
 
-// SanitizeWithConfig returns input sanitization middleware with config
+// SanitizeWithConfig returns input sanitization middleware with config.
 func SanitizeWithConfig(config SanitizeConfig) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -43,30 +43,34 @@ func SanitizeWithConfig(config SanitizeConfig) echo.MiddlewareFunc {
 				config:  config,
 			}
 			c.SetRequest(req.Request)
+
 			return next(c)
 		}
 	}
 }
 
-// sanitizingRequest wraps http.Request to sanitize form values
+// sanitizingRequest wraps http.Request to sanitize form values.
 type sanitizingRequest struct {
 	*http.Request
+
 	config SanitizeConfig
 }
 
-// FormValue returns the sanitized form value for the provided key
+// FormValue returns the sanitized form value for the provided key.
 func (r *sanitizingRequest) FormValue(key string) string {
 	value := r.Request.FormValue(key)
+
 	return r.sanitizeValue(value)
 }
 
-// PostFormValue returns the sanitized POST form value for the provided key
+// PostFormValue returns the sanitized POST form value for the provided key.
 func (r *sanitizingRequest) PostFormValue(key string) string {
 	value := r.Request.PostFormValue(key)
+
 	return r.sanitizeValue(value)
 }
 
-// sanitizeValue applies all configured sanitization rules
+// sanitizeValue applies all configured sanitization rules.
 func (r *sanitizingRequest) sanitizeValue(value string) string {
 	if value == "" {
 		return value
@@ -97,12 +101,12 @@ func (r *sanitizingRequest) sanitizeValue(value string) string {
 	return result
 }
 
-// sanitizeHTML escapes HTML characters to prevent HTML injection
+// sanitizeHTML escapes HTML characters to prevent HTML injection.
 func sanitizeHTML(input string) string {
 	return html.EscapeString(input)
 }
 
-// sanitizeXSS removes or escapes potential XSS vectors
+// sanitizeXSS removes or escapes potential XSS vectors.
 func sanitizeXSS(input string) string {
 	// Remove or escape dangerous patterns
 	dangerous := []string{
@@ -147,7 +151,7 @@ func sanitizeXSS(input string) string {
 	return input
 }
 
-// sanitizeSQL provides basic SQL injection protection
+// sanitizeSQL provides basic SQL injection protection.
 func sanitizeSQL(input string) string {
 	// Remove SQL comment patterns
 	sqlComments := []string{
@@ -194,29 +198,30 @@ func sanitizeSQL(input string) string {
 	return result
 }
 
-// SanitizeString provides a utility function to sanitize individual strings
+// SanitizeString provides a utility function to sanitize individual strings.
 func SanitizeString(input string, config SanitizeConfig) string {
 	sanitizer := &sanitizingRequest{config: config}
+
 	return sanitizer.sanitizeValue(input)
 }
 
-// Common sanitization presets
+// Common sanitization presets.
 var (
-	// HTMLSanitizeConfig sanitizes HTML content
+	// HTMLSanitizeConfig sanitizes HTML content.
 	HTMLSanitizeConfig = SanitizeConfig{
 		SanitizeHTML: true,
 		SanitizeXSS:  true,
 		SanitizeSQL:  false,
 	}
 
-	// FormSanitizeConfig sanitizes form inputs
+	// FormSanitizeConfig sanitizes form inputs.
 	FormSanitizeConfig = SanitizeConfig{
 		SanitizeHTML: true,
 		SanitizeXSS:  true,
 		SanitizeSQL:  true,
 	}
 
-	// SQLSanitizeConfig focuses on SQL injection prevention
+	// SQLSanitizeConfig focuses on SQL injection prevention.
 	SQLSanitizeConfig = SanitizeConfig{
 		SanitizeHTML: false,
 		SanitizeXSS:  false,

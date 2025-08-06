@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -42,6 +43,7 @@ func main() {
 			Level: cfg.GetLogLevel(),
 		}))
 	}
+
 	slog.SetDefault(logger)
 
 	slog.Info("Starting Go Web Server",
@@ -61,8 +63,9 @@ func main() {
 	store, err := store.NewStore(cfg.Database.URL)
 	if err != nil {
 		slog.Error("failed to connect to database", "error", err, "database_url", cfg.Database.URL)
-		os.Exit(1)
+		return
 	}
+
 	defer func() {
 		if err := store.Close(); err != nil {
 			slog.Error("failed to close database connection", "error", err)
@@ -72,16 +75,17 @@ func main() {
 	// Run migrations if enabled
 	if cfg.Database.RunMigrations {
 		slog.Info("Running database migrations with Goose")
+
 		if err := runGooseMigrations(cfg.Database.URL); err != nil {
 			slog.Error("failed to run migrations", "error", err)
-			os.Exit(1)
+			return
 		}
 	}
 
 	// Initialize schema (fallback if migrations not used)
 	if err := store.InitSchema(); err != nil {
 		slog.Error("failed to initialize schema", "error", err)
-		os.Exit(1)
+		return
 	}
 
 	// Create Echo instance
@@ -156,6 +160,7 @@ func main() {
 					"request_id", v.RequestID,
 					"error", v.Error)
 			}
+
 			return nil
 		},
 	}))
@@ -199,6 +204,7 @@ func main() {
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			c.Set("environment", cfg.App.Environment)
+
 			return next(c)
 		}
 	})
@@ -207,7 +213,7 @@ func main() {
 	handlers := handler.NewHandlers(store)
 	if err := handler.RegisterRoutes(e, handlers); err != nil {
 		slog.Error("failed to register routes", "error", err)
-		os.Exit(1)
+		return
 	}
 
 	// Add metrics endpoint if enabled
@@ -224,9 +230,9 @@ func main() {
 		address := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
 		slog.Info("Server starting", "address", address)
 
-		if err := e.Start(address); err != nil && err != http.ErrServerClosed {
+		if err := e.Start(address); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("failed to start server", "error", err)
-			os.Exit(1)
+			return
 		}
 	}()
 
@@ -241,19 +247,20 @@ func main() {
 
 	if err := e.Shutdown(shutdownCtx); err != nil {
 		slog.Error("failed to shutdown server gracefully", "error", err)
-		os.Exit(1)
+		return
 	}
 
 	slog.Info("Server shutdown complete")
 }
 
-// runGooseMigrations runs database migrations using Goose
+// runGooseMigrations runs database migrations using Goose.
 func runGooseMigrations(databaseURL string) error {
 	// Open database connection
 	db, err := sql.Open("sqlite", databaseURL)
 	if err != nil {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
+
 	defer func() {
 		if err := db.Close(); err != nil {
 			slog.Error("failed to close database connection", "error", err)
@@ -271,5 +278,6 @@ func runGooseMigrations(databaseURL string) error {
 	}
 
 	slog.Info("Database migrations completed successfully with Goose")
+
 	return nil
 }

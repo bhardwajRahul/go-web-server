@@ -31,8 +31,10 @@ func RegisterRoutes(e *echo.Echo, handlers *Handlers) error {
 	staticFS, err := fs.Sub(ui.StaticFiles, "static")
 	if err != nil {
 		slog.Error("failed to create static file system", "error", err)
+
 		return err
 	}
+
 	e.GET("/static/*", echo.WrapHandler(http.StripPrefix("/static/", http.FileServer(http.FS(staticFS)))))
 
 	// Home routes

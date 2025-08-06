@@ -12,6 +12,10 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+const (
+	htmxRequestHeader = "true"
+)
+
 // UserHandler handles all user-related HTTP requests including CRUD operations.
 type UserHandler struct {
 	store *store.Store
@@ -24,7 +28,7 @@ func NewUserHandler(s *store.Store) *UserHandler {
 	}
 }
 
-// Users renders the main user management page
+// Users renders the main user management page.
 func (h *UserHandler) Users(c echo.Context) error {
 	// Get CSRF token for initial requests
 	token := middleware.GetCSRFToken(c)
@@ -33,23 +37,26 @@ func (h *UserHandler) Users(c echo.Context) error {
 	}
 
 	// Check if this is an HTMX request for partial content
-	if c.Request().Header.Get("HX-Request") == "true" {
+	if c.Request().Header.Get("HX-Request") == HtmxRequestHeader {
 		component := view.UsersContent()
+
 		return component.Render(c.Request().Context(), c.Response().Writer)
 	}
 
 	// Return full page with layout and CSRF token
 	if token != "" {
 		component := view.UsersWithCSRF(token)
+
 		return component.Render(c.Request().Context(), c.Response().Writer)
 	}
 
 	// Fallback to basic template
 	component := view.Users()
+
 	return component.Render(c.Request().Context(), c.Response().Writer)
 }
 
-// UserList returns the list of users as HTML fragment
+// UserList returns the list of users as HTML fragment.
 func (h *UserHandler) UserList(c echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -64,6 +71,7 @@ func (h *UserHandler) UserList(c echo.Context) error {
 		slog.Error("Failed to fetch users",
 			"error", err,
 			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
+
 		return middleware.NewAppError(
 			middleware.ErrorTypeInternal,
 			http.StatusInternalServerError,
@@ -72,10 +80,11 @@ func (h *UserHandler) UserList(c echo.Context) error {
 	}
 
 	component := view.UserList(users)
+
 	return component.Render(ctx, c.Response().Writer)
 }
 
-// UserCount returns the count of active users
+// UserCount returns the count of active users.
 func (h *UserHandler) UserCount(c echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -90,6 +99,7 @@ func (h *UserHandler) UserCount(c echo.Context) error {
 		slog.Error("Failed to count users",
 			"error", err,
 			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
+
 		return middleware.NewAppError(
 			middleware.ErrorTypeInternal,
 			http.StatusInternalServerError,
@@ -101,10 +111,11 @@ func (h *UserHandler) UserCount(c echo.Context) error {
 	middleware.UpdateActiveUsers(count)
 
 	component := view.UserCount(count)
+
 	return component.Render(ctx, c.Response().Writer)
 }
 
-// UserForm renders the user creation/edit form
+// UserForm renders the user creation/edit form.
 func (h *UserHandler) UserForm(c echo.Context) error {
 	// Set CSRF token in response header for HTMX to pick up
 	token := middleware.GetCSRFToken(c)
@@ -113,13 +124,15 @@ func (h *UserHandler) UserForm(c echo.Context) error {
 	}
 
 	component := view.UserForm(nil, token)
+
 	return component.Render(c.Request().Context(), c.Response().Writer)
 }
 
-// EditUserForm renders the user edit form with existing data
+// EditUserForm renders the user edit form with existing data.
 func (h *UserHandler) EditUserForm(c echo.Context) error {
 	ctx := c.Request().Context()
 	idStr := c.Param("id")
+
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		return middleware.NewAppError(
@@ -135,6 +148,7 @@ func (h *UserHandler) EditUserForm(c echo.Context) error {
 			"id", id,
 			"error", err,
 			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
+
 		return middleware.NewAppError(
 			middleware.ErrorTypeNotFound,
 			http.StatusNotFound,
@@ -149,10 +163,11 @@ func (h *UserHandler) EditUserForm(c echo.Context) error {
 	}
 
 	component := view.UserForm(&user, token)
+
 	return component.Render(ctx, c.Response().Writer)
 }
 
-// CreateUser creates a new user
+// CreateUser creates a new user.
 func (h *UserHandler) CreateUser(c echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -198,6 +213,7 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 			"email", email,
 			"error", err,
 			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
+
 		return middleware.NewAppError(
 			middleware.ErrorTypeInternal,
 			http.StatusInternalServerError,
@@ -226,13 +242,15 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 	}
 
 	component := view.UserList(users)
+
 	return component.Render(ctx, c.Response().Writer)
 }
 
-// UpdateUser updates an existing user
+// UpdateUser updates an existing user.
 func (h *UserHandler) UpdateUser(c echo.Context) error {
 	ctx := c.Request().Context()
 	idStr := c.Param("id")
+
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		return middleware.NewAppError(
@@ -278,6 +296,7 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 			"id", id,
 			"error", err,
 			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
+
 		return middleware.NewAppError(
 			middleware.ErrorTypeInternal,
 			http.StatusInternalServerError,
@@ -303,13 +322,15 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 	}
 
 	component := view.UserList(users)
+
 	return component.Render(ctx, c.Response().Writer)
 }
 
-// DeactivateUser deactivates a user instead of deleting
+// DeactivateUser deactivates a user instead of deleting.
 func (h *UserHandler) DeactivateUser(c echo.Context) error {
 	ctx := c.Request().Context()
 	idStr := c.Param("id")
+
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		return middleware.NewAppError(
@@ -325,6 +346,7 @@ func (h *UserHandler) DeactivateUser(c echo.Context) error {
 			"id", id,
 			"error", err,
 			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
+
 		return middleware.NewAppError(
 			middleware.ErrorTypeInternal,
 			http.StatusInternalServerError,
@@ -350,13 +372,15 @@ func (h *UserHandler) DeactivateUser(c echo.Context) error {
 	c.Response().Header().Set("HX-Trigger", "userDeactivated")
 
 	component := view.UserRow(user)
+
 	return component.Render(ctx, c.Response().Writer)
 }
 
-// DeleteUser permanently deletes a user
+// DeleteUser permanently deletes a user.
 func (h *UserHandler) DeleteUser(c echo.Context) error {
 	ctx := c.Request().Context()
 	idStr := c.Param("id")
+
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		return middleware.NewAppError(
@@ -372,6 +396,7 @@ func (h *UserHandler) DeleteUser(c echo.Context) error {
 			"id", id,
 			"error", err,
 			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
+
 		return middleware.NewAppError(
 			middleware.ErrorTypeInternal,
 			http.StatusInternalServerError,

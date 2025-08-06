@@ -4,15 +4,16 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/hex"
-	"fmt"
+	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
 )
 
-// CSRFConfig defines the configuration for CSRF protection
+// CSRFConfig defines the configuration for CSRF protection.
 type CSRFConfig struct {
 	// TokenLength is the length of the CSRF token in bytes
 	TokenLength int
@@ -43,10 +44,10 @@ type CSRFConfig struct {
 	ErrorHandler CSRFErrorHandler
 }
 
-// CSRFErrorHandler defines a function which is executed for an invalid CSRF token
+// CSRFErrorHandler defines a function which is executed for an invalid CSRF token.
 type CSRFErrorHandler func(error, echo.Context) error
 
-// DefaultCSRFConfig is the default CSRF middleware config
+// DefaultCSRFConfig is the default CSRF middleware config.
 var DefaultCSRFConfig = CSRFConfig{
 	TokenLength:    32,
 	TokenLookup:    "header:X-CSRF-Token,form:csrf_token",
@@ -60,35 +61,42 @@ var DefaultCSRFConfig = CSRFConfig{
 	ErrorHandler:   nil,
 }
 
-// CSRF returns a Cross-Site Request Forgery (CSRF) middleware
+// CSRF returns a Cross-Site Request Forgery (CSRF) middleware.
 func CSRF() echo.MiddlewareFunc {
 	return CSRFWithConfig(DefaultCSRFConfig)
 }
 
-// CSRFWithConfig returns a CSRF middleware with config
+// CSRFWithConfig returns a CSRF middleware with config.
 func CSRFWithConfig(config CSRFConfig) echo.MiddlewareFunc {
 	// Set defaults
 	if config.TokenLength == 0 {
 		config.TokenLength = DefaultCSRFConfig.TokenLength
 	}
+
 	if config.TokenLookup == "" {
 		config.TokenLookup = DefaultCSRFConfig.TokenLookup
 	}
+
 	if config.CookieName == "" {
 		config.CookieName = DefaultCSRFConfig.CookieName
 	}
+
 	if config.CookiePath == "" {
 		config.CookiePath = DefaultCSRFConfig.CookiePath
 	}
+
 	if config.CookieSameSite == 0 {
 		config.CookieSameSite = DefaultCSRFConfig.CookieSameSite
 	}
+
 	if config.CookieMaxAge == 0 {
 		config.CookieMaxAge = DefaultCSRFConfig.CookieMaxAge
 	}
+
 	if config.ContextKey == "" {
 		config.ContextKey = DefaultCSRFConfig.ContextKey
 	}
+
 	if config.ErrorHandler == nil {
 		config.ErrorHandler = func(err error, c echo.Context) error {
 			return ErrCSRF.WithContext(c).WithInternal(err)
@@ -98,11 +106,13 @@ func CSRFWithConfig(config CSRFConfig) echo.MiddlewareFunc {
 	// Parse token lookup
 	parts := strings.Split(config.TokenLookup, ",")
 	extractors := make([]csrfTokenExtractor, 0, len(parts))
+
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
 		if part == "" {
 			continue
 		}
+
 		extractor := createCSRFTokenExtractor(part)
 		if extractor != nil {
 			extractors = append(extractors, extractor)
@@ -118,14 +128,16 @@ func CSRFWithConfig(config CSRFConfig) echo.MiddlewareFunc {
 				setCSRFCookie(c, config, token)
 				c.Set(config.ContextKey, token)
 				RecordCSRFTokenGenerated()
+
 				return next(c)
 			}
 
 			// Get token from cookie
 			cookie, err := c.Cookie(config.CookieName)
 			if err != nil {
-				return config.ErrorHandler(fmt.Errorf("CSRF cookie not found"), c)
+				return config.ErrorHandler(errors.New("CSRF cookie not found"), c)
 			}
+
 			cookieToken := cookie.Value
 
 			// Get token from request
@@ -138,13 +150,14 @@ func CSRFWithConfig(config CSRFConfig) echo.MiddlewareFunc {
 			}
 
 			if requestToken == "" {
-				return config.ErrorHandler(fmt.Errorf("CSRF token not found in request"), c)
+				return config.ErrorHandler(errors.New("CSRF token not found in request"), c)
 			}
 
 			// Validate token
 			if !validateCSRFToken(cookieToken, requestToken) {
 				RecordCSRFValidationFailure()
-				return config.ErrorHandler(fmt.Errorf("CSRF token mismatch"), c)
+
+				return config.ErrorHandler(errors.New("CSRF token mismatch"), c)
 			}
 
 			// Generate new token for next request
@@ -158,10 +171,10 @@ func CSRFWithConfig(config CSRFConfig) echo.MiddlewareFunc {
 	}
 }
 
-// csrfTokenExtractor extracts CSRF token from different sources
+// csrfTokenExtractor extracts CSRF token from different sources.
 type csrfTokenExtractor func(echo.Context) string
 
-// createCSRFTokenExtractor creates token extractor from lookup string
+// createCSRFTokenExtractor creates token extractor from lookup string.
 func createCSRFTokenExtractor(lookup string) csrfTokenExtractor {
 	parts := strings.SplitN(lookup, ":", 2)
 	if len(parts) != 2 {
@@ -183,25 +196,27 @@ func createCSRFTokenExtractor(lookup string) csrfTokenExtractor {
 			return c.QueryParam(name)
 		}
 	}
+
 	return nil
 }
 
-// generateCSRFToken generates a random CSRF token
+// generateCSRFToken generates a random CSRF token.
 func generateCSRFToken(length int) string {
 	bytes := make([]byte, length)
 	if _, err := rand.Read(bytes); err != nil {
 		// Fallback to time-based token if crypto/rand fails
-		return fmt.Sprintf("%d", time.Now().UnixNano())
+		return strconv.FormatInt(time.Now().UnixNano(), 10)
 	}
+
 	return hex.EncodeToString(bytes)
 }
 
-// validateCSRFToken validates CSRF token using constant-time comparison
+// validateCSRFToken validates CSRF token using constant-time comparison.
 func validateCSRFToken(cookieToken, requestToken string) bool {
 	return subtle.ConstantTimeCompare([]byte(cookieToken), []byte(requestToken)) == 1
 }
 
-// setCSRFCookie sets the CSRF cookie
+// setCSRFCookie sets the CSRF cookie.
 func setCSRFCookie(c echo.Context, config CSRFConfig, token string) {
 	cookie := &http.Cookie{
 		Name:     config.CookieName,
@@ -216,14 +231,16 @@ func setCSRFCookie(c echo.Context, config CSRFConfig, token string) {
 	c.SetCookie(cookie)
 }
 
-// GetCSRFToken returns the CSRF token from context
+// GetCSRFToken returns the CSRF token from context.
 func GetCSRFToken(c echo.Context) string {
 	token := c.Get("csrf")
 	if token == nil {
 		return ""
 	}
+
 	if tokenStr, ok := token.(string); ok {
 		return tokenStr
 	}
+
 	return ""
 }

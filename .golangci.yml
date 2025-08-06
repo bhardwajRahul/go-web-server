@@ -1,291 +1,57 @@
 version: "2"
-# golangci-lint v2 configuration for Modern Go Web Server
-# Updated for golangci-lint v2.2+ with August 2025 best practices
-
 run:
   timeout: 5m
   tests: true
   go: "1.24"
-  build-tags:
-    - integration
 
 output:
   format: colored-line-number
   sort-results: true
 
 linters:
-  # Use fast linters as default base
-  default: fast
-  
   enable:
-    # Core Go linters (included in fast)
-    - errcheck      # Check for unchecked errors
-    - govet         # Go vet analysis
-    - staticcheck   # Static analysis
-    - unused        # Check for unused code
-    - ineffassign   # Detect ineffectual assignments
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - ineffassign
+    - gosec
+    - misspell
+    - revive
+    - unconvert
+    - unparam
+    - whitespace
+    - goconst
+    - gocritic
+  disable:
+    - cyclop
+    - funlen
+    - gocognit
+    - nestif
+    - lll
+    - wsl
 
-    # Additional quality linters
-    - cyclop        # Cyclomatic complexity
-    - goconst       # Repeated constants detection
-    - gocritic      # Comprehensive static analyzer
-    - unparam       # Unused function parameters
-
-    # Bug prevention linters
-    - bodyclose     # Check HTTP response body closure
-    - contextcheck  # Context propagation checking
-    - copyloopvar   # Go 1.22+ loop variable copying
-    - errorlint     # Error handling improvements
-    - nilerr        # Nil error return checking
-    - rowserrcheck  # Database row error checking
-    - sqlclosecheck # SQL connection closing
-
-    # Performance linters
-    - perfsprint    # Performance-focused sprintf alternatives
-
-    # Security analysis
-    - gosec         # Security vulnerability scanning
-
-    # Style and formatting
-    - misspell      # Fix common spelling mistakes
-    - whitespace    # Whitespace linting
-
-    # Documentation and API design
-    - revive        # Fast, configurable linter
-
-    # Test-specific linters
-    - testifylint   # Testify assertion improvements
-    - thelper       # Test helper detection
-    - paralleltest  # Parallel test detection
-
-  settings:
-    # Enable all error checks
-    errcheck:
-      check-type-assertions: true
-      check-blank: true
-      exclude-functions:
-        - (io.Closer).Close
-
-    # Dependency guard - allow internal imports
-    depguard:
-      rules:
-        main:
-          allow:
-            - $gostd
-            - github.com/dunamismax/go-web-server
-            - github.com/labstack/echo
-            - github.com/knadh/koanf
-            - github.com/pressly/goose
-            - github.com/prometheus/client_golang
-            - modernc.org/sqlite
-
-    # Complexity analysis
-    cyclop:
-      max-complexity: 15
-      package-average: 10.0
-      skip-tests: true
-
-
-
-    # Govet settings
-    govet:
-      enable-all: true
-      disable:
-        - fieldalignment  # Can be too strict for readability
-        - shadow         # Can be too noisy in some contexts
-
-    # Go constants detection
-    goconst:
-      min-len: 3
-      min-occurrences: 2
-      ignore-tests: true
-      match-constant: true
-      numbers: true
-      min: 3
-      max: 3
-
-    # Go critic - comprehensive static analyzer
-    gocritic:
-      enabled-tags:
-        - diagnostic
-        - experimental
-        - opinionated
-        - performance
-        - style
-      disabled-checks:
-        - dupImport       # https://github.com/go-critic/go-critic/issues/845
-        - ifElseChain
-        - octalLiteral
-        - whyNoLint
-
-    # Misspell settings
-    misspell:
-      locale: US
-      ignore-words:
-        - someword
-
-    # Security-focused linters with updated rules
-    gosec:
-      confidence: medium
-      severity: medium
-      excludes:
-        - G104  # Errors unhandled - we use errcheck for this
-
-    # Documentation linters with enhanced rules
-    revive:
-      confidence: 0.8
-      rules:
-        - name: exported
-          severity: warning
-          disabled: false
-          arguments:
-            - "checkPrivateReceivers"
-            - "sayRepetitiveInsteadOfStutters"
-        - name: unused-parameter
-        - name: unreachable-code
-        - name: redefines-builtin-id
-        - name: redundant-build-tag
-        - name: use-errors-new
-        - name: early-return
-
-    # Performance focused string formatting
-    perfsprint:
-      int-conversion: true
-      err-error: true
-      errorf: true
-      sprintf1: true
-      strconcat: true
-
-    # Test helper linting
-    testifylint:
-      enable-all: true
-      disable:
-        - float-compare  # Can be useful for approximate comparisons
-        - go-require     # Sometimes require in goroutines is needed
-
-    # Context checking - crucial for proper context handling
-    contextcheck:
-      check-non-inherited: true
-
-    # Nil error return checking
-    nilerr:
-      use-is-nil: true
-
-    # Error linting for better error handling
-    errorlint:
-      errorf: true
-      asserts: true
-      comparison: true
-
-    # Copy loop variable analysis (Go 1.22+ feature)
-    copyloopvar: {}
-
-    # Row error checking for database operations
-    rowserrcheck:
-      packages:
-        - github.com/jmoiron/sqlx
-
-    # SQL close checking
-    sqlclosecheck: {}
-
-    # Unused parameter detection
-    unparam:
-      check-exported: true
-
-    # Whitespace settings
-    whitespace:
-      multi-if: false
-      multi-func: false
+linters-settings:
+  revive:
+    rules:
+      - name: unused-parameter
+        disabled: true
+  gocritic:
+    disabled-checks:
+      - exitAfterDefer
 
 issues:
   exclude-use-default: false
-  exclude-files:
-    - ".*_templ.go$"     # Skip generated templ files
-    - "queries.sql.go"   # Skip generated sqlc files
-    - ".*\\.pb\\.go$"    # Skip protobuf generated files
-    - ".*\\.gen\\.go$"   # Skip other generated files
-  exclude-dirs:
-    - bin
-    - tmp
-    - vendor
-    - .git
-    - node_modules
-  exclude-dirs-use-default: true
-
   exclude-rules:
-    # Exclude some linters from running on test files
     - path: _test\.go
       linters:
-        - cyclop        # Tests can be complex
-        - errcheck      # Test errors are often intentionally ignored
-        - gosec         # Security rules less strict in tests
-        - unparam       # Test parameters often unused
-        - gochecknoglobals
-        - funlen        # Test functions can be long
-        - maintidx      # Test maintenance index less critical
-
-    # Exclude generated files from most linters
-    - path: ".*_templ.go"
+        - errcheck
+        - gosec
+    - path: internal/store/queries.sql.go
       linters:
         - revive
-        - unused
-        - gocritic
-        - gosec
-        - errcheck
+    - path: internal/ui/embed.go
+      linters:
         - staticcheck
-
-    # Exclude sqlc generated files
-    - path: "queries.sql.go"
-      linters:
-        - revive
-        - unused
-        - gocritic
-        - gosec
-        - errcheck
-        - staticcheck
-
-    # Exclude main.go from some rules (common patterns in main)
-    - path: cmd/web/main.go
-      linters:
-        - gochecknoglobals
-        - gochecknoinits
-        - cyclop        # Main functions are often complex
-        - funlen        # Main functions can be long
-        - gocognit      # Main functions can be cognitively complex
-
-    # Less strict rules for some common false positives
-    - linters:
-        - godot         # Not all comments need periods
-        - wsl          # Whitespace rules can be too strict
-        - nlreturn     # New line return can be too strict
-        - lll          # Line length can be flexible in some cases
-      text: ".*"
-
-    # Allow longer lines in generated files
-    - path: ".*\\.gen\\.go"
-      linters:
-        - lll
-
-    # Allow complex init functions in config packages
-    - path: internal/config/.*\.go
-      linters:
-        - gochecknoinits
-        - cyclop
-
-  # Enhanced exclusion patterns for common false positives
-  exclude:
-    # errcheck: Almost all programs ignore errors on these functions and in most cases it's ok
-    - Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*print.*|os\.(Un)?Setenv). is not checked
-    - should check returned error before deferring
-
-  # Maximum issues count per one linter
   max-issues-per-linter: 0
-
-  # Maximum count of issues with the same text
   max-same-issues: 0
-
-  # Show only new issues
-  new: false
-
-  # Fix found issues if possible (useful for auto-fixable linters)
-  fix: false

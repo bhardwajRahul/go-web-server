@@ -10,35 +10,35 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// ErrorType represents different categories of errors
+// ErrorType represents different categories of errors.
 type ErrorType string
 
 const (
-	// ErrorTypeValidation represents validation-related errors
+	// ErrorTypeValidation represents validation-related errors.
 	ErrorTypeValidation ErrorType = "validation"
-	// ErrorTypeAuthentication represents authentication-related errors
+	// ErrorTypeAuthentication represents authentication-related errors.
 	ErrorTypeAuthentication ErrorType = "authentication"
-	// ErrorTypeAuthorization represents authorization-related errors
+	// ErrorTypeAuthorization represents authorization-related errors.
 	ErrorTypeAuthorization ErrorType = "authorization"
-	// ErrorTypeNotFound represents resource not found errors
+	// ErrorTypeNotFound represents resource not found errors.
 	ErrorTypeNotFound ErrorType = "not_found"
-	// ErrorTypeConflict represents resource conflict errors
+	// ErrorTypeConflict represents resource conflict errors.
 	ErrorTypeConflict ErrorType = "conflict"
-	// ErrorTypeRateLimit represents rate limiting errors
+	// ErrorTypeRateLimit represents rate limiting errors.
 	ErrorTypeRateLimit ErrorType = "rate_limit"
-	// ErrorTypeInternal represents internal server errors
+	// ErrorTypeInternal represents internal server errors.
 	ErrorTypeInternal ErrorType = "internal"
-	// ErrorTypeExternal represents external service errors
+	// ErrorTypeExternal represents external service errors.
 	ErrorTypeExternal ErrorType = "external"
-	// ErrorTypeTimeout represents timeout errors
+	// ErrorTypeTimeout represents timeout errors.
 	ErrorTypeTimeout ErrorType = "timeout"
-	// ErrorTypeCSRF represents CSRF token errors
+	// ErrorTypeCSRF represents CSRF token errors.
 	ErrorTypeCSRF ErrorType = "csrf"
-	// ErrorTypeSanitization represents input sanitization errors
+	// ErrorTypeSanitization represents input sanitization errors.
 	ErrorTypeSanitization ErrorType = "sanitization"
 )
 
-// AppError represents an application-specific error with enhanced context
+// AppError represents an application-specific error with enhanced context.
 type AppError struct {
 	Type      ErrorType `json:"type"`
 	Code      int       `json:"code"`
@@ -55,10 +55,11 @@ func (e AppError) Error() string {
 	if e.Internal != nil {
 		return e.Internal.Error()
 	}
+
 	return e.Message
 }
 
-// NewAppError creates a new application error
+// NewAppError creates a new application error.
 func NewAppError(errorType ErrorType, code int, message string) *AppError {
 	return &AppError{
 		Type:    errorType,
@@ -67,7 +68,7 @@ func NewAppError(errorType ErrorType, code int, message string) *AppError {
 	}
 }
 
-// NewAppErrorWithDetails creates a new application error with details
+// NewAppErrorWithDetails creates a new application error with details.
 func NewAppErrorWithDetails(errorType ErrorType, code int, message string, details any) *AppError {
 	return &AppError{
 		Type:    errorType,
@@ -77,23 +78,25 @@ func NewAppErrorWithDetails(errorType ErrorType, code int, message string, detai
 	}
 }
 
-// WithContext adds request context to the error
+// WithContext adds request context to the error.
 func (e *AppError) WithContext(c echo.Context) *AppError {
 	if c != nil {
 		e.RequestID = c.Response().Header().Get(echo.HeaderXRequestID)
 		e.Path = c.Request().URL.Path
 		e.Method = c.Request().Method
 	}
+
 	return e
 }
 
-// WithInternal adds an internal error for logging purposes
+// WithInternal adds an internal error for logging purposes.
 func (e *AppError) WithInternal(err error) *AppError {
 	e.Internal = err
+
 	return e
 }
 
-// Common application errors
+// Common application errors.
 var (
 	ErrBadRequest         = NewAppError(ErrorTypeValidation, http.StatusBadRequest, "Bad request")
 	ErrUnauthorized       = NewAppError(ErrorTypeAuthentication, http.StatusUnauthorized, "Unauthorized")
@@ -107,7 +110,7 @@ var (
 	ErrCSRF               = NewAppError(ErrorTypeCSRF, http.StatusForbidden, "Invalid CSRF token")
 )
 
-// ErrorResponse represents the JSON error response structure with enhanced metadata
+// ErrorResponse represents the JSON error response structure with enhanced metadata.
 type ErrorResponse struct {
 	Type      ErrorType `json:"type"`
 	Error     string    `json:"error"`
@@ -120,7 +123,7 @@ type ErrorResponse struct {
 	Timestamp string    `json:"timestamp"`
 }
 
-// ErrorHandler is a custom Echo error handler with enhanced error tracking
+// ErrorHandler is a custom Echo error handler with enhanced error tracking.
 func ErrorHandler(err error, c echo.Context) {
 	var (
 		errorType = ErrorTypeInternal
@@ -156,14 +159,16 @@ func ErrorHandler(err error, c echo.Context) {
 				"user_agent", c.Request().UserAgent(),
 				"remote_ip", c.RealIP())
 		}
-	} else if echoErr, ok := err.(*echo.HTTPError); ok {
+	} else if echoErr := (&echo.HTTPError{}); errors.As(err, &echoErr) {
 		// Echo HTTP error
 		code = echoErr.Code
+
 		if msg, ok := echoErr.Message.(string); ok {
 			message = msg
 		} else {
 			message = http.StatusText(code)
 		}
+
 		details = echoErr.Internal
 
 		slog.Warn("HTTP error",
@@ -221,7 +226,7 @@ func ErrorHandler(err error, c echo.Context) {
 	}
 }
 
-// RecoveryMiddleware creates a custom recovery middleware
+// RecoveryMiddleware creates a custom recovery middleware.
 func RecoveryMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -256,17 +261,17 @@ func RecoveryMiddleware() echo.MiddlewareFunc {
 	}
 }
 
-// NotFoundHandler handles 404 errors
+// NotFoundHandler handles 404 errors.
 func NotFoundHandler(c echo.Context) error {
 	return ErrNotFound.WithContext(c)
 }
 
-// MethodNotAllowedHandler handles 405 errors
+// MethodNotAllowedHandler handles 405 errors.
 func MethodNotAllowedHandler(c echo.Context) error {
 	return NewAppError(ErrorTypeValidation, http.StatusMethodNotAllowed, "Method not allowed").WithContext(c)
 }
 
-// ValidationErrorMiddleware converts validation errors to app errors
+// ValidationErrorMiddleware converts validation errors to app errors.
 func ValidationErrorMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -291,7 +296,7 @@ func ValidationErrorMiddleware() echo.MiddlewareFunc {
 	}
 }
 
-// TimeoutErrorHandler handles timeout errors
+// TimeoutErrorHandler handles timeout errors.
 func TimeoutErrorHandler() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -310,7 +315,7 @@ func TimeoutErrorHandler() echo.MiddlewareFunc {
 	}
 }
 
-// SecurityHeadersMiddleware adds additional security headers not covered by Echo's secure middleware
+// SecurityHeadersMiddleware adds additional security headers not covered by Echo's secure middleware.
 func SecurityHeadersMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
