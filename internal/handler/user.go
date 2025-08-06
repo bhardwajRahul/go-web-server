@@ -26,6 +26,12 @@ func NewUserHandler(s *store.Store) *UserHandler {
 
 // Users renders the main user management page
 func (h *UserHandler) Users(c echo.Context) error {
+	// Set CSRF token in response header for initial requests
+	token := middleware.GetCSRFToken(c)
+	if token != "" {
+		c.Response().Header().Set("X-CSRF-Token", token)
+	}
+
 	// Check if this is an HTMX request for partial content
 	if c.Request().Header.Get("HX-Request") == "true" {
 		component := view.UsersContent()

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/dunamismax/go-web-server/internal/middleware"
 	"github.com/dunamismax/go-web-server/internal/store"
 	"github.com/dunamismax/go-web-server/internal/view"
 	"github.com/labstack/echo/v4"
@@ -22,6 +23,12 @@ func NewHomeHandler(s *store.Store) *HomeHandler {
 
 // Home handles requests to the root path, returning either full page or partial content.
 func (h *HomeHandler) Home(c echo.Context) error {
+	// Set CSRF token in response header for initial requests
+	token := middleware.GetCSRFToken(c)
+	if token != "" {
+		c.Response().Header().Set("X-CSRF-Token", token)
+	}
+
 	// Check if this is an HTMX request for partial content
 	if c.Request().Header.Get("HX-Request") == "true" {
 		component := view.HomeContent()

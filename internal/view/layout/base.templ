@@ -12,6 +12,8 @@ templ Base(title string) {
 			<link rel="icon" type="image/x-icon" href="/static/favicon.ico"/>
 			<link rel="stylesheet" href="/static/css/pico.min.css"/>
 			<script src="/static/js/htmx.min.js"></script>
+			<meta name="csrf-header" content="X-CSRF-Token"/>
+			<meta name="htmx-config" content='{"globalViewTransitions": true, "requestClass": "htmx-request", "timeout": 10000}'/>
 			<style>
 				/* Custom theme enhancements */
 				:root {
@@ -286,6 +288,24 @@ templ Base(title string) {
 					htmx.config.defaultSwapDelay = 0;
 					htmx.config.defaultSettleDelay = 0;
 					
+					// Track current CSRF token
+					let currentCSRFToken = null;
+					
+					// Configure CSRF token handling
+					document.body.addEventListener('htmx:configRequest', function(evt) {
+						if (currentCSRFToken) {
+							evt.detail.headers['X-CSRF-Token'] = currentCSRFToken;
+						}
+					});
+					
+					// Update CSRF token from responses
+					document.body.addEventListener('htmx:afterRequest', function(evt) {
+						const newToken = evt.detail.xhr.getResponseHeader('X-CSRF-Token');
+						if (newToken) {
+							currentCSRFToken = newToken;
+						}
+					});
+					
 					// Ultra-smooth SPA-like page transitions
 					const pageLoading = document.getElementById('page-loading');
 					
@@ -352,25 +372,35 @@ templ Base(title string) {
 				
 				// Flash message system
 				function showFlash(message, type) {
-					const flashContainer = document.getElementById('flash-messages');
-					if (!flashContainer) {
-						console.warn('Flash messages container not found');
-						return;
-					}
-					
-					const flash = document.createElement('div');
-					flash.className = `flash ${type} fade-in`;
-					flash.textContent = message;
-					
-					flashContainer.innerHTML = '';
-					flashContainer.appendChild(flash);
-					
-					// Auto-remove after 5 seconds
-					setTimeout(() => {
-						if (flash.parentNode) {
-							flash.remove();
+					// Wait for DOM to be ready if needed
+					const showFlashMessage = () => {
+						const flashContainer = document.getElementById('flash-messages');
+						if (!flashContainer) {
+							console.warn('Flash messages container not found');
+							return;
 						}
-					}, 5000);
+						
+						const flash = document.createElement('div');
+						flash.className = `flash ${type} fade-in`;
+						flash.textContent = message;
+						
+						flashContainer.innerHTML = '';
+						flashContainer.appendChild(flash);
+						
+						// Auto-remove after 5 seconds
+						setTimeout(() => {
+							if (flash.parentNode) {
+								flash.remove();
+							}
+						}, 5000);
+					};
+					
+					if (document.getElementById('flash-messages')) {
+						showFlashMessage();
+					} else {
+						// Wait for DOM to be ready
+						setTimeout(showFlashMessage, 100);
+					}
 				}
 			</script>
 		</body>
