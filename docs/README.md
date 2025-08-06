@@ -21,7 +21,7 @@ Complete documentation for the Modern Go Stack web server.
 ### Core Technologies
 
 - **Backend**: Echo v4 + SQLC v1.29.0 + SQLite (Pure Go)
-- **Frontend**: Templ v0.3.850 + HTMX 2.0.6 + Pico.css v2
+- **Frontend**: Templ v0.3.924 + HTMX 2.0.6 + Pico.css v2
 - **Security**: Custom CSRF + Input sanitization + Security headers
 - **Build**: Mage automation + Air hot reload + Go 1.24+
 - **Deploy**: Single binary (~11MB) + Zero dependencies

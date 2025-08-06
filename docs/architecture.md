@@ -71,7 +71,7 @@ internal/
 | Layer         | Technology                  | Purpose                         |
 | ------------- | --------------------------- | ------------------------------- |
 | **Server**    | Echo v4                     | HTTP framework with middleware  |
-| **Templates** | Templ v0.3.850              | Type-safe Go HTML templates     |
+| **Templates** | Templ v0.3.924              | Type-safe Go HTML templates     |
 | **Frontend**  | HTMX 2.0.6                  | Dynamic interactions without JS |
 | **Styling**   | Pico.css v2                 | Semantic CSS with themes        |
 | **Database**  | SQLite + modernc.org/sqlite | Zero-CGO, embedded database     |

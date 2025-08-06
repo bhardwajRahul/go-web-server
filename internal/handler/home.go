@@ -120,11 +120,14 @@ func (h *HomeHandler) Health(c echo.Context) error {
 	c.Response().Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 
 	// Set appropriate HTTP status based on health
-	statusCode := http.StatusOK
-	if overallStatus == "error" {
+	var statusCode int
+	switch overallStatus {
+	case "error":
 		statusCode = http.StatusServiceUnavailable
-	} else if overallStatus == "degraded" || overallStatus == "warning" {
+	case "degraded", "warning":
 		statusCode = http.StatusPartialContent
+	default:
+		statusCode = http.StatusOK
 	}
 
 	return c.JSON(statusCode, health)

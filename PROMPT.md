@@ -14,7 +14,7 @@
 
 - **Language:** Go 1.24+
 - **Framework:** Echo v4
-- **Templates & Frontend:** Templ v0.3.850 & HTMX 2.0.6
+- **Templates & Frontend:** Templ v0.3.924 & HTMX 2.0.6 (ALWAYS USE LATEST STABLE)
 - **Data Layer:** SQLC v1.29.0 with a pure Go SQLite driver (`modernc.org/sqlite`).
 - **Metrics:** Prometheus for observability and performance monitoring.
 - **Build & Quality:** Mage for automation, `golangci-lint` for linting, and `govulncheck` for security.
@@ -57,3 +57,6 @@ What project, feature, or architectural challenge can I help you with today? Ple
 2. If you ever discover new or updated (STABLE) versions of any part of the tech stack via a web search:
     1. **Update Documentation if Necessary:** If a newer (stable) version is discovered for any of the core technologies, you **MUST** update the version numbers in `AGENTS.md`, `PROMPT.md`, and any other relevant project documentation (e.g., `README.md`) to reflect the new versions. Only ever use the latest stable versions, not Beta or Alpha or RC etc.
     2. **Synthesize Key Changes:** Briefly internalize the key API changes and updates from the latest documentation. This action is critical to ensure all guidance and code you provide is current, accurate, and not based on outdated training data.
+
+**CRITICAL VERSION PROTECTION DIRECTIVE:**
+TEMPL VERSION v0.3.924 IS THE CURRENT LATEST STABLE VERSION. NEVER downgrade to v0.3.850 or any older version. This repository uses the LATEST STABLE versions of all technologies. If you encounter version conflicts or compatibility issues, always upgrade dependencies to match the latest stable versions, never downgrade the documented versions. The versions specified in this documentation (PROMPT.md, AGENTS.md, README.md) represent the current production standard and MUST NOT be reduced to older versions under any circumstances.

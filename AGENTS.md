@@ -14,7 +14,7 @@ Follow a **Plan → Code → Iterate → Deploy** workflow anchored in performan
 
 - **Language**: Go 1.24+
 - **Framework**: Echo v4
-- **Templates**: Templ v0.3.850 (Type-Safe HTML Components)
+- **Templates**: Templ v0.3.924 (Type-Safe HTML Components) - **ALWAYS USE LATEST STABLE VERSION**
 - **Frontend**: HTMX 2.0.6 (Dynamic UI)
 - **CSS**: Pico.css v2 (Semantic & Minimal)
 - **Database**: SQLite (via `modernc.org/sqlite` Pure Go Driver)
@@ -43,6 +43,7 @@ Follow a **Plan → Code → Iterate → Deploy** workflow anchored in performan
 - **TEMPORARY TESTING ONLY** - Only create minimal, temporary tests during development if absolutely necessary for verification, then remove them.
 - **NO GIT INTERACTION** - Never interact with Git (commits, branches, pushes) unless explicitly instructed by the user.
 - **ESCALATE AMBIGUITY** - When facing unclear requirements around database schemas, security, or refactors, pause and seek user input.
+- **VERSION PROTECTION** - NEVER downgrade any technology versions from what is specified in this documentation. Templ v0.3.924 is the current standard - never suggest or implement downgrades to v0.3.850 or older versions. Always use latest stable versions.
 
 ### 3. Architecture Decisions
 
