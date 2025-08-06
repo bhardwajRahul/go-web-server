@@ -17,11 +17,11 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 -- Index for active users
 CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active);
 
--- Insert sample data for development
+-- Insert sample data for development - The creators of Go
 INSERT INTO users (email, name, bio) VALUES 
-    ('alice@example.com', 'Alice Johnson', 'Full-stack developer with a passion for Go'),
-    ('bob@example.com', 'Bob Smith', 'DevOps engineer who loves automation'),
-    ('charlie@example.com', 'Charlie Brown', 'UI/UX designer focused on user experience')
+    ('robert@google.com', 'Robert Griesemer', 'Co-creator of Go programming language, designed at Google starting in 2007'),
+    ('rob@google.com', 'Rob Pike', 'Co-creator of Go programming language, Unix pioneer and member of original Unix team'),
+    ('ken@google.com', 'Ken Thompson', 'Co-creator of Go programming language, designed Unix and invented the B programming language')
 ON CONFLICT(email) DO NOTHING;
 
 -- +goose Down

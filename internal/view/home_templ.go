@@ -128,7 +128,7 @@ func HomeContent() templ.Component {
 			templ_7745c5c3_Var5 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section><hgroup><h1>Modern Go Web Server</h1><p>The perfect, reusable template for building modern web applications with radical simplicity</p></hgroup><div class=\"grid\"><div><p><strong>Production Ready:</strong> Built with Go 1.24+, Echo v4, HTMX 2.x, templ, and Pico.css v2. Features single binary deployment, type-safe queries, and modern tooling.</p></div><div><button hx-get=\"/demo\" hx-target=\"#demo-area\" hx-swap=\"innerHTML swap:0s settle:0s\" hx-trigger=\"click\" class=\"contrast\" hx-indicator=\".demo-indicator\">Try Live Demo <span class=\"demo-indicator htmx-indicator css-spinner\" style=\"margin-left: 0.5rem;\" aria-hidden=\"true\"></span></button></div></div></section><section><h2>Tech Stack Features</h2><div class=\"grid\"><article><header><h4>Performance First</h4></header><p><strong>Echo Framework:</strong> High-performance HTTP router with middleware support.<br><strong>Go 1.24:</strong> Latest performance improvements and language features.</p><details><summary role=\"button\" class=\"secondary outline\">Learn More</summary><ul><li>Optimized HTTP router without dynamic memory allocation</li><li>HTTP/2 support for enhanced speed</li><li>Automatic TLS with Let's Encrypt integration</li><li>Rich middleware ecosystem for security and logging</li></ul></details></article><article><header><h4>Type Safety</h4></header><p><strong>SQLC:</strong> Generate type-safe Go code from SQL queries.<br><strong>Templ:</strong> Compile-time validated HTML templates.</p><details><summary role=\"button\" class=\"secondary outline\">Learn More</summary><ul><li>No runtime template parsing errors</li><li>Full IDE support with autocompletion</li><li>Type-safe database operations</li><li>Compile-time validation for all templates</li></ul></details></article><article><header><h4>Modern UI/UX</h4></header><p><strong>HTMX 2.x:</strong> Dynamic interactions without JavaScript complexity.<br><strong>Pico.css v2:</strong> Beautiful semantic CSS with dark mode.</p><details><summary role=\"button\" class=\"secondary outline\">Learn More</summary><ul><li>Automatic dark/light theme switching</li><li>Server-driven UI updates via HTMX</li><li>20+ color themes available</li><li>Responsive design out of the box</li></ul></details></article></div></section><section><h2>Quick Actions</h2><div class=\"grid\"><div role=\"group\"><button hx-get=\"/users/list\" hx-target=\"#demo-area\" hx-swap=\"innerHTML swap:0s settle:0s\" hx-trigger=\"click\" hx-indicator=\".users-indicator\">Load Users <span class=\"users-indicator htmx-indicator css-spinner\" style=\"margin-left: 0.5rem;\" aria-hidden=\"true\"></span></button> <button hx-get=\"/health\" hx-target=\"#demo-area\" hx-swap=\"innerHTML swap:0s settle:0s\" class=\"secondary\" hx-indicator=\".health-indicator\">Health Check <span class=\"health-indicator htmx-indicator css-spinner\" style=\"margin-left: 0.5rem;\" aria-hidden=\"true\"></span></button></div></div></section><section><div id=\"demo-area\"><article><header><h4>Interactive Demo Area</h4></header><p>Click the buttons above to see HTMX in action. This area will be dynamically updated with content from the server.</p><p><small><strong>Developer Tip:</strong> Check the network tab to see how HTMX makes partial page updates with minimal JavaScript.</small></p></article></div></section><section><h2>What's Included</h2><div class=\"grid\"><div><h5>Development Tools</h5><ul><li>Hot reloading with <code>go generate</code></li><li>Database migrations with golang-migrate</li><li>Structured logging with slog</li><li>Production-ready configuration</li></ul></div><div><h5>Production Features</h5><ul><li>Single binary deployment</li><li>Embedded static assets</li><li>Graceful shutdown handling</li><li>Security middleware & CORS</li></ul></div><div><h5>Modern Patterns</h5><ul><li>Clean architecture with separation of concerns</li><li>Repository pattern with SQLC</li><li>Component-based templates</li><li>Progressive enhancement with HTMX</li></ul></div></div></section><section><article><header><h3>Perfect For</h3></header><div class=\"grid\"><div><p><strong>Web Applications:</strong> Build full-stack apps with server-side rendering and dynamic client interactions.</p></div><div><p><strong>REST APIs:</strong> Create high-performance APIs with type-safe database operations.</p></div><div><p><strong>Enterprise Apps:</strong> Production-ready template with security, logging, and configuration best practices.</p></div></div></article></section>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section><hgroup><h1>The Modern Go Stack</h1><p>The ideal perfect launch point for your next web application or website project</p></hgroup><div class=\"grid\"><div><p><strong>Production Ready:</strong> A cohesive technology stack for building high-performance, maintainable applications.  Creates single, self-contained binaries with zero external dependencies using Go 1.24+, Echo v4, HTMX 2.x, Templ, and Pico.css v2.</p></div><div style=\"text-align: center;\"><button onclick=\"document.getElementById('demo-area').scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => { document.querySelector('#demo-area button[hx-get=\\'/demo\\']').click(); }, 500);\" class=\"contrast\" style=\"font-size: 18px; padding: 16px 32px; font-weight: 600;\">Try Live Demo</button><br><br><small style=\"color: var(--pico-color-grey-600);\">Scroll down to see the demo area</small></div></div></section><section><h2>Why The Modern Go Stack?</h2><div class=\"grid\"><article><header><h4>High Performance</h4></header><p><strong>Echo v4 + Go 1.24+:</strong> Lightning-fast HTTP framework with the latest Go performance improvements.  Built for speed with HTTP/2 support and optimized middleware stack.</p><details><summary role=\"button\" class=\"secondary outline\">Learn More</summary><ul><li>Optimized HTTP router without dynamic memory allocation</li><li>HTTP/2 support for enhanced speed</li><li>Automatic TLS with Let's Encrypt integration</li><li>Rich middleware ecosystem for security and logging</li></ul></details></article><article><header><h4>Enterprise Security</h4></header><p><strong>SQLC + Templ:</strong> Type-safe database operations and compile-time validated templates eliminate runtime errors.  Includes CSRF protection, input sanitization, and structured error handling.</p><details><summary role=\"button\" class=\"secondary outline\">Learn More</summary><ul><li>No runtime template parsing errors</li><li>Full IDE support with autocompletion</li><li>Type-safe database operations</li><li>Compile-time validation for all templates</li></ul></details></article><article><header><h4>Modern Developer Experience</h4></header><p><strong>HTMX 2.x + Pico.css v2:</strong> Dynamic interactions without JavaScript complexity.  Hot reload with Air, Mage build automation, and beautiful responsive design with automatic dark/light themes.</p><details><summary role=\"button\" class=\"secondary outline\">Learn More</summary><ul><li>Automatic dark/light theme switching</li><li>Server-driven UI updates via HTMX</li><li>20+ color themes available</li><li>Responsive design out of the box</li></ul></details></article></div></section><section><h2>Quick Actions</h2><div class=\"grid\"><div role=\"group\" style=\"display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;\"><button hx-get=\"/demo\" hx-target=\"#demo-area\" hx-swap=\"innerHTML swap:0s settle:0s\" hx-trigger=\"click\" hx-indicator=\".demo-indicator\" style=\"min-width: 140px;\">Show Demo <span class=\"demo-indicator htmx-indicator css-spinner\" style=\"margin-left: 0.5rem;\" aria-hidden=\"true\"></span></button> <button hx-get=\"/users/list\" hx-target=\"#demo-area\" hx-swap=\"innerHTML swap:0s settle:0s\" hx-trigger=\"click\" hx-indicator=\".users-indicator\" class=\"secondary\" style=\"min-width: 140px;\">Load Users <span class=\"users-indicator htmx-indicator css-spinner\" style=\"margin-left: 0.5rem;\" aria-hidden=\"true\"></span></button> <button hx-get=\"/health\" hx-target=\"#demo-area\" hx-swap=\"innerHTML swap:0s settle:0s\" class=\"outline\" hx-indicator=\".health-indicator\" style=\"min-width: 140px;\">Health Check <span class=\"health-indicator htmx-indicator css-spinner\" style=\"margin-left: 0.5rem;\" aria-hidden=\"true\"></span></button></div></div></section><section><div id=\"demo-area\" style=\"scroll-margin-top: 2rem;\"><article style=\"border: 2px dashed var(--go-cyan); background: rgba(0, 173, 216, 0.05);\"><header><h4>Interactive Demo Area</h4></header><p>Click the buttons above to see HTMX in action! This area will be dynamically updated with content from the server using partial page updates.</p><div class=\"grid\"><div><p><small><strong>Developer Tip:</strong> Open your browser's Network tab to see how HTMX makes efficient partial page updates with zero JavaScript!</small></p></div><div style=\"text-align: center;\"><small style=\"color: var(--go-blue); font-weight: 600;\">Try the buttons above</small></div></div></article></div></section><section><h2>What's Included</h2><div class=\"grid\"><div><h5>Development Experience</h5><ul><li>Hot reloading with <strong>Air</strong></li><li>Database migrations with <strong>Goose</strong></li><li>Structured logging with <strong>slog</strong></li><li><strong>Mage</strong> build automation</li><li>Multi-source config with <strong>Koanf</strong></li></ul></div><div><h5>Production Features</h5><ul><li>Single binary deployment <strong>(~11MB)</strong></li><li>Embedded static assets</li><li>Graceful shutdown handling</li><li>Enterprise security & monitoring</li><li><strong>Zero external dependencies</strong></li></ul></div><div><h5>Modern Architecture</h5><ul><li>Clean separation of concerns</li><li>Type-safe queries with <strong>SQLC</strong></li><li>Component-based <strong>Templ</strong> templates</li><li>Progressive enhancement with <strong>HTMX</strong></li><li><strong>CGO-free</strong> pure Go SQLite</li></ul></div></div></section><section><article><header><h3>Perfect For</h3></header><div class=\"grid\"><div><p><strong>Web Applications:</strong> Build full-stack apps with server-side rendering and dynamic client interactions.</p></div><div><p><strong>REST APIs:</strong> Create high-performance APIs with type-safe database operations.</p></div><div><p><strong>Enterprise Apps:</strong> Production-ready template with security, logging, and configuration best practices.</p></div></div></article></section>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -157,14 +157,14 @@ func DemoContent(message string, features []string, serverTime, requestID string
 			templ_7745c5c3_Var6 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<article class=\"fade-in\"><header><h4>🚀 Live Demo Results</h4></header><p><strong>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<article class=\"fade-in\"><header><h4>Live Demo Results</h4></header><p><strong>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(message)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 219, Col: 22}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 234, Col: 22}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -182,7 +182,7 @@ func DemoContent(message string, features []string, serverTime, requestID string
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(feature)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 225, Col: 19}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 240, Col: 19}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
@@ -200,7 +200,7 @@ func DemoContent(message string, features []string, serverTime, requestID string
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(serverTime)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 231, Col: 56}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 246, Col: 56}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -218,7 +218,7 @@ func DemoContent(message string, features []string, serverTime, requestID string
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(requestID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 233, Col: 55}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 248, Col: 55}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -229,7 +229,7 @@ func DemoContent(message string, features []string, serverTime, requestID string
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<p><small><strong>Content Type:</strong> Server-rendered HTML</small></p><p><small><strong>Method:</strong> HTMX partial page update</small></p></div></div><footer><div role=\"group\"><button hx-get=\"/demo\" hx-target=\"#demo-area\" hx-swap=\"innerHTML\" class=\"secondary\">🔄 Reload Demo</button> <button hx-get=\"/health\" hx-target=\"#demo-area\" hx-swap=\"innerHTML\" class=\"outline\">📊 System Health</button></div></footer></article>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<p><small><strong>Content Type:</strong> Server-rendered HTML</small></p><p><small><strong>Method:</strong> HTMX partial page update</small></p></div></div><footer><div role=\"group\"><button hx-get=\"/demo\" hx-target=\"#demo-area\" hx-swap=\"innerHTML\" class=\"secondary\">Reload Demo</button> <button hx-get=\"/health\" hx-target=\"#demo-area\" hx-swap=\"innerHTML\" class=\"outline\">System Health</button></div></footer></article>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -270,7 +270,7 @@ func HealthCheck(status, service, version, uptime, timestamp string, checks map[
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 273, Col: 67}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 288, Col: 67}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -288,7 +288,7 @@ func HealthCheck(status, service, version, uptime, timestamp string, checks map[
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(status)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 275, Col: 65}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 290, Col: 65}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
@@ -306,7 +306,7 @@ func HealthCheck(status, service, version, uptime, timestamp string, checks map[
 		var templ_7745c5c3_Var14 string
 		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(service)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 278, Col: 42}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 293, Col: 42}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
@@ -319,7 +319,7 @@ func HealthCheck(status, service, version, uptime, timestamp string, checks map[
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(version)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 279, Col: 42}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 294, Col: 42}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
@@ -332,7 +332,7 @@ func HealthCheck(status, service, version, uptime, timestamp string, checks map[
 		var templ_7745c5c3_Var16 string
 		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(uptime)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 280, Col: 40}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 295, Col: 40}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
@@ -350,7 +350,7 @@ func HealthCheck(status, service, version, uptime, timestamp string, checks map[
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%s:", component))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 286, Col: 45}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 301, Col: 45}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 			if templ_7745c5c3_Err != nil {
@@ -368,7 +368,7 @@ func HealthCheck(status, service, version, uptime, timestamp string, checks map[
 				var templ_7745c5c3_Var18 string
 				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(checkStatus)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 288, Col: 73}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 303, Col: 73}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 				if templ_7745c5c3_Err != nil {
@@ -386,7 +386,7 @@ func HealthCheck(status, service, version, uptime, timestamp string, checks map[
 				var templ_7745c5c3_Var19 string
 				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(checkStatus)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 290, Col: 71}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 305, Col: 71}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 				if templ_7745c5c3_Err != nil {
@@ -409,7 +409,7 @@ func HealthCheck(status, service, version, uptime, timestamp string, checks map[
 		var templ_7745c5c3_Var20 string
 		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(timestamp)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 297, Col: 52}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/home.templ`, Line: 312, Col: 52}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {

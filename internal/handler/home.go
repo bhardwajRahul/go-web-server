@@ -54,7 +54,7 @@ func (h *HomeHandler) Demo(c echo.Context) error {
 		ServerTime string
 		RequestID  string
 	}{
-		Message:    "🎉 Demo successful! This content was loaded dynamically using HTMX.",
+		Message:    "Demo successful! This content was loaded dynamically using HTMX.",
 		Features:   []string{"Server-side rendering", "Dynamic content loading", "No page refresh", "Smooth animations"},
 		ServerTime: time.Now().Format("3:04:05 PM MST"),
 		RequestID:  c.Response().Header().Get(echo.HeaderXRequestID),

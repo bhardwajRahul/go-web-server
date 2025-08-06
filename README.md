@@ -92,7 +92,7 @@ mage run
 
 ## Documentation
 
-📚 **[Complete Documentation](docs/)** - Comprehensive guides for development, deployment, security, and architecture.
+**[Complete Documentation](docs/)** - Comprehensive guides for development, deployment, security, and architecture.
 
 | Guide | Description |
 |-------|-------------|
@@ -163,6 +163,8 @@ Interactive user management application demonstrating:
 - **Real-time Updates**: HTMX interactions with smooth page transitions
 - **Responsive Design**: Automatic dark/light theme switching with Pico.css
 - **Enterprise Security**: Input sanitization and structured error handling
+
+> **Easter Egg**: The default user database comes pre-populated with Robert Griesemer, Rob Pike, and Ken Thompson - the three brilliant minds who created the Go programming language at Google starting in 2007. A small tribute to the creators of the language that powers this entire stack!
 
 ## Project Structure
 
