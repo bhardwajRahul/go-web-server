@@ -94,6 +94,14 @@ mage run
 
 📚 **[Complete Documentation](docs/)** - Comprehensive guides for development, deployment, security, and architecture.
 
+| Guide | Description |
+|-------|-------------|
+| **[Development Guide](docs/development.md)** | Local setup, hot reload, database management, and daily workflow |
+| **[API Reference](docs/api.md)** | HTTP endpoints, HTMX integration, and CSRF protection |
+| **[Architecture](docs/architecture.md)** | System design, components, and technology decisions |
+| **[Security Guide](docs/security.md)** | CSRF, sanitization, headers, rate limiting, and monitoring |
+| **[Deployment Guide](docs/deployment.md)** | Production deployment, configuration, and scaling |
+
 ---
 
 <p align="center">
@@ -145,16 +153,16 @@ FEATURES_ENABLE_METRICS=true mage run
 curl http://localhost:8080/health
 ```
 
-## Applications
+## Live Demo
 
-### Web Demo (`localhost:8080`)
+### Web Application (`localhost:8080`)
 
 Interactive user management application demonstrating:
 
-- CRUD operations with type-safe database queries and CSRF protection
-- Real-time updates via HTMX with smooth page transitions
-- Responsive design with automatic dark/light theme switching
-- Enterprise security with input sanitization and structured error handling
+- **CRUD Operations**: Type-safe database queries with CSRF protection
+- **Real-time Updates**: HTMX interactions with smooth page transitions
+- **Responsive Design**: Automatic dark/light theme switching with Pico.css
+- **Enterprise Security**: Input sanitization and structured error handling
 
 ## Project Structure
 
@@ -183,31 +191,13 @@ go-web-server/
   <img src="https://github.com/dunamismax/images/blob/main/golang/gopher-aviator.jpg" alt="Go Gopher" width="400" />
 </p>
 
-## Production Deployment
-
-### Single Binary
+## Single Binary Deployment
 
 ```bash
 mage build  # Creates optimized binary in bin/server (~11MB)
 ```
 
 The binary includes embedded Pico.css, HTMX, Templ templates, and SQLite database. **Zero external dependencies**, single file deployment with instant startup.
-
-### Environment Variables
-
-Koanf supports multiple configuration sources (JSON, YAML, TOML files + environment variables):
-
-- `SERVER_PORT`: Server port (default: 8080)
-- `SERVER_HOST`: Server host (default: "")
-- `DATABASE_URL`: SQLite database file (default: data.db)
-- `DATABASE_RUN_MIGRATIONS`: Auto-run database migrations (default: true)
-- `APP_ENVIRONMENT`: Environment mode (default: development)
-- `APP_LOG_LEVEL`: Logging level - debug, info, warn, error (default: info)
-- `APP_LOG_FORMAT`: Log format - text or json (default: text)
-- `APP_DEBUG`: Enable debug mode (default: false)
-- `SECURITY_ENABLE_CORS`: Enable CORS middleware (default: true)
-- `FEATURES_ENABLE_METRICS`: Enable Prometheus metrics endpoint (default: false)
-- `FEATURES_ENABLE_PPROF`: Enable pprof profiling endpoints (default: false)
 
 ## Key Features Demonstrated
 
@@ -237,45 +227,6 @@ Koanf supports multiple configuration sources (JSON, YAML, TOML files + environm
 - Database migrations with Goose and graceful shutdown
 - Single binary deployment (~11MB) with embedded assets
 - Zero external dependencies and CGO-free compilation
-
-## Production Deployment
-
-### Caddy Integration (Recommended)
-
-This application works excellently with [Caddy](https://caddyserver.com/) as a reverse proxy:
-
-**Automatic HTTPS:**
-- Let's Encrypt certificates handled automatically
-- HTTP/2 and HTTP/3 support out of the box
-- Perfect for production deployments
-
-**Sample Caddyfile:**
-```caddyfile
-your-domain.com {
-    reverse_proxy localhost:8080
-    encode gzip
-}
-```
-
-### Cloudflare Integration
-
-Optimize performance and security with [Cloudflare](https://cloudflare.com/):
-
-**CDN & Performance:**
-- Global CDN acceleration for static assets
-- Built-in GZIP compression and caching
-- Automatic image optimization and WebP conversion
-
-**Security & Monitoring:**
-- DDoS protection and security features
-- Analytics and performance monitoring
-- Edge computing capabilities for future scaling
-
-**Configuration:**
-1. Set up DNS through Cloudflare
-2. Enable proxy (orange cloud) for your domain
-3. Configure SSL/TLS mode to "Full (strict)"
-4. Optionally enable additional security features
 
 ---
 

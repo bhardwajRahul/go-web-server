@@ -221,12 +221,14 @@ When providing code solutions, include:
 ### Reverse Proxy & CDN Integration
 
 **Caddy Integration:**
+
 - Automatic HTTPS with Let's Encrypt certificates
 - HTTP/2 and HTTP/3 support out of the box
 - Reverse proxy configuration for Go backend
 - Static asset serving optimization
 
 **Cloudflare Integration:**
+
 - DNS management and CDN acceleration
 - Built-in GZIP compression and caching
 - DDoS protection and security features
@@ -236,6 +238,7 @@ When providing code solutions, include:
 ### Observability & Monitoring
 
 **Prometheus Metrics:**
+
 - HTTP request metrics (duration, status, method)
 - Database connection and query metrics
 - HTMX-specific interaction tracking
@@ -244,6 +247,7 @@ When providing code solutions, include:
 - Application health and uptime tracking
 
 **Health Monitoring:**
+
 - Enhanced `/health` endpoint with database connectivity checks
 - Connection pool monitoring and alerting
 - Degraded state detection for partial failures
@@ -252,12 +256,14 @@ When providing code solutions, include:
 ### Performance Optimizations
 
 **Single Binary Deployment:**
+
 - Embedded static assets (CSS, JS, images)
 - Zero external dependencies
 - Instant startup and minimal resource usage
 - Cross-platform compilation support
 
 **Hot Reload Development:**
+
 - Optimized `.air.toml` configuration
 - Automatic code generation triggers
 - Efficient file watching and exclusions
