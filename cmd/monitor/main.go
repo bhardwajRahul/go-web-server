@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
+	"regexp"
 	"strings"
 	"sync"
 	"syscall"
@@ -19,26 +21,50 @@ import (
 
 // LogEntry represents a structured log entry
 type LogEntry struct {
-	Time     string `json:"time"`
-	Level    string `json:"level"`
-	Message  string `json:"msg"`
-	Service  string `json:"-"`
-	RawLine  string `json:"-"`
-	Method   string `json:"method,omitempty"`
-	URI      string `json:"uri,omitempty"`
-	Status   int    `json:"status,omitempty"`
-	Latency  string `json:"latency,omitempty"`
-	RemoteIP string `json:"remote_ip,omitempty"`
-	Error    string `json:"error,omitempty"`
+	Time      string `json:"time"`
+	Level     string `json:"level"`
+	Message   string `json:"msg"`
+	Service   string `json:"-"`
+	RawLine   string `json:"-"`
+	Method    string `json:"method,omitempty"`
+	URI       string `json:"uri,omitempty"`
+	Status    int    `json:"status,omitempty"`
+	Latency   string `json:"latency,omitempty"`
+	RemoteIP  string `json:"remote_ip,omitempty"`
+	Error     string `json:"error,omitempty"`
+	RequestID string `json:"request_id,omitempty"`
+	UserAgent string `json:"user_agent,omitempty"`
+}
+
+// MonitorStats tracks monitoring statistics
+type MonitorStats struct {
+	StartTime      time.Time
+	TotalRequests  int64
+	ErrorRequests  int64
+	LastRequest    time.Time
+	ServicesStatus map[string]bool
+}
+
+// ContainerStats represents Docker container statistics
+type ContainerStats struct {
+	Name     string
+	CPUUsage string
+	MemUsage string
+	NetIO    string
+	Status   string
 }
 
 // LogMonitor handles live monitoring of all services
 type LogMonitor struct {
-	ctx      context.Context
-	cancel   context.CancelFunc
-	wg       sync.WaitGroup
-	colorMap map[string]*color.Color
-	services []string
+	ctx         context.Context
+	cancel      context.CancelFunc
+	wg          sync.WaitGroup
+	colorMap    map[string]*color.Color
+	services    []string
+	stats       *MonitorStats
+	statsMutex  sync.RWMutex
+	lastHealthy map[string]time.Time
+	healthMutex sync.RWMutex
 }
 
 // NewLogMonitor creates a new log monitor instance
@@ -53,13 +79,19 @@ func NewLogMonitor() *LogMonitor {
 			"postgres": color.New(color.FgGreen, color.Bold),
 			"caddy":    color.New(color.FgYellow, color.Bold),
 			"system":   color.New(color.FgMagenta, color.Bold),
+			"monitor":  color.New(color.FgBlue, color.Bold),
 		},
 		services: []string{"app", "postgres", "caddy"},
+		stats: &MonitorStats{
+			StartTime:      time.Now(),
+			ServicesStatus: make(map[string]bool),
+		},
+		lastHealthy: make(map[string]time.Time),
 	}
 }
 
 // Start begins monitoring all services
-func (m *LogMonitor) Start() error {
+func (m *LogMonitor) Start() {
 	// Print header
 	m.printHeader()
 
@@ -75,18 +107,25 @@ func (m *LogMonitor) Start() error {
 	m.wg.Add(1)
 	go m.monitorMetrics()
 
+	// Start performance stats monitor
+	m.wg.Add(1)
+	go m.monitorPerformance()
+
+	// Start container stats monitor
+	m.wg.Add(1)
+	go m.monitorContainerStats()
+
 	// Handle shutdown gracefully
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
 		<-c
-		fmt.Println("\n" + m.colorMap["system"].Sprint("🛑 Shutting down monitor..."))
+		fmt.Println("\n" + m.colorMap["system"].Sprint("Shutting down monitor..."))
 		m.cancel()
 	}()
 
 	m.wg.Wait()
-	return nil
 }
 
 // printHeader displays the monitor startup information
@@ -95,10 +134,10 @@ func (m *LogMonitor) printHeader() {
 	separator := strings.Repeat("=", 80)
 
 	fmt.Println(separator)
-	header.Println("🚀 GO WEB SERVER - LIVE LOG MONITOR")
-	fmt.Printf("📅 Started: %s\n", time.Now().Format("2006-01-02 15:04:05 MST"))
-	fmt.Printf("🐳 Monitoring: %s\n", strings.Join(m.services, ", "))
-	fmt.Println("💡 Press Ctrl+C to stop monitoring")
+	_, _ = header.Println("GO WEB SERVER - LIVE LOG MONITOR")
+	fmt.Printf("Started: %s\n", time.Now().Format("2006-01-02 15:04:05 MST"))
+	fmt.Printf("Monitoring: %s\n", strings.Join(m.services, ", "))
+	fmt.Println("Press Ctrl+C to stop monitoring")
 	fmt.Println(separator)
 	fmt.Println()
 }
@@ -237,7 +276,7 @@ func (m *LogMonitor) parseGoAppLog(entry *LogEntry, message string) {
 	entry.Error = fields["error"]
 
 	if status := fields["status"]; status != "" {
-		fmt.Sscanf(status, "%d", &entry.Status)
+		_, _ = fmt.Sscanf(status, "%d", &entry.Status)
 	}
 }
 
@@ -259,6 +298,17 @@ func (m *LogMonitor) parseKeyValuePairs(message string) map[string]string {
 
 // displayLog formats and displays a log entry
 func (m *LogMonitor) displayLog(entry LogEntry) {
+	// Update statistics for HTTP requests
+	if entry.Method != "" && entry.URI != "" {
+		m.statsMutex.Lock()
+		m.stats.TotalRequests++
+		m.stats.LastRequest = time.Now()
+		if entry.Status >= 400 {
+			m.stats.ErrorRequests++
+		}
+		m.statsMutex.Unlock()
+	}
+
 	serviceColor := m.colorMap[entry.Service]
 	if serviceColor == nil {
 		serviceColor = color.New(color.FgWhite)
@@ -353,15 +403,25 @@ func (m *LogMonitor) checkHealth() {
 	timestamp := color.New(color.FgBlue).Sprintf("[%s]", time.Now().Format("15:04:05"))
 	serviceName := m.colorMap["system"].Sprintf("%-8s", "HEALTH")
 
-	// Check application health
-	cmd := exec.Command("curl", "-s", "-f", "http://localhost:8080/health")
-	if err := cmd.Run(); err != nil {
+	// Check application health with response time
+	healthy, duration, err := m.enhancedHealthCheck("http://localhost:8080/health")
+
+	m.healthMutex.Lock()
+	if healthy {
+		m.lastHealthy["app"] = time.Now()
+	}
+	m.healthMutex.Unlock()
+
+	if err != nil || !healthy {
 		level := color.New(color.FgRed, color.Bold).Sprint("[ERROR]")
-		message := "Application health check failed"
+		message := fmt.Sprintf("Application health check failed (%v)", duration.Round(time.Millisecond))
+		if err != nil {
+			message += fmt.Sprintf(": %v", err)
+		}
 		fmt.Printf("%s %s %s %s\n", timestamp, serviceName, level, message)
 	} else {
 		level := color.New(color.FgGreen).Sprint("[INFO ]")
-		message := "✓ Application is healthy"
+		message := fmt.Sprintf("Application is healthy (%v)", duration.Round(time.Millisecond))
 		fmt.Printf("%s %s %s %s\n", timestamp, serviceName, level, message)
 	}
 }
@@ -395,7 +455,7 @@ func (m *LogMonitor) checkMetrics() {
 		fmt.Printf("%s %s %s %s\n", timestamp, serviceName, level, message)
 	} else {
 		level := color.New(color.FgGreen).Sprint("[INFO ]")
-		message := "✓ Metrics endpoint is available"
+		message := "Metrics endpoint is available"
 		fmt.Printf("%s %s %s %s\n", timestamp, serviceName, level, message)
 	}
 }
@@ -410,16 +470,136 @@ func (m *LogMonitor) logError(message string, err error) {
 	fmt.Printf("%s %s %s %s\n", timestamp, serviceName, level, errorMsg)
 }
 
+// monitorPerformance periodically displays performance statistics
+func (m *LogMonitor) monitorPerformance() {
+	defer m.wg.Done()
+
+	ticker := time.NewTicker(2 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-m.ctx.Done():
+			return
+		case <-ticker.C:
+			m.displayPerformanceStats()
+		}
+	}
+}
+
+// displayPerformanceStats shows current performance metrics
+func (m *LogMonitor) displayPerformanceStats() {
+	m.statsMutex.RLock()
+	stats := *m.stats // Copy to avoid holding lock
+	m.statsMutex.RUnlock()
+
+	timestamp := color.New(color.FgBlue).Sprintf("[%s]", time.Now().Format("15:04:05"))
+	serviceName := m.colorMap["monitor"].Sprintf("%-8s", "PERF")
+	level := color.New(color.FgCyan).Sprint("[STATS]")
+
+	uptime := time.Since(stats.StartTime)
+	errorRate := float64(0)
+	if stats.TotalRequests > 0 {
+		errorRate = float64(stats.ErrorRequests) / float64(stats.TotalRequests) * 100
+	}
+
+	message := fmt.Sprintf("Uptime: %v | Requests: %d | Errors: %d (%.1f%%) | Last: %s",
+		uptime.Round(time.Second),
+		stats.TotalRequests,
+		stats.ErrorRequests,
+		errorRate,
+		stats.LastRequest.Format("15:04:05"))
+
+	fmt.Printf("%s %s %s %s\n", timestamp, serviceName, level, message)
+}
+
+// monitorContainerStats periodically checks Docker container statistics
+func (m *LogMonitor) monitorContainerStats() {
+	defer m.wg.Done()
+
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-m.ctx.Done():
+			return
+		case <-ticker.C:
+			m.displayContainerStats()
+		}
+	}
+}
+
+// displayContainerStats shows Docker container resource usage
+func (m *LogMonitor) displayContainerStats() {
+	cmd := exec.Command("docker", "stats", "--no-stream", "--format",
+		"table {{.Container}}\\t{{.CPUPerc}}\\t{{.MemUsage}}\\t{{.NetIO}}")
+
+	output, err := cmd.Output()
+	if err != nil {
+		m.logError("Failed to get container stats", err)
+		return
+	}
+
+	lines := strings.Split(string(output), "\n")
+	if len(lines) < 2 {
+		return
+	}
+
+	timestamp := color.New(color.FgBlue).Sprintf("[%s]", time.Now().Format("15:04:05"))
+	serviceName := m.colorMap["monitor"].Sprintf("%-8s", "DOCKER")
+	level := color.New(color.FgCyan).Sprint("[STATS]")
+
+	// Parse and display stats for our services
+	for _, line := range lines[1:] {
+		if line == "" {
+			continue
+		}
+
+		parts := regexp.MustCompile(`\s+`).Split(strings.TrimSpace(line), -1)
+		if len(parts) >= 4 {
+			container := parts[0]
+			if strings.Contains(container, "gowebserver-") {
+				service := strings.TrimPrefix(container, "gowebserver-")
+				message := fmt.Sprintf("%s: CPU %s | MEM %s | NET %s",
+					service, parts[1], parts[2], parts[3])
+				fmt.Printf("%s %s %s %s\n", timestamp, serviceName, level, message)
+			}
+		}
+	}
+}
+
+// Enhanced health check with response time monitoring
+func (m *LogMonitor) enhancedHealthCheck(endpoint string) (bool, time.Duration, error) {
+	start := time.Now()
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	resp, err := client.Get(endpoint)
+	duration := time.Since(start)
+
+	if err != nil {
+		return false, duration, err
+	}
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			// Log close error but don't affect the main result
+			log.Printf("Error closing response body: %v", closeErr)
+		}
+	}()
+
+	return resp.StatusCode == 200, duration, nil
+}
+
 func main() {
 	monitor := NewLogMonitor()
 
-	fmt.Println("🔍 Starting Go Web Server Live Log Monitor...")
-	fmt.Println("📊 Monitoring: Application, PostgreSQL, Caddy, Health & Metrics")
+	fmt.Println("Starting Go Web Server Live Log Monitor...")
+	fmt.Println("Monitoring: Application, PostgreSQL, Caddy, Health & Metrics")
 	fmt.Println()
 
-	if err := monitor.Start(); err != nil {
-		log.Fatalf("Monitor failed: %v", err)
-	}
+	monitor.Start()
 
-	fmt.Println("👋 Monitor stopped.")
+	fmt.Println("Monitor stopped.")
 }
