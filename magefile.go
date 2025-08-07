@@ -166,10 +166,10 @@ func VulnCheck() error {
 func Lint() error {
 	fmt.Println("Running golangci-lint...")
 
-	// Ensure the correct version of golangci-lint is installed
-	fmt.Println("  Ensuring golangci-lint is installed...")
-	if err := sh.RunV("go", "install", "github.com/golangci/golangci-lint/cmd/golangci-lint@latest"); err != nil {
-		return fmt.Errorf("failed to install golangci-lint: %w", err)
+	// Ensure the correct version of golangci-lint v2 is installed
+	fmt.Println("  Ensuring golangci-lint v2 is installed...")
+	if err := sh.RunV("go", "install", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest"); err != nil {
+		return fmt.Errorf("failed to install golangci-lint v2: %w", err)
 	}
 
 	// Find golangci-lint binary
