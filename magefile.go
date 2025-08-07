@@ -443,6 +443,29 @@ func DockerLogs() error {
 	return sh.RunV("docker", "compose", "logs", "-f")
 }
 
+// Monitor starts the live log monitor
+func Monitor() error {
+	fmt.Println("Starting live log monitor...")
+
+	// Build the monitor binary first
+	monitorPath := filepath.Join(buildDir, "monitor")
+	if runtime.GOOS == "windows" {
+		monitorPath += ".exe"
+	}
+
+	if err := sh.Run("mkdir", "-p", buildDir); err != nil {
+		return fmt.Errorf("failed to create build directory: %w", err)
+	}
+
+	ldflags := "-s -w"
+	if err := sh.RunV("go", "build", "-ldflags="+ldflags, "-o", monitorPath, "./cmd/monitor"); err != nil {
+		return fmt.Errorf("failed to build monitor: %w", err)
+	}
+
+	// Run the monitor
+	return sh.RunV(monitorPath)
+}
+
 // Help prints a help message with available commands
 func Help() {
 	fmt.Println(`
@@ -474,6 +497,7 @@ Docker:
   mage dockerDown       Stop all Docker services
   mage dockerReset      Reset Docker environment (remove volumes and containers)
   mage dockerLogs       Show logs from all Docker services
+  mage monitor          Start live color-coded log monitor for all services
 
 Production:
   mage ci               Complete CI pipeline (generate + fmt + quality + build)

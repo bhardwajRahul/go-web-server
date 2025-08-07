@@ -58,7 +58,7 @@ Request → Middleware Stack → Router → Handler → Store → Database
 ```
 cmd/web/main.go           # Entry point & server setup
 internal/
-├── config/              # Koanf configuration
+├── config/              # Viper configuration
 ├── handler/             # HTTP request handlers
 ├── middleware/          # Security & validation
 ├── store/               # SQLC database layer

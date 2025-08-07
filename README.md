@@ -18,7 +18,7 @@
   <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/Database-PostgreSQL-336791.svg?logo=postgresql" alt="PostgreSQL"></a>
   <a href="https://pkg.go.dev/github.com/jackc/pgx/v5"><img src="https://img.shields.io/badge/Driver-pgx_v5-00ADD8.svg?logo=go" alt="pgx PostgreSQL Driver"></a>
   <a href="https://pkg.go.dev/log/slog"><img src="https://img.shields.io/badge/Logging-slog-00ADD8.svg?logo=go" alt="Go slog"></a>
-  <a href="https://github.com/knadh/koanf"><img src="https://img.shields.io/badge/Config-Koanf-00ADD8.svg?logo=go" alt="Koanf"></a>
+  <a href="https://github.com/spf13/viper"><img src="https://img.shields.io/badge/Config-Viper-00ADD8.svg?logo=go" alt="Viper"></a>
   <a href="https://github.com/pressly/goose"><img src="https://img.shields.io/badge/Migrations-Goose-00ADD8.svg?logo=go" alt="Goose"></a>
   <a href="https://magefile.org/"><img src="https://img.shields.io/badge/Build-Mage-purple.svg?logo=go" alt="Mage"></a>
   <a href="https://github.com/air-verse/air"><img src="https://img.shields.io/badge/HotReload-Air-FF6B6B.svg?logo=go" alt="Air"></a>
@@ -62,7 +62,7 @@ A production-ready template for modern web applications using **The Modern Go St
 | **Metrics**    | [Prometheus](https://prometheus.io/)                        | Performance monitoring & observability |
 | **DB Driver**  | [pgx v5](https://pkg.go.dev/github.com/jackc/pgx/v5)       | High-performance PostgreSQL driver     |
 | **Assets**     | [Go Embed](https://pkg.go.dev/embed)                        | Single binary with embedded resources  |
-| **Config**     | [Koanf](https://github.com/knadh/koanf)                     | Multi-source configuration management  |
+| **Config**     | [Viper](https://github.com/spf13/viper)                     | Multi-source configuration management  |
 | **Migrations** | [Goose](https://github.com/pressly/goose)                   | Database migration management          |
 | **Build**      | [Mage](https://magefile.org/)                               | Go-based build automation              |
 | **Hot Reload** | [Air](https://github.com/air-verse/air)                     | Development server with live reload    |
@@ -234,7 +234,7 @@ go-web-server/
 ├── cmd/web/              # Application entry point
 ├── docs/                 # Complete documentation
 ├── internal/
-│   ├── config/           # Koanf configuration management
+│   ├── config/           # Viper configuration management
 │   ├── handler/          # HTTP handlers with Echo routes
 │   ├── middleware/       # Security, validation, error handling
 │   ├── store/            # Database layer with SQLC
@@ -290,7 +290,7 @@ The binary includes embedded Pico.css, HTMX, and Templ templates. **Docker-first
 
 - Enterprise security with CSRF protection and input sanitization
 - Structured error handling with request tracing and monitoring
-- Multi-source configuration with Koanf (JSON, YAML, ENV)
+- Multi-source configuration with Viper (JSON, YAML, ENV)
 - Database migrations with Goose and graceful shutdown
 - Single binary deployment (~14MB) with embedded assets
 - Minimal external dependencies with enterprise PostgreSQL backend
@@ -319,7 +319,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 <p align="center">
   <strong>The Modern Go Stack</strong><br>
-  <sub>Echo • Templ • HTMX • Pico.css • SQLC • PostgreSQL • slog • Koanf • Goose • Mage • Air</sub>
+  <sub>Echo • Templ • HTMX • Pico.css • SQLC • PostgreSQL • slog • Viper • Goose • Mage • Air</sub>
 </p>
 
 <p align="center">

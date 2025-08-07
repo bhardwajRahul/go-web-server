@@ -24,7 +24,7 @@ Follow a **Plan → Code → Iterate → Deploy** workflow anchored in performan
 - **Build/Automation**: Mage
 - **Hot Reload**: Air
 - **Logging**: `slog` (Structured Logging)
-- **Configuration**: Koanf
+- **Configuration**: Viper
 
 ---
 

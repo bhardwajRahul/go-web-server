@@ -43,9 +43,8 @@ services:
       # Environment
       ENVIRONMENT: production
       
-      # Security features
-      FEATURES_ENABLE_CSRF: "true"
-      FEATURES_ENABLE_RATE_LIMITING: "true"
+      # Feature flags (Viper format with underscores)
+      FEATURES_ENABLE_CSRF: "true" 
       FEATURES_ENABLE_METRICS: "true"
       
       # CORS (if needed for API access)
