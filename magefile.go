@@ -3,10 +3,12 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/magefile/mage/mg"
@@ -22,6 +24,48 @@ const (
 
 // Default target to run when none is specified
 var Default = Build
+
+// loadEnvFile loads environment variables from .env file if it exists
+func loadEnvFile() error {
+	envFile := ".env"
+	if _, err := os.Stat(envFile); os.IsNotExist(err) {
+		// .env file doesn't exist, that's okay
+		return nil
+	}
+
+	file, err := os.Open(envFile)
+	if err != nil {
+		return fmt.Errorf("failed to open .env file: %w", err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) == 2 {
+			key := strings.TrimSpace(parts[0])
+			value := strings.TrimSpace(parts[1])
+
+			// Remove quotes if present
+			if (strings.HasPrefix(value, `"`) && strings.HasSuffix(value, `"`)) ||
+				(strings.HasPrefix(value, `'`) && strings.HasSuffix(value, `'`)) {
+				value = value[1 : len(value)-1]
+			}
+
+			// Only set if not already set by system environment
+			if os.Getenv(key) == "" {
+				os.Setenv(key, value)
+			}
+		}
+	}
+
+	return scanner.Err()
+}
 
 // Build generates code and builds the server binary
 func Build() error {
@@ -50,7 +94,6 @@ func buildServer() error {
 func getCurrentTime() string {
 	return time.Now().UTC().Format("2006-01-02T15:04:05Z")
 }
-
 
 // getGoBinaryPath finds the path to a Go binary, checking GOBIN, GOPATH/bin, and PATH
 func getGoBinaryPath(binaryName string) (string, error) {
@@ -321,6 +364,12 @@ func Setup() error {
 // Migrate runs database migrations up
 func Migrate() error {
 	fmt.Println("Running database migrations...")
+
+	// Load environment variables from .env file
+	if err := loadEnvFile(); err != nil {
+		return fmt.Errorf("failed to load .env file: %w", err)
+	}
+
 	goosePath, err := getGoBinaryPath("goose")
 	if err != nil {
 		return fmt.Errorf("goose not found: %w", err)
@@ -330,7 +379,33 @@ func Migrate() error {
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
 		fmt.Println("  Using local PostgreSQL...")
-		databaseURL = "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable"
+		// Build database URL from individual environment variables
+		user := os.Getenv("DATABASE_USER")
+		password := os.Getenv("DATABASE_PASSWORD")
+		host := os.Getenv("DATABASE_HOST")
+		port := os.Getenv("DATABASE_PORT")
+		name := os.Getenv("DATABASE_NAME")
+		sslmode := os.Getenv("DATABASE_SSLMODE")
+
+		// Set defaults if not specified
+		if host == "" {
+			host = "localhost"
+		}
+		if port == "" {
+			port = "5432"
+		}
+		if name == "" {
+			name = "gowebserver"
+		}
+		if sslmode == "" {
+			sslmode = "disable"
+		}
+		if user == "" || password == "" {
+			fmt.Println("  Warning: DATABASE_USER and DATABASE_PASSWORD must be set in .env file")
+			databaseURL = "postgres://user:password@localhost:5432/gowebserver?sslmode=disable"
+		} else {
+			databaseURL = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", user, password, host, port, name, sslmode)
+		}
 	}
 
 	return sh.RunV(goosePath, "-dir", "internal/store/migrations", "postgres", databaseURL, "up")
@@ -339,6 +414,12 @@ func Migrate() error {
 // MigrateDown rolls back the last migration
 func MigrateDown() error {
 	fmt.Println("Rolling back last migration...")
+
+	// Load environment variables from .env file
+	if err := loadEnvFile(); err != nil {
+		return fmt.Errorf("failed to load .env file: %w", err)
+	}
+
 	goosePath, err := getGoBinaryPath("goose")
 	if err != nil {
 		return fmt.Errorf("goose not found: %w", err)
@@ -348,7 +429,33 @@ func MigrateDown() error {
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
 		fmt.Println("  Using local PostgreSQL...")
-		databaseURL = "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable"
+		// Build database URL from individual environment variables
+		user := os.Getenv("DATABASE_USER")
+		password := os.Getenv("DATABASE_PASSWORD")
+		host := os.Getenv("DATABASE_HOST")
+		port := os.Getenv("DATABASE_PORT")
+		name := os.Getenv("DATABASE_NAME")
+		sslmode := os.Getenv("DATABASE_SSLMODE")
+
+		// Set defaults if not specified
+		if host == "" {
+			host = "localhost"
+		}
+		if port == "" {
+			port = "5432"
+		}
+		if name == "" {
+			name = "gowebserver"
+		}
+		if sslmode == "" {
+			sslmode = "disable"
+		}
+		if user == "" || password == "" {
+			fmt.Println("  Warning: DATABASE_USER and DATABASE_PASSWORD must be set in .env file")
+			databaseURL = "postgres://user:password@localhost:5432/gowebserver?sslmode=disable"
+		} else {
+			databaseURL = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", user, password, host, port, name, sslmode)
+		}
 	}
 
 	return sh.RunV(goosePath, "-dir", "internal/store/migrations", "postgres", databaseURL, "down")
@@ -357,6 +464,12 @@ func MigrateDown() error {
 // MigrateStatus shows migration status
 func MigrateStatus() error {
 	fmt.Println("Checking migration status...")
+
+	// Load environment variables from .env file
+	if err := loadEnvFile(); err != nil {
+		return fmt.Errorf("failed to load .env file: %w", err)
+	}
+
 	goosePath, err := getGoBinaryPath("goose")
 	if err != nil {
 		return fmt.Errorf("goose not found: %w", err)
@@ -366,7 +479,33 @@ func MigrateStatus() error {
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
 		fmt.Println("  Using local PostgreSQL...")
-		databaseURL = "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable"
+		// Build database URL from individual environment variables
+		user := os.Getenv("DATABASE_USER")
+		password := os.Getenv("DATABASE_PASSWORD")
+		host := os.Getenv("DATABASE_HOST")
+		port := os.Getenv("DATABASE_PORT")
+		name := os.Getenv("DATABASE_NAME")
+		sslmode := os.Getenv("DATABASE_SSLMODE")
+
+		// Set defaults if not specified
+		if host == "" {
+			host = "localhost"
+		}
+		if port == "" {
+			port = "5432"
+		}
+		if name == "" {
+			name = "gowebserver"
+		}
+		if sslmode == "" {
+			sslmode = "disable"
+		}
+		if user == "" || password == "" {
+			fmt.Println("  Warning: DATABASE_USER and DATABASE_PASSWORD must be set in .env file")
+			databaseURL = "postgres://user:password@localhost:5432/gowebserver?sslmode=disable"
+		} else {
+			databaseURL = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", user, password, host, port, name, sslmode)
+		}
 	}
 
 	return sh.RunV(goosePath, "-dir", "internal/store/migrations", "postgres", databaseURL, "status")
@@ -385,7 +524,6 @@ func Quality() error {
 	mg.Deps(Vet, Lint, VulnCheck)
 	return nil
 }
-
 
 // Help prints a help message with available commands
 func Help() {

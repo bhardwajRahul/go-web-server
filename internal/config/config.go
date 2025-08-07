@@ -2,6 +2,7 @@
 package config
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"strings"
@@ -68,8 +69,21 @@ func New() *Config {
 	v.AddConfigPath(".")
 	v.AddConfigPath("./config")
 
-	// Try to read config file (optional)
+	// Try to read .env file first
+	v.SetConfigFile(".env")
+	v.SetConfigType("env")
 	if err := v.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			slog.Debug("no .env file found")
+		} else {
+			slog.Warn("failed to read .env file", "error", err)
+		}
+	}
+
+	// Try to read config file (optional)
+	v.SetConfigName("config")
+	v.SetConfigType("yaml") // Default, but will try others
+	if err := v.MergeInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			slog.Debug("no config file found, using defaults and environment variables")
 		} else {
@@ -88,6 +102,37 @@ func New() *Config {
 	if err := v.Unmarshal(&cfg); err != nil {
 		slog.Error("failed to unmarshal config", "error", err)
 		os.Exit(1)
+	}
+
+	// Construct database URL if not provided directly
+	if cfg.Database.URL == "" {
+		user := v.GetString("DATABASE_USER")
+		password := v.GetString("DATABASE_PASSWORD")
+		host := v.GetString("DATABASE_HOST")
+		port := v.GetString("DATABASE_PORT")
+		name := v.GetString("DATABASE_NAME")
+		sslmode := v.GetString("DATABASE_SSLMODE")
+
+		// Set defaults for missing values
+		if host == "" {
+			host = "localhost"
+		}
+		if port == "" {
+			port = "5432"
+		}
+		if name == "" {
+			name = "gowebserver"
+		}
+		if sslmode == "" {
+			sslmode = "disable"
+		}
+
+		if user != "" && password != "" {
+			cfg.Database.URL = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", user, password, host, port, name, sslmode)
+		} else {
+			slog.Error("DATABASE_URL not provided and DATABASE_USER/DATABASE_PASSWORD not found in environment")
+			os.Exit(1)
+		}
 	}
 
 	// Production overrides
@@ -109,8 +154,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("server.write_timeout", 10*time.Second)
 	v.SetDefault("server.shutdown_timeout", 30*time.Second)
 
-	// Database defaults
-	v.SetDefault("database.url", "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable")
+	// Database defaults - will be overridden by environment variables
+	v.SetDefault("database.url", "") // Will be constructed from individual vars if not set
 	v.SetDefault("database.max_connections", 25)
 	v.SetDefault("database.min_connections", 5)
 	v.SetDefault("database.timeout", 30*time.Second)

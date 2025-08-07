@@ -4,7 +4,6 @@ go 1.24
 
 require (
 	github.com/a-h/templ v0.3.924
-	github.com/fatih/color v1.18.0
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/magefile/mage v1.15.0
