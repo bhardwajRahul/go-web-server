@@ -78,6 +78,10 @@ A production-ready template for modern web applications using **The Modern Go St
 git clone https://github.com/dunamismax/go-web-server.git
 cd go-web-server
 
+# Create your environment file
+cp .env.example .env
+# Edit .env with your database credentials (DATABASE_USER, DATABASE_PASSWORD, etc.)
+
 # Start all services (PostgreSQL + App + Caddy)
 docker compose up --build
 
@@ -94,6 +98,10 @@ docker compose up --build
 git clone https://github.com/dunamismax/go-web-server.git
 cd go-web-server
 go mod tidy
+
+# Create your environment file
+cp .env.example .env
+# Edit .env with your database credentials (DATABASE_USER, DATABASE_PASSWORD, etc.)
 
 # Install development tools and dependencies
 mage setup

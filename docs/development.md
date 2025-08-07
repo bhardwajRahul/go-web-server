@@ -9,6 +9,10 @@ Local development setup and workflow for the Modern Go Stack.
 git clone https://github.com/dunamismax/go-web-server.git
 cd go-web-server
 
+# Create your environment file
+cp .env.example .env
+# Edit .env with your database credentials (DATABASE_USER, DATABASE_PASSWORD, etc.)
+
 # Install tools and dependencies
 mage setup
 
@@ -129,13 +133,16 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 
 ## Configuration
 
-**Development environment variables:**
+**Development environment variables (.env file):**
 
 ```bash
 APP_ENVIRONMENT=development
 APP_DEBUG=true
 SERVER_PORT=8080
-DATABASE_URL=postgres://user:password@localhost:5432/gowebserver?sslmode=disable
+DATABASE_USER=your_username
+DATABASE_PASSWORD=your_password
+DATABASE_NAME=gowebserver
+DATABASE_URL=postgres://your_username:your_password@localhost:5432/gowebserver?sslmode=disable
 FEATURES_ENABLE_METRICS=true
 ```
 
@@ -144,11 +151,11 @@ FEATURES_ENABLE_METRICS=true
 **Database:**
 
 ```bash
-# Connect to PostgreSQL in Docker
-docker exec -it gowebserver-postgres psql -U user -d gowebserver
+# Connect to PostgreSQL in Docker (replace with your credentials)
+docker exec -it gowebserver-postgres psql -U ${DATABASE_USER} -d ${DATABASE_NAME}
 
-# Or using local psql client
-psql postgres://user:password@localhost:5432/gowebserver
+# Or using local psql client with your credentials from .env
+psql postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/${DATABASE_NAME}
 
 # Common commands
 \dt                          # List tables

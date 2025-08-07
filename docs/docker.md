@@ -17,6 +17,10 @@ The application uses a multi-service Docker architecture:
 git clone https://github.com/dunamismax/go-web-server.git
 cd go-web-server
 
+# Create your environment file
+cp .env.example .env
+# Edit .env with your database credentials (DATABASE_USER, DATABASE_PASSWORD, etc.)
+
 # Start all services
 docker compose up --build
 
@@ -31,7 +35,7 @@ open http://localhost:8080   # Direct application access
 
 - **Image**: `postgres:16-alpine`
 - **Port**: 5432 (exposed in development)
-- **Credentials**: user/password (change in production)
+- **Credentials**: Configured via .env file environment variables
 - **Volume**: `postgres_data` for data persistence
 - **Migrations**: Auto-applied on container startup
 
@@ -102,6 +106,10 @@ docker compose --env-file .env.production up -d
 ### Local Development
 
 ```bash
+# Create your environment file
+cp .env.example .env
+# Edit .env with your database credentials
+
 # Start database only
 docker compose up postgres -d
 
@@ -202,6 +210,7 @@ docker network inspect gowebserver-network
 ### Common Issues
 
 **Application won't start:**
+
 ```bash
 # Check dependencies
 docker compose ps
@@ -212,6 +221,7 @@ docker exec gowebserver-postgres pg_isready -U user
 ```
 
 **Caddy SSL issues:**
+
 ```bash
 # Check domain DNS
 nslookup yourdomain.com
@@ -224,6 +234,7 @@ curl -I http://yourdomain.com
 ```
 
 **Database connection issues:**
+
 ```bash
 # Check PostgreSQL logs
 docker compose logs postgres
@@ -235,6 +246,7 @@ docker exec -it gowebserver-postgres psql -U user -d gowebserver -c "SELECT 1;"
 ### Performance Optimization
 
 **Database tuning in docker-compose.yml:**
+
 ```yaml
 postgres:
   environment:
@@ -244,6 +256,7 @@ postgres:
 ```
 
 **Application scaling:**
+
 ```bash
 docker compose up -d --scale app=3
 ```

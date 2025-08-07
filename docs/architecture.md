@@ -152,9 +152,11 @@ Build → Single binary with embedded assets
 ## Monitoring Architecture
 
 **Request Tracing:**
+
 - Unique ID per request with structured logging
 
 **Metrics Collection:**
+
 - HTTP request metrics (duration, status, method)
 - Database connection and query metrics
 - Business metrics (user operations)
