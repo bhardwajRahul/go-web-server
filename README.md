@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/dunamismax/go-web-server">
-    <img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&size=24&pause=1000&color=00ADD8&center=true&vCenter=true&width=900&lines=The+Modern+Go+Stack;Echo+v4+Framework+with+Type-Safe+Templates;HTMX+Dynamic+UX+without+JavaScript;SQLC+Generated+Queries+with+PostgreSQL;CSRF+Protection+and+Input+Sanitization;Structured+Error+Handling+and+Request+Tracing;Hot+Reload+Development+with+Mage+Automation;Single+Binary+Deployment+at+14MB;Production-Ready+Security+Middleware;Docker+First+Deployment" alt="Typing SVG" />
+    <img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&size=24&pause=1000&color=00ADD8&center=true&vCenter=true&width=900&lines=The+Modern+Go+Stack;Echo+v4+Framework+with+Type-Safe+Templates;HTMX+Dynamic+UX+without+JavaScript;SQLC+Generated+Queries+with+PostgreSQL;CSRF+Protection+and+Input+Sanitization;Structured+Error+Handling+and+Request+Tracing;Hot+Reload+Development+with+Mage+Automation;Single+Binary+Deployment+at+15MB;Production-Ready+Security+Middleware;Docker+First+Deployment" alt="Typing SVG" />
   </a>
 </p>
 
@@ -261,7 +261,7 @@ go-web-server/
 docker compose up --build
 
 # Or build optimized binary for custom deployment
-mage build  # Creates optimized binary in bin/server (~14MB)
+mage build  # Creates optimized binary in bin/server (~15MB)
 ```
 
 The binary includes embedded Pico.css, HTMX, and Templ templates. **Docker-first architecture** with PostgreSQL, Caddy reverse proxy, and automatic HTTPS. Single binary deployment option available for custom environments.
@@ -292,7 +292,7 @@ The binary includes embedded Pico.css, HTMX, and Templ templates. **Docker-first
 - Structured error handling with request tracing and monitoring
 - Multi-source configuration with Viper (JSON, YAML, ENV)
 - Database migrations with Goose and graceful shutdown
-- Single binary deployment (~14MB) with embedded assets
+- Single binary deployment (~15MB) with embedded assets
 - Minimal external dependencies with enterprise PostgreSQL backend
 
 ---

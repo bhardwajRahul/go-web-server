@@ -18,7 +18,7 @@ Complete documentation for the Modern Go Stack web server.
 - Backend: Echo v4 + SQLC + PostgreSQL (pgx/v5 driver)
 - Frontend: Templ v0.3.924 + HTMX 2.0.6 + Pico.css v2
 - Build: Mage + Air hot reload + Go 1.24+
-- Deploy: Single binary (~14MB), Docker-first with PostgreSQL
+- Deploy: Single binary (~15MB), Docker-first with PostgreSQL
 
 **Key Benefits:**
 

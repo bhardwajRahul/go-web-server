@@ -15,7 +15,7 @@ export DATABASE_URL=postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5
 /opt/app/server
 ```
 
-Binary is ~14MB with minimal external dependencies (requires PostgreSQL server).
+Binary is ~15MB with minimal external dependencies (requires PostgreSQL server).
 
 ## Ubuntu Server Setup
 

@@ -113,7 +113,7 @@ Transport:      HTTPS + HSTS + Secure Cookies
 ### Single Binary Deployment
 
 ```
-bin/server                # ~14MB executable
+bin/server                # ~15MB executable
 ├── Embedded assets       # CSS, JS, templates
 └── Minimal dependencies  # Requires PostgreSQL server
 ```
