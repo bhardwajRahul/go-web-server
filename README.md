@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/dunamismax/go-web-server">
-    <img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&size=24&pause=1000&color=00ADD8&center=true&vCenter=true&width=900&lines=The+Modern+Go+Stack;Echo+v4+Framework+with+Type-Safe+Templates;HTMX+Dynamic+UX+without+JavaScript;SQLC+Generated+Queries+with+PostgreSQL;CSRF+Protection+and+Input+Sanitization;Structured+Error+Handling+and+Request+Tracing;Hot+Reload+Development+with+Mage+Automation;Single+Binary+Deployment+at+15MB;Production-Ready+Security+Middleware;Docker+First+Deployment" alt="Typing SVG" />
+    <img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&size=24&pause=1000&color=00ADD8&center=true&vCenter=true&width=900&lines=The+Modern+Go+Stack;Echo+v4+Framework+with+Type-Safe+Templates;HTMX+Dynamic+UX+without+JavaScript;SQLC+Generated+Queries+with+PostgreSQL;CSRF+Protection+and+Input+Sanitization;Structured+Error+Handling+and+Request+Tracing;Hot+Reload+Development+with+Mage+Automation;Single+Binary+Deployment+at+15MB;Production-Ready+Security+Middleware;Ubuntu+SystemD+Deployment" alt="Typing SVG" />
   </a>
 </p>
 
@@ -71,27 +71,36 @@ A production-ready template for modern web applications using **The Modern Go St
 
 ## Quick Start
 
-### Docker Deployment (Recommended)
+### Ubuntu Production Deployment (Recommended)
 
 ```bash
 # Clone repository
 git clone https://github.com/dunamismax/go-web-server.git
 cd go-web-server
 
+# Install PostgreSQL
+sudo apt update
+sudo apt install postgresql postgresql-contrib
+
+# Create database and user
+sudo -u postgres createdb gowebserver
+sudo -u postgres createuser -P gowebserver  # Set password when prompted
+
 # Create your environment file
 cp .env.example .env
 # Edit .env with your database credentials (DATABASE_USER, DATABASE_PASSWORD, etc.)
 
-# Start all services (PostgreSQL + App + Caddy)
-docker compose up --build
+# Install Go dependencies and build
+mage setup
+mage build
 
-# Access application at http://localhost
-# Or direct app access at http://localhost:8080
+# Run database migrations
+mage migrate
+
+# Server binary available at: bin/server
 ```
 
-**Requirements:** Docker and Docker Compose
-
-> **Note:** This project uses the legacy Docker builder (`DOCKER_BUILDKIT=0`) for maximum compatibility. The Mage commands handle this automatically.
+**Requirements:** Ubuntu 20.04+, PostgreSQL, Go 1.24+
 
 ### Local Development
 
@@ -108,8 +117,9 @@ cp .env.example .env
 # Install development tools and dependencies
 mage setup
 
-# Start PostgreSQL database
-docker compose up postgres -d
+# Ensure PostgreSQL is running locally
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
 
 # Start development server with hot reload
 mage dev
@@ -121,7 +131,7 @@ mage dev
 
 - Go 1.24+
 - Mage build tool (`go install github.com/magefile/mage@latest`)
-- Docker (for PostgreSQL database)
+- PostgreSQL database (local installation)
 
 **Note:** First run of `mage setup` installs all development tools automatically.
 
@@ -132,7 +142,6 @@ mage dev
 | Guide | Description |
 |-------|-------------|
 | **[Development Guide](docs/development.md)** | Local setup, hot reload, database management, and daily workflow |
-| **[Docker Guide](docs/docker.md)** | Docker deployment, management, and production setup |
 | **[API Reference](docs/api.md)** | HTTP endpoints, HTMX integration, and CSRF protection |
 | **[Architecture](docs/architecture.md)** | System design, components, and technology decisions |
 | **[Security Guide](docs/security.md)** | CSRF, sanitization, headers, rate limiting, and monitoring |
@@ -166,26 +175,6 @@ mage migrateDown      # Roll back last migration
 mage migrateStatus    # Show migration status
 ```
 
-**Docker:**
-
-```bash
-mage docker           # Start all services (PostgreSQL + App + Caddy)
-mage dockerDown       # Stop all Docker services
-mage dockerReset      # Reset Docker environment (remove volumes)
-mage dockerLogs       # Show logs from all Docker services
-```
-
-**Docker Build Issues:**
-
-If you encounter buildx plugin errors, the Mage commands automatically use the legacy builder. For manual commands:
-
-```bash
-# Use legacy builder for compatibility
-DOCKER_BUILDKIT=0 docker compose up --build
-
-# Or use the Mage command (handles this automatically)
-mage docker
-```
 
 **Quality & Production:**
 
@@ -254,17 +243,20 @@ go-web-server/
   <img src="https://github.com/dunamismax/images/blob/main/golang/gopher-aviator.jpg" alt="Go Gopher" width="400" />
 </p>
 
-## Docker-First Deployment
+## Ubuntu SystemD Deployment
 
 ```bash
-# Production deployment with all services
-docker compose up --build
-
-# Or build optimized binary for custom deployment
+# Build optimized binary for production deployment
 mage build  # Creates optimized binary in bin/server (~15MB)
+
+# Create systemd service file
+sudo cp scripts/gowebserver.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable gowebserver
+sudo systemctl start gowebserver
 ```
 
-The binary includes embedded Pico.css, HTMX, and Templ templates. **Docker-first architecture** with PostgreSQL, Caddy reverse proxy, and automatic HTTPS. Single binary deployment option available for custom environments.
+The binary includes embedded Pico.css, HTMX, and Templ templates. **Single binary deployment** with local PostgreSQL backend. Perfect for traditional Ubuntu servers behind Caddy reverse proxy with Cloudflare DNS.
 
 ## Key Features Demonstrated
 

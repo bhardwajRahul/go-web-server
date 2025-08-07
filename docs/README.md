@@ -5,11 +5,10 @@ Complete documentation for the Modern Go Stack web server.
 ## Quick Reference
 
 - **[Development Guide](./development.md)** - Local setup and workflow
-- **[Docker Guide](./docker.md)** - Docker deployment and management
 - **[API Reference](./api.md)** - HTTP endpoints and HTMX integration
 - **[Architecture](./architecture.md)** - System design and components
 - **[Security Guide](./security.md)** - Security implementation
-- **[Deployment Guide](./deployment.md)** - Traditional production deployment
+- **[Ubuntu Deployment Guide](./ubuntu-deployment.md)** - Complete Ubuntu SystemD deployment
 
 ## The Modern Go Stack
 
@@ -18,7 +17,7 @@ Complete documentation for the Modern Go Stack web server.
 - Backend: Echo v4 + SQLC + PostgreSQL (pgx/v5 driver)
 - Frontend: Templ v0.3.924 + HTMX 2.0.6 + Pico.css v2
 - Build: Mage + Air hot reload + Go 1.24+
-- Deploy: Single binary (~15MB), Docker-first with PostgreSQL
+- Deploy: Single binary (~15MB), Ubuntu SystemD with PostgreSQL
 
 **Key Benefits:**
 
@@ -33,7 +32,7 @@ Complete documentation for the Modern Go Stack web server.
 ```bash
 # Setup and run with PostgreSQL
 mage setup
-docker compose up postgres -d
+sudo systemctl start postgresql
 mage dev
 
 # Quality checks and build

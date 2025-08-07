@@ -16,14 +16,15 @@ cp .env.example .env
 # Install tools and dependencies
 mage setup
 
-# Start PostgreSQL database
-docker compose up postgres -d
+# Ensure PostgreSQL is running locally
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
 
 # Start development server with hot reload
 mage dev
 ```
 
-**Prerequisites:** Go 1.24+, Docker (for PostgreSQL)
+**Prerequisites:** Go 1.24+, PostgreSQL (local installation)
 
 Server runs at `http://localhost:8080`
 
@@ -38,13 +39,13 @@ mage build        # Production binary
 
 ## Database Development
 
-**PostgreSQL with Docker:**
+**Local PostgreSQL:**
 
 ```bash
-docker compose up postgres -d    # Start PostgreSQL
-mage migrate                    # Run migrations up
-mage migrateDown               # Rollback last migration
-mage migrateStatus             # Show migration status
+sudo systemctl start postgresql  # Start PostgreSQL service
+mage migrate                     # Run migrations up
+mage migrateDown                # Rollback last migration
+mage migrateStatus              # Show migration status
 ```
 
 **Creating migrations:**

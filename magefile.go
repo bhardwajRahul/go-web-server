@@ -51,18 +51,6 @@ func getCurrentTime() string {
 	return time.Now().UTC().Format("2006-01-02T15:04:05Z")
 }
 
-// isDockerPostgresAvailable checks if Docker PostgreSQL container is running
-func isDockerPostgresAvailable() bool {
-	// Check if docker compose is available and postgres container is running
-	err := sh.Run("docker", "compose", "ps", "--services", "--filter", "status=running")
-	if err != nil {
-		return false
-	}
-
-	// Check if the postgres container specifically is running
-	err = sh.Run("docker", "container", "inspect", "gowebserver-postgres", "--format", "{{.State.Status}}")
-	return err == nil
-}
 
 // getGoBinaryPath finds the path to a Go binary, checking GOBIN, GOPATH/bin, and PATH
 func getGoBinaryPath(binaryName string) (string, error) {
@@ -257,11 +245,7 @@ func Reset() error {
 
 	// Reset database to fresh state
 	fmt.Println("Resetting database...")
-	if isDockerPostgresAvailable() {
-		fmt.Println("  Resetting Docker PostgreSQL database...")
-		// Stop and remove the database container and volume
-		sh.Run("docker", "compose", "down", "-v")
-	}
+	// Note: Database reset now requires manual intervention for local PostgreSQL
 
 	// Remove legacy SQLite database file if it exists
 	if err := sh.Rm("data.db"); err == nil {
@@ -327,8 +311,8 @@ func Setup() error {
 
 	fmt.Println("Setup complete!")
 	fmt.Println("Next steps:")
+	fmt.Println("   • Ensure PostgreSQL is running locally")
 	fmt.Println("   • Run 'mage dev' to start development with hot reload")
-
 	fmt.Println("   • Run 'mage build' to create production binary")
 
 	return nil
@@ -342,16 +326,11 @@ func Migrate() error {
 		return fmt.Errorf("goose not found: %w", err)
 	}
 
-	// Check if we should use Docker PostgreSQL or local PostgreSQL
+	// Use local PostgreSQL
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
-		if isDockerPostgresAvailable() {
-			fmt.Println("  Using Docker PostgreSQL...")
-			databaseURL = "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable"
-		} else {
-			fmt.Println("  Using local PostgreSQL...")
-			databaseURL = "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable"
-		}
+		fmt.Println("  Using local PostgreSQL...")
+		databaseURL = "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable"
 	}
 
 	return sh.RunV(goosePath, "-dir", "internal/store/migrations", "postgres", databaseURL, "up")
@@ -365,16 +344,11 @@ func MigrateDown() error {
 		return fmt.Errorf("goose not found: %w", err)
 	}
 
-	// Check if we should use Docker PostgreSQL or local PostgreSQL
+	// Use local PostgreSQL
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
-		if isDockerPostgresAvailable() {
-			fmt.Println("  Using Docker PostgreSQL...")
-			databaseURL = "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable"
-		} else {
-			fmt.Println("  Using local PostgreSQL...")
-			databaseURL = "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable"
-		}
+		fmt.Println("  Using local PostgreSQL...")
+		databaseURL = "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable"
 	}
 
 	return sh.RunV(goosePath, "-dir", "internal/store/migrations", "postgres", databaseURL, "down")
@@ -388,16 +362,11 @@ func MigrateStatus() error {
 		return fmt.Errorf("goose not found: %w", err)
 	}
 
-	// Check if we should use Docker PostgreSQL or local PostgreSQL
+	// Use local PostgreSQL
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
-		if isDockerPostgresAvailable() {
-			fmt.Println("  Using Docker PostgreSQL...")
-			databaseURL = "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable"
-		} else {
-			fmt.Println("  Using local PostgreSQL...")
-			databaseURL = "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable"
-		}
+		fmt.Println("  Using local PostgreSQL...")
+		databaseURL = "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable"
 	}
 
 	return sh.RunV(goosePath, "-dir", "internal/store/migrations", "postgres", databaseURL, "status")
@@ -417,54 +386,6 @@ func Quality() error {
 	return nil
 }
 
-// Docker starts all services using docker-compose
-func Docker() error {
-	fmt.Println("Starting all services with Docker Compose...")
-	// Use legacy Docker builder to work around buildx plugin issues
-	env := map[string]string{"DOCKER_BUILDKIT": "0"}
-	return sh.RunWithV(env, "docker", "compose", "up", "--build", "-d")
-}
-
-// DockerDown stops all Docker services
-func DockerDown() error {
-	fmt.Println("Stopping Docker services...")
-	return sh.RunV("docker", "compose", "down")
-}
-
-// DockerReset resets Docker environment (removes volumes)
-func DockerReset() error {
-	fmt.Println("Resetting Docker environment...")
-	return sh.RunV("docker", "compose", "down", "-v", "--remove-orphans")
-}
-
-// DockerLogs shows logs from all Docker services
-func DockerLogs() error {
-	fmt.Println("Showing Docker logs...")
-	return sh.RunV("docker", "compose", "logs", "-f")
-}
-
-// Monitor starts the live log monitor
-func Monitor() error {
-	fmt.Println("Starting live log monitor...")
-
-	// Build the monitor binary first
-	monitorPath := filepath.Join(buildDir, "monitor")
-	if runtime.GOOS == "windows" {
-		monitorPath += ".exe"
-	}
-
-	if err := sh.Run("mkdir", "-p", buildDir); err != nil {
-		return fmt.Errorf("failed to create build directory: %w", err)
-	}
-
-	ldflags := "-s -w"
-	if err := sh.RunV("go", "build", "-ldflags="+ldflags, "-o", monitorPath, "./cmd/monitor"); err != nil {
-		return fmt.Errorf("failed to build monitor: %w", err)
-	}
-
-	// Run the monitor
-	return sh.RunV(monitorPath)
-}
 
 // Help prints a help message with available commands
 func Help() {
@@ -492,12 +413,6 @@ Quality:
   mage vulncheck (vc)   Check for security vulnerabilities
   mage quality (q)      Run all quality checks (vet + lint + vulncheck)
 
-Docker:
-  mage docker           Start all services with Docker Compose (legacy builder for compatibility)
-  mage dockerDown       Stop all Docker services
-  mage dockerReset      Reset Docker environment (remove volumes and containers)
-  mage dockerLogs       Show logs from all Docker services
-  mage monitor          Start live color-coded log monitor for all services
 
 Production:
   mage ci               Complete CI pipeline (generate + fmt + quality + build)
