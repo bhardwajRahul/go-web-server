@@ -51,6 +51,19 @@ func getCurrentTime() string {
 	return time.Now().UTC().Format("2006-01-02T15:04:05Z")
 }
 
+// isDockerPostgresAvailable checks if Docker PostgreSQL container is running
+func isDockerPostgresAvailable() bool {
+	// Check if docker compose is available and postgres container is running
+	err := sh.Run("docker", "compose", "ps", "--services", "--filter", "status=running")
+	if err != nil {
+		return false
+	}
+
+	// Check if the postgres container specifically is running
+	err = sh.Run("docker", "container", "inspect", "gowebserver-postgres", "--format", "{{.State.Status}}")
+	return err == nil
+}
+
 // getGoBinaryPath finds the path to a Go binary, checking GOBIN, GOPATH/bin, and PATH
 func getGoBinaryPath(binaryName string) (string, error) {
 	// First check if it's in PATH
@@ -242,10 +255,17 @@ func Reset() error {
 		return fmt.Errorf("failed to clean build artifacts: %w", err)
 	}
 
-	// Remove database file to reset to fresh state
-	fmt.Println("Removing database file...")
-	if err := sh.Rm("data.db"); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to remove database file: %w", err)
+	// Reset database to fresh state
+	fmt.Println("Resetting database...")
+	if isDockerPostgresAvailable() {
+		fmt.Println("  Resetting Docker PostgreSQL database...")
+		// Stop and remove the database container and volume
+		sh.Run("docker", "compose", "down", "-v")
+	}
+
+	// Remove legacy SQLite database file if it exists
+	if err := sh.Rm("data.db"); err == nil {
+		fmt.Println("  Removed legacy SQLite database file")
 	}
 
 	// Remove any generated code to ensure fresh generation
@@ -321,7 +341,20 @@ func Migrate() error {
 	if err != nil {
 		return fmt.Errorf("goose not found: %w", err)
 	}
-	return sh.RunV(goosePath, "-dir", "internal/store/migrations", "sqlite3", "data.db", "up")
+
+	// Check if we should use Docker PostgreSQL or local PostgreSQL
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		if isDockerPostgresAvailable() {
+			fmt.Println("  Using Docker PostgreSQL...")
+			databaseURL = "postgres://user:password@localhost:5432/gowebserver?sslmode=disable"
+		} else {
+			fmt.Println("  Using local PostgreSQL...")
+			databaseURL = "postgres://user:password@localhost:5432/gowebserver?sslmode=disable"
+		}
+	}
+
+	return sh.RunV(goosePath, "-dir", "internal/store/migrations", "postgres", databaseURL, "up")
 }
 
 // MigrateDown rolls back the last migration
@@ -331,7 +364,20 @@ func MigrateDown() error {
 	if err != nil {
 		return fmt.Errorf("goose not found: %w", err)
 	}
-	return sh.RunV(goosePath, "-dir", "internal/store/migrations", "sqlite3", "data.db", "down")
+
+	// Check if we should use Docker PostgreSQL or local PostgreSQL
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		if isDockerPostgresAvailable() {
+			fmt.Println("  Using Docker PostgreSQL...")
+			databaseURL = "postgres://user:password@localhost:5432/gowebserver?sslmode=disable"
+		} else {
+			fmt.Println("  Using local PostgreSQL...")
+			databaseURL = "postgres://user:password@localhost:5432/gowebserver?sslmode=disable"
+		}
+	}
+
+	return sh.RunV(goosePath, "-dir", "internal/store/migrations", "postgres", databaseURL, "down")
 }
 
 // MigrateStatus shows migration status
@@ -341,7 +387,20 @@ func MigrateStatus() error {
 	if err != nil {
 		return fmt.Errorf("goose not found: %w", err)
 	}
-	return sh.RunV(goosePath, "-dir", "internal/store/migrations", "sqlite3", "data.db", "status")
+
+	// Check if we should use Docker PostgreSQL or local PostgreSQL
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		if isDockerPostgresAvailable() {
+			fmt.Println("  Using Docker PostgreSQL...")
+			databaseURL = "postgres://user:password@localhost:5432/gowebserver?sslmode=disable"
+		} else {
+			fmt.Println("  Using local PostgreSQL...")
+			databaseURL = "postgres://user:password@localhost:5432/gowebserver?sslmode=disable"
+		}
+	}
+
+	return sh.RunV(goosePath, "-dir", "internal/store/migrations", "postgres", databaseURL, "status")
 }
 
 // CI runs the complete CI pipeline
@@ -356,6 +415,30 @@ func Quality() error {
 	fmt.Println("Running all quality checks...")
 	mg.Deps(Vet, Lint, VulnCheck)
 	return nil
+}
+
+// Docker starts all services using docker-compose
+func Docker() error {
+	fmt.Println("Starting all services with Docker Compose...")
+	return sh.RunV("docker", "compose", "up", "--build", "-d")
+}
+
+// DockerDown stops all Docker services
+func DockerDown() error {
+	fmt.Println("Stopping Docker services...")
+	return sh.RunV("docker", "compose", "down")
+}
+
+// DockerReset resets Docker environment (removes volumes)
+func DockerReset() error {
+	fmt.Println("Resetting Docker environment...")
+	return sh.RunV("docker", "compose", "down", "-v", "--remove-orphans")
+}
+
+// DockerLogs shows logs from all Docker services
+func DockerLogs() error {
+	fmt.Println("Showing Docker logs...")
+	return sh.RunV("docker", "compose", "logs", "-f")
 }
 
 // Help prints a help message with available commands
@@ -383,6 +466,12 @@ Quality:
   mage lint (l)         Run golangci-lint comprehensive linting
   mage vulncheck (vc)   Check for security vulnerabilities
   mage quality (q)      Run all quality checks (vet + lint + vulncheck)
+
+Docker:
+  mage docker           Start all services with Docker Compose (build + up -d)
+  mage dockerDown       Stop all Docker services
+  mage dockerReset      Reset Docker environment (remove volumes and containers)
+  mage dockerLogs       Show logs from all Docker services
 
 Production:
   mage ci               Complete CI pipeline (generate + fmt + quality + build)

@@ -1,21 +1,87 @@
 services:
+  # PostgreSQL database
   postgres:
     image: postgres:16-alpine
     container_name: gowebserver-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: gowebserver
       POSTGRES_HOST_AUTH_METHOD: md5
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./internal/store/migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d gowebserver"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
+    networks:
+      - gowebserver-network
+
+  # Go Web Server Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gowebserver-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database configuration
+      DATABASE_DRIVER: postgres
+      DATABASE_URL: postgres://user:password@postgres:5432/gowebserver?sslmode=disable
+      
+      # Server configuration
+      HTTP_HOST: 0.0.0.0
+      HTTP_PORT: 8080
+      
+      # Environment
+      ENVIRONMENT: production
+      
+      # Security features
+      FEATURES_ENABLE_CSRF: "true"
+      FEATURES_ENABLE_RATE_LIMITING: "true"
+      FEATURES_ENABLE_METRICS: "true"
+      
+      # CORS (if needed for API access)
+      SECURITY_ENABLE_CORS: "false"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - gowebserver-network
+
+  # Caddy reverse proxy
+  caddy:
+    image: caddy:2-alpine
+    container_name: gowebserver-caddy
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - gowebserver-network
+
+networks:
+  gowebserver-network:
+    driver: bridge
 
 volumes:
   postgres_data:
+  caddy_data:
+  caddy_config:

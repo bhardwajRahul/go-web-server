@@ -11,7 +11,7 @@ Browser (HTMX + Pico.css)
          ↓
   Go Web Server (Echo)
          ↓
- SQLite Database (Pure Go)
+ PostgreSQL (pgx/v5 driver)
 ```
 
 ## Request Flow
@@ -48,7 +48,7 @@ Request → Middleware Stack → Router → Handler → Store → Database
 | **Templates** | Templ v0.3.924 | Type-safe HTML templates |
 | **Frontend** | HTMX 2.0.6 | Dynamic interactions |
 | **Styling** | Pico.css v2 | Semantic CSS with themes |
-| **Database** | SQLite + modernc.org/sqlite | Zero-CGO database |
+| **Database** | PostgreSQL + pgx/v5 | High-performance PostgreSQL driver |
 | **Queries** | SQLC v1.29.0 | Type-safe Go from SQL |
 | **Build** | Mage | Go-based automation |
 | **Dev** | Air | Hot reload development |
@@ -84,7 +84,7 @@ internal/
 1. Handler validates input
 2. Calls SQLC-generated store method
 3. Store executes parameterized query
-4. SQLite processes and returns results
+4. PostgreSQL processes and returns results
 5. Results mapped to Go structs
 6. Passed to template for rendering
 ```
@@ -115,8 +115,7 @@ Transport:      HTTPS + HSTS + Secure Cookies
 ```
 bin/server                # ~14MB executable
 ├── Embedded assets       # CSS, JS, templates
-├── Database schema       # SQLite schema
-└── Zero dependencies     # No external requirements
+└── Minimal dependencies  # Requires PostgreSQL server
 ```
 
 ### Code Generation Pipeline
@@ -132,13 +131,13 @@ Build → Single binary with embedded assets
 **Memory Efficiency:**
 
 - Compiled templates (no runtime parsing)
-- Connection pooling for SQLite
+- Connection pooling for PostgreSQL
 - Embedded assets (no file I/O)
 - Minimal garbage collection
 
 **Request Latency:**
 
-- Zero-CGO database driver
+- High-performance PostgreSQL driver
 - Efficient middleware stack
 - Type-safe database queries
 - Minimal allocations
@@ -153,16 +152,11 @@ Build → Single binary with embedded assets
 ## Monitoring Architecture
 
 **Request Tracing:**
-
-- Unique ID per request
-- Structured logging with context
-- Error correlation and debugging
+- Unique ID per request with structured logging
 
 **Metrics Collection:**
-
 - HTTP request metrics (duration, status, method)
-- Database connection metrics
-- CSRF token generation metrics
+- Database connection and query metrics
 - Business metrics (user operations)
 
 This architecture provides production-ready performance and security while maintaining simplicity and developer experience.

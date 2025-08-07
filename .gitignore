@@ -41,11 +41,10 @@ go.work.sum
 .env.development
 .env.production
 
-# Database files (SQLite)
-*.db
+# Database files
+data.db
 *.sqlite3
 /data/
-data.db
 
 # Log files
 *.log
@@ -107,9 +106,8 @@ package-lock.json
 yarn.lock
 
 # Docker
-.dockerignore
 Dockerfile.dev
-docker-compose.override.yml
+# Keep docker-compose.override.yml as it's used for development
 
 # CI/CD
 .github/workflows/test.yml.bak

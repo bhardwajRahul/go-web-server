@@ -9,11 +9,17 @@ Local development setup and workflow for the Modern Go Stack.
 git clone https://github.com/dunamismax/go-web-server.git
 cd go-web-server
 
-# Install tools and start development
-mage setup && mage dev
+# Install tools and dependencies
+mage setup
+
+# Start PostgreSQL database
+docker compose up postgres -d
+
+# Start development server with hot reload
+mage dev
 ```
 
-**Prerequisites:** Go 1.24+
+**Prerequisites:** Go 1.24+, Docker (for PostgreSQL)
 
 Server runs at `http://localhost:8080`
 
@@ -28,10 +34,13 @@ mage build        # Production binary
 
 ## Database Development
 
+**PostgreSQL with Docker:**
+
 ```bash
-mage migrate         # Run migrations up
-mage migrateDown     # Rollback last migration
-mage migrateStatus   # Show migration status
+docker compose up postgres -d    # Start PostgreSQL
+mage migrate                    # Run migrations up
+mage migrateDown               # Rollback last migration
+mage migrateStatus             # Show migration status
 ```
 
 **Creating migrations:**
@@ -44,7 +53,7 @@ goose -dir internal/store/migrations create feature_name sql
 
 ```sql
 -- name: GetActiveUsers :many
-SELECT * FROM users WHERE is_active = 1 ORDER BY created_at DESC;
+SELECT * FROM users WHERE is_active = true ORDER BY created_at DESC;
 ```
 
 ## Template Development
@@ -120,13 +129,13 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 
 ## Configuration
 
-**Development `.env`:**
+**Development environment variables:**
 
 ```bash
 APP_ENVIRONMENT=development
 APP_DEBUG=true
 SERVER_PORT=8080
-DATABASE_URL=data.db
+DATABASE_URL=postgres://user:password@localhost:5432/gowebserver?sslmode=disable
 FEATURES_ENABLE_METRICS=true
 ```
 
@@ -135,10 +144,16 @@ FEATURES_ENABLE_METRICS=true
 **Database:**
 
 ```bash
-sqlite3 data.db
-.tables
-.schema users
-SELECT * FROM users LIMIT 5;
+# Connect to PostgreSQL in Docker
+docker exec -it gowebserver-postgres psql -U user -d gowebserver
+
+# Or using local psql client
+psql postgres://user:password@localhost:5432/gowebserver
+
+# Common commands
+\dt                          # List tables
+\d users                     # Describe users table
+SELECT * FROM users LIMIT 5; # Query users
 ```
 
 **Monitoring:**

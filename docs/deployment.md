@@ -1,6 +1,6 @@
 # Deployment Guide
 
-Production deployment for the Modern Go Stack using Ubuntu, Caddy, and Cloudflare.
+Production deployment for the Modern Go Stack using Ubuntu, PostgreSQL, Caddy, and Cloudflare.
 
 ## Quick Deployment
 
@@ -11,25 +11,29 @@ scp bin/server user@server:/opt/app/
 
 # Set environment and run
 export APP_ENVIRONMENT=production
-export DATABASE_URL=/opt/app/data/production.db
+export DATABASE_URL=postgres://user:password@localhost:5432/gowebserver?sslmode=disable
 /opt/app/server
 ```
 
-Binary is ~14MB with zero external dependencies.
+Binary is ~14MB with minimal external dependencies (requires PostgreSQL server).
 
 ## Ubuntu Server Setup
 
 ### System Preparation
 
 ```bash
-# Update and create user
+# Update and install PostgreSQL
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y sqlite3
+sudo apt install -y postgresql postgresql-contrib
 
-# Create application user
+# Create application user and database
 sudo useradd -m -s /bin/bash appuser
-sudo mkdir -p /opt/app/{data,backups}
+sudo mkdir -p /opt/app/{backups,logs}
 sudo chown -R appuser:appuser /opt/app
+
+# Setup PostgreSQL database
+sudo -u postgres createuser -P gowebserver  # Set password when prompted
+sudo -u postgres createdb -O gowebserver gowebserver
 ```
 
 ### Application Installation
@@ -41,8 +45,8 @@ sudo chown appuser:appuser /opt/app/server
 sudo chmod +x /opt/app/server
 
 # Set permissions
-sudo chmod 700 /opt/app/data
 sudo chmod 755 /opt/app
+sudo chmod 700 /opt/app/logs
 ```
 
 ## Configuration
@@ -57,7 +61,7 @@ SERVER_HOST=0.0.0.0
 SERVER_PORT=8080
 
 # Database
-DATABASE_URL=/opt/app/data/production.db
+DATABASE_URL=postgres://gowebserver:your_secure_password@localhost:5432/gowebserver?sslmode=disable
 DATABASE_RUN_MIGRATIONS=true
 
 # Application
@@ -98,7 +102,7 @@ RestartSec=5
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
-ReadWritePaths=/opt/app/data
+ReadWritePaths=/opt/app/logs
 
 # Environment
 EnvironmentFile=/opt/app/.env
@@ -231,22 +235,22 @@ sudo systemctl reload caddy
 
 ## Database Management
 
-### Automated Backup
+### Automated PostgreSQL Backup
 
 Create `/opt/app/backup.sh`:
 
 ```bash
 #!/bin/bash
-DATABASE_FILE="/opt/app/data/production.db"
+export PGPASSWORD="your_secure_password"
+DATABASE_URL="postgres://gowebserver:your_secure_password@localhost:5432/gowebserver"
 BACKUP_DIR="/opt/app/backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 
 mkdir -p $BACKUP_DIR
-sqlite3 $DATABASE_FILE ".backup $BACKUP_DIR/backup_$DATE.db"
-gzip "$BACKUP_DIR/backup_$DATE.db"
+pg_dump $DATABASE_URL | gzip > "$BACKUP_DIR/backup_$DATE.sql.gz"
 
 # Keep only last 30 days
-find $BACKUP_DIR -name "backup_*.db.gz" -mtime +30 -delete
+find $BACKUP_DIR -name "backup_*.sql.gz" -mtime +30 -delete
 ```
 
 Set permissions and schedule:
@@ -263,10 +267,14 @@ sudo -u appuser crontab -e
 
 ```bash
 # Manual backup
-sudo -u appuser sqlite3 /opt/app/data/production.db ".backup /opt/app/backups/manual_$(date +%Y%m%d).db"
+export PGPASSWORD="your_secure_password"
+pg_dump "postgres://gowebserver:your_secure_password@localhost:5432/gowebserver" | gzip > /opt/app/backups/manual_$(date +%Y%m%d).sql.gz
 
-# Integrity check
-sudo -u appuser sqlite3 /opt/app/data/production.db "PRAGMA integrity_check;"
+# Database connection test
+psql "postgres://gowebserver:your_secure_password@localhost:5432/gowebserver" -c "SELECT version();"
+
+# Performance stats
+psql "postgres://gowebserver:your_secure_password@localhost:5432/gowebserver" -c "SELECT schemaname,tablename,n_tup_ins,n_tup_upd,n_tup_del FROM pg_stat_user_tables;"
 ```
 
 ## Monitoring
@@ -321,9 +329,9 @@ sudo ufw deny 8080/tcp  # Block direct access
 sudo chmod 755 /opt/app/server
 sudo chown appuser:appuser /opt/app/server
 
-# Database
-sudo chmod 600 /opt/app/data/production.db
-sudo chown appuser:appuser /opt/app/data/production.db
+# Logs directory
+sudo chmod 700 /opt/app/logs
+sudo chown appuser:appuser /opt/app/logs
 
 # Configuration
 sudo chmod 600 /opt/app/.env
@@ -342,8 +350,8 @@ sudo journalctl -u go-web-server -n 50
 **Database issues:**
 
 ```bash
-ls -la /opt/app/data/
-sudo -u appuser sqlite3 /opt/app/data/production.db "PRAGMA integrity_check;"
+sudo systemctl status postgresql
+psql "postgres://gowebserver:password@localhost:5432/gowebserver" -c "SELECT 1;"
 ```
 
 **Caddy SSL issues:**
@@ -353,4 +361,4 @@ sudo caddy validate --config /etc/caddy/Caddyfile
 sudo journalctl -u caddy -n 50
 ```
 
-This deployment guide ensures reliable and secure production operation with Ubuntu, Caddy, and Cloudflare integration.
+This deployment guide ensures reliable and secure production operation with Ubuntu, PostgreSQL, Caddy, and Cloudflare integration.

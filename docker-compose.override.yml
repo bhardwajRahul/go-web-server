@@ -1,0 +1,42 @@
+# Development overrides for docker-compose.yml
+# This file is automatically used by docker-compose for local development
+
+services:
+  # Development PostgreSQL with exposed port for local access
+  postgres:
+    ports:
+      - "5432:5432"  # Expose PostgreSQL for local development tools
+    environment:
+      # More permissive settings for development
+      POSTGRES_HOST_AUTH_METHOD: trust
+
+  # Development Go app with hot reload capabilities
+  app:
+    # Override build for development (optional: use volumes for live code updates)
+    # volumes:
+    #   - .:/app/src:ro
+    environment:
+      # Development-specific settings
+      ENVIRONMENT: development
+      LOG_LEVEL: debug
+      
+      # Development database connection
+      DATABASE_URL: postgres://user:password@postgres:5432/gowebserver?sslmode=disable
+      
+      # Enable development features
+      FEATURES_ENABLE_METRICS: "true"
+      FEATURES_ENABLE_DEBUG: "true"
+      
+    # Expose app port for direct access during development
+    ports:
+      - "8080:8080"
+
+  # Development Caddy with localhost configuration
+  caddy:
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - CADDY_ADMIN=0.0.0.0:2019  # Enable admin API for development

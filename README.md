@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/dunamismax/go-web-server">
-    <img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&size=24&pause=1000&color=00ADD8&center=true&vCenter=true&width=900&lines=The+Modern+Go+Stack;Echo+v4+Framework+with+Type-Safe+Templates;HTMX+Dynamic+UX+without+JavaScript;SQLC+Generated+Queries+with+Pure+Go+SQLite;CSRF+Protection+and+Input+Sanitization;Structured+Error+Handling+and+Request+Tracing;Hot+Reload+Development+with+Mage+Automation;Single+Binary+Deployment+at+14MB;Production-Ready+Security+Middleware;Zero+External+Dependencies" alt="Typing SVG" />
+    <img src="https://readme-typing-svg.demolab.com/?font=Fira+Code&size=24&pause=1000&color=00ADD8&center=true&vCenter=true&width=900&lines=The+Modern+Go+Stack;Echo+v4+Framework+with+Type-Safe+Templates;HTMX+Dynamic+UX+without+JavaScript;SQLC+Generated+Queries+with+PostgreSQL;CSRF+Protection+and+Input+Sanitization;Structured+Error+Handling+and+Request+Tracing;Hot+Reload+Development+with+Mage+Automation;Single+Binary+Deployment+at+14MB;Production-Ready+Security+Middleware;Docker+First+Deployment" alt="Typing SVG" />
   </a>
 </p>
 
@@ -71,6 +71,24 @@ A production-ready template for modern web applications using **The Modern Go St
 
 ## Quick Start
 
+### Docker Deployment (Recommended)
+
+```bash
+# Clone repository
+git clone https://github.com/dunamismax/go-web-server.git
+cd go-web-server
+
+# Start all services (PostgreSQL + App + Caddy)
+docker compose up --build
+
+# Access application at http://localhost
+# Or direct app access at http://localhost:8080
+```
+
+**Requirements:** Docker and Docker Compose
+
+### Local Development
+
 ```bash
 # Clone and setup
 git clone https://github.com/dunamismax/go-web-server.git
@@ -80,11 +98,11 @@ go mod tidy
 # Install development tools and dependencies
 mage setup
 
+# Start PostgreSQL database
+docker compose up postgres -d
+
 # Start development server with hot reload
 mage dev
-
-# Or build and run production binary
-mage run
 
 # Server starts at http://localhost:8080
 ```
@@ -93,6 +111,7 @@ mage run
 
 - Go 1.24+
 - Mage build tool (`go install github.com/magefile/mage@latest`)
+- Docker (for PostgreSQL database)
 
 **Note:** First run of `mage setup` installs all development tools automatically.
 
@@ -103,10 +122,11 @@ mage run
 | Guide | Description |
 |-------|-------------|
 | **[Development Guide](docs/development.md)** | Local setup, hot reload, database management, and daily workflow |
+| **[Docker Guide](docs/docker.md)** | Docker deployment, management, and production setup |
 | **[API Reference](docs/api.md)** | HTTP endpoints, HTMX integration, and CSRF protection |
 | **[Architecture](docs/architecture.md)** | System design, components, and technology decisions |
 | **[Security Guide](docs/security.md)** | CSRF, sanitization, headers, rate limiting, and monitoring |
-| **[Deployment Guide](docs/deployment.md)** | Production deployment, configuration, and scaling |
+| **[Deployment Guide](docs/deployment.md)** | Traditional production deployment and configuration |
 
 ---
 
@@ -134,6 +154,15 @@ mage build (b)        # Build production binary
 mage migrate (m)      # Run database migrations up
 mage migrateDown      # Roll back last migration
 mage migrateStatus    # Show migration status
+```
+
+**Docker:**
+
+```bash
+mage docker           # Start all services (PostgreSQL + App + Caddy)
+mage dockerDown       # Stop all Docker services
+mage dockerReset      # Reset Docker environment (remove volumes)
+mage dockerLogs       # Show logs from all Docker services
 ```
 
 **Quality & Production:**
@@ -203,13 +232,17 @@ go-web-server/
   <img src="https://github.com/dunamismax/images/blob/main/golang/gopher-aviator.jpg" alt="Go Gopher" width="400" />
 </p>
 
-## Single Binary Deployment
+## Docker-First Deployment
 
 ```bash
+# Production deployment with all services
+docker compose up --build
+
+# Or build optimized binary for custom deployment
 mage build  # Creates optimized binary in bin/server (~14MB)
 ```
 
-The binary includes embedded Pico.css, HTMX, and Templ templates. **Minimal external dependencies** (requires PostgreSQL server), single file deployment with instant startup.
+The binary includes embedded Pico.css, HTMX, and Templ templates. **Docker-first architecture** with PostgreSQL, Caddy reverse proxy, and automatic HTTPS. Single binary deployment option available for custom environments.
 
 ## Key Features Demonstrated
 
@@ -264,7 +297,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 <p align="center">
   <strong>The Modern Go Stack</strong><br>
-  <sub>Echo • Templ • HTMX • Pico.css • SQLC • SQLite • slog • Koanf • Goose • Mage • Air</sub>
+  <sub>Echo • Templ • HTMX • Pico.css • SQLC • PostgreSQL • slog • Koanf • Goose • Mage • Air</sub>
 </p>
 
 <p align="center">
