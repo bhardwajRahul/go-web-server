@@ -1,9 +1,9 @@
 package view
 
 import (
-	"database/sql"
 	"github.com/dunamismax/go-web-server/internal/store"
 	"github.com/dunamismax/go-web-server/internal/view/layout"
+	"github.com/jackc/pgx/v5/pgtype"
 	"strconv"
 )
 
@@ -93,8 +93,8 @@ templ UserRow(user store.User) {
 	<tr id={ "user-" + strconv.FormatInt(user.ID, 10) }>
 		<td>
 			<div style="display: flex; align-items: center; gap: 0.5rem;">
-				if user.AvatarUrl.Valid && user.AvatarUrl.String != "" {
-					<img src={ user.AvatarUrl.String } alt={ user.Name } class="avatar"/>
+				if user.AvatarUrl != nil && *user.AvatarUrl != "" {
+					<img src={ *user.AvatarUrl } alt={ user.Name } class="avatar"/>
 				} else {
 					<div class="avatar" style="background: var(--pico-primary-background); display: flex; align-items: center; justify-content: center; color: var(--pico-primary);">
 						{ string([]rune(user.Name)[0]) }
@@ -107,21 +107,21 @@ templ UserRow(user store.User) {
 			<a href={ templ.SafeURL("mailto:" + user.Email) }>{ user.Email }</a>
 		</td>
 		<td>
-			if user.Bio.Valid && user.Bio.String != "" {
-				<small>{ user.Bio.String }</small>
+			if user.Bio != nil && *user.Bio != "" {
+				<small>{ *user.Bio }</small>
 			} else {
 				<small style="color: var(--pico-muted-color);">No bio provided</small>
 			}
 		</td>
 		<td>
-			if user.IsActive.Valid && user.IsActive.Bool {
+			if user.IsActive != nil && *user.IsActive {
 				<span style="color: var(--pico-color-green-500);">● Active</span>
 			} else {
 				<span style="color: var(--pico-color-amber-500);">● Inactive</span>
 			}
 		</td>
 		<td>
-			<small>{ formatTimeFromNullTime(user.CreatedAt) }</small>
+			<small>{ formatTimeFromPgTimestamptz(user.CreatedAt) }</small>
 		</td>
 		<td>
 			<div role="group">
@@ -134,7 +134,7 @@ templ UserRow(user store.User) {
 				>
 					Edit
 				</button>
-				if user.IsActive.Valid && user.IsActive.Bool {
+				if user.IsActive != nil && *user.IsActive {
 					<button
 						hx-patch={ "/users/" + strconv.FormatInt(user.ID, 10) + "/deactivate" }
 						hx-target={ "#user-" + strconv.FormatInt(user.ID, 10) }
@@ -249,9 +249,9 @@ templ UserCount(count int64) {
 	{ strconv.FormatInt(count, 10) }
 }
 
-func formatTimeFromNullTime(nullTime sql.NullTime) string {
-	if nullTime.Valid {
-		return nullTime.Time.Format("Jan 2, 2006")
+func formatTimeFromPgTimestamptz(ts pgtype.Timestamptz) string {
+	if ts.Valid {
+		return ts.Time.Format("Jan 2, 2006")
 	}
 	return "N/A"
 }
@@ -271,15 +271,15 @@ func getUserEmail(user *store.User) string {
 }
 
 func getUserBio(user *store.User) string {
-	if user != nil && user.Bio.Valid {
-		return user.Bio.String
+	if user != nil && user.Bio != nil {
+		return *user.Bio
 	}
 	return ""
 }
 
 func getUserAvatarUrl(user *store.User) string {
-	if user != nil && user.AvatarUrl.Valid {
-		return user.AvatarUrl.String
+	if user != nil && user.AvatarUrl != nil {
+		return *user.AvatarUrl
 	}
 	return ""
 }

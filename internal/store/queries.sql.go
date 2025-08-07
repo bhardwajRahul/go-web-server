@@ -7,15 +7,14 @@ package store
 
 import (
 	"context"
-	"database/sql"
 )
 
 const countUsers = `-- name: CountUsers :one
-SELECT COUNT(*) FROM users WHERE is_active = 1
+SELECT COUNT(*) FROM users WHERE is_active = true
 `
 
 func (q *Queries) CountUsers(ctx context.Context) (int64, error) {
-	row := q.db.QueryRowContext(ctx, countUsers)
+	row := q.db.QueryRow(ctx, countUsers)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -23,19 +22,19 @@ func (q *Queries) CountUsers(ctx context.Context) (int64, error) {
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (email, name, bio, avatar_url) 
-VALUES (?, ?, ?, ?)
+VALUES ($1, $2, $3, $4)
 RETURNING id, email, name, avatar_url, bio, is_active, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	Email     string         `db:"email" json:"email"`
-	Name      string         `db:"name" json:"name"`
-	Bio       sql.NullString `db:"bio" json:"bio"`
-	AvatarUrl sql.NullString `db:"avatar_url" json:"avatar_url"`
+	Email     string  `db:"email" json:"email"`
+	Name      string  `db:"name" json:"name"`
+	Bio       *string `db:"bio" json:"bio"`
+	AvatarUrl *string `db:"avatar_url" json:"avatar_url"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser,
+	row := q.db.QueryRow(ctx, createUser,
 		arg.Email,
 		arg.Name,
 		arg.Bio,
@@ -57,30 +56,30 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 
 const deactivateUser = `-- name: DeactivateUser :exec
 UPDATE users 
-SET is_active = 0, updated_at = CURRENT_TIMESTAMP
-WHERE id = ?
+SET is_active = false, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
 `
 
 func (q *Queries) DeactivateUser(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deactivateUser, id)
+	_, err := q.db.Exec(ctx, deactivateUser, id)
 	return err
 }
 
 const deleteUser = `-- name: DeleteUser :exec
-DELETE FROM users WHERE id = ?
+DELETE FROM users WHERE id = $1
 `
 
 func (q *Queries) DeleteUser(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteUser, id)
+	_, err := q.db.Exec(ctx, deleteUser, id)
 	return err
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, email, name, avatar_url, bio, is_active, created_at, updated_at FROM users WHERE id = ? LIMIT 1
+SELECT id, email, name, avatar_url, bio, is_active, created_at, updated_at FROM users WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUser, id)
+	row := q.db.QueryRow(ctx, getUser, id)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -96,11 +95,11 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, name, avatar_url, bio, is_active, created_at, updated_at FROM users WHERE email = ? LIMIT 1
+SELECT id, email, name, avatar_url, bio, is_active, created_at, updated_at FROM users WHERE email = $1 LIMIT 1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -120,7 +119,7 @@ SELECT id, email, name, avatar_url, bio, is_active, created_at, updated_at FROM 
 `
 
 func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
-	rows, err := q.db.QueryContext(ctx, listAllUsers)
+	rows, err := q.db.Query(ctx, listAllUsers)
 	if err != nil {
 		return nil, err
 	}
@@ -141,9 +140,6 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -153,12 +149,12 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 
 const listUsers = `-- name: ListUsers :many
 SELECT id, email, name, avatar_url, bio, is_active, created_at, updated_at FROM users 
-WHERE is_active = 1 
+WHERE is_active = true 
 ORDER BY created_at DESC
 `
 
 func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
-	rows, err := q.db.QueryContext(ctx, listUsers)
+	rows, err := q.db.Query(ctx, listUsers)
 	if err != nil {
 		return nil, err
 	}
@@ -180,9 +176,6 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -191,20 +184,20 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 
 const updateUser = `-- name: UpdateUser :one
 UPDATE users 
-SET name = ?, bio = ?, avatar_url = ?, updated_at = CURRENT_TIMESTAMP
-WHERE id = ?
+SET name = $1, bio = $2, avatar_url = $3, updated_at = CURRENT_TIMESTAMP
+WHERE id = $4
 RETURNING id, email, name, avatar_url, bio, is_active, created_at, updated_at
 `
 
 type UpdateUserParams struct {
-	Name      string         `db:"name" json:"name"`
-	Bio       sql.NullString `db:"bio" json:"bio"`
-	AvatarUrl sql.NullString `db:"avatar_url" json:"avatar_url"`
-	ID        int64          `db:"id" json:"id"`
+	Name      string  `db:"name" json:"name"`
+	Bio       *string `db:"bio" json:"bio"`
+	AvatarUrl *string `db:"avatar_url" json:"avatar_url"`
+	ID        int64   `db:"id" json:"id"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, updateUser,
+	row := q.db.QueryRow(ctx, updateUser,
 		arg.Name,
 		arg.Bio,
 		arg.AvatarUrl,

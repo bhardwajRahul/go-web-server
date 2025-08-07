@@ -29,10 +29,14 @@ type Config struct {
 
 	// Database configuration
 	Database struct {
-		URL            string        `koanf:"url"`
-		MaxConnections int           `koanf:"max_connections"`
-		Timeout        time.Duration `koanf:"timeout"`
-		RunMigrations  bool          `koanf:"run_migrations"`
+		URL             string        `koanf:"url"`
+		MaxConnections  int           `koanf:"max_connections"`
+		MinConnections  int           `koanf:"min_connections"`
+		Timeout         time.Duration `koanf:"timeout"`
+		MaxConnLifetime time.Duration `koanf:"max_conn_lifetime"`
+		MaxConnIdleTime time.Duration `koanf:"max_conn_idle_time"`
+		RunMigrations   bool          `koanf:"run_migrations"`
+		SSLMode         string        `koanf:"ssl_mode"`
 	} `koanf:"database"`
 
 	// Application configuration
@@ -133,15 +137,23 @@ func getDefaults() Config {
 			ShutdownTimeout: 30 * time.Second,
 		},
 		Database: struct {
-			URL            string        `koanf:"url"`
-			MaxConnections int           `koanf:"max_connections"`
-			Timeout        time.Duration `koanf:"timeout"`
-			RunMigrations  bool          `koanf:"run_migrations"`
+			URL             string        `koanf:"url"`
+			MaxConnections  int           `koanf:"max_connections"`
+			MinConnections  int           `koanf:"min_connections"`
+			Timeout         time.Duration `koanf:"timeout"`
+			MaxConnLifetime time.Duration `koanf:"max_conn_lifetime"`
+			MaxConnIdleTime time.Duration `koanf:"max_conn_idle_time"`
+			RunMigrations   bool          `koanf:"run_migrations"`
+			SSLMode         string        `koanf:"ssl_mode"`
 		}{
-			URL:            "data.db",
-			MaxConnections: 25,
-			Timeout:        30 * time.Second,
-			RunMigrations:  true,
+			URL:             "postgres://user:password@localhost:5432/gowebserver?sslmode=disable",
+			MaxConnections:  25,
+			MinConnections:  5,
+			Timeout:         30 * time.Second,
+			MaxConnLifetime: time.Hour,
+			MaxConnIdleTime: 30 * time.Minute,
+			RunMigrations:   true,
+			SSLMode:         "disable",
 		},
 		App: struct {
 			Environment string `koanf:"environment"`

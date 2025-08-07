@@ -102,7 +102,7 @@ func (h *HomeHandler) Health(c echo.Context) error {
 
 		// Database connection stats
 		if db := h.store.DB(); db != nil {
-			if stats := db.Stats(); stats.OpenConnections > 0 {
+			if stats := db.Stat(); stats.AcquiredConns() > 0 {
 				checks["database_connections"] = "ok"
 			} else {
 				checks["database_connections"] = statusWarning

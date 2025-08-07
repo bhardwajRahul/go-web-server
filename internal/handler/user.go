@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"database/sql"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -189,21 +188,21 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 		).WithContext(c)
 	}
 
-	var bioSQL sql.NullString
+	var bioPtr *string
 	if bio != "" {
-		bioSQL = sql.NullString{String: bio, Valid: true}
+		bioPtr = &bio
 	}
 
-	var avatarURLSQL sql.NullString
+	var avatarURLPtr *string
 	if avatarURL != "" {
-		avatarURLSQL = sql.NullString{String: avatarURL, Valid: true}
+		avatarURLPtr = &avatarURL
 	}
 
 	params := store.CreateUserParams{
 		Email:     email,
 		Name:      name,
-		Bio:       bioSQL,
-		AvatarUrl: avatarURLSQL,
+		Bio:       bioPtr,
+		AvatarUrl: avatarURLPtr,
 	}
 
 	_, err := h.store.CreateUser(ctx, params)
@@ -273,20 +272,20 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 		).WithContext(c)
 	}
 
-	var bioSQL sql.NullString
+	var bioPtr *string
 	if bio != "" {
-		bioSQL = sql.NullString{String: bio, Valid: true}
+		bioPtr = &bio
 	}
 
-	var avatarURLSQL sql.NullString
+	var avatarURLPtr *string
 	if avatarURL != "" {
-		avatarURLSQL = sql.NullString{String: avatarURL, Valid: true}
+		avatarURLPtr = &avatarURL
 	}
 
 	params := store.UpdateUserParams{
 		Name:      name,
-		Bio:       bioSQL,
-		AvatarUrl: avatarURLSQL,
+		Bio:       bioPtr,
+		AvatarUrl: avatarURLPtr,
 		ID:        id,
 	}
 

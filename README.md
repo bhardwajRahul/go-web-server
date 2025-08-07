@@ -15,8 +15,8 @@
   <a href="https://htmx.org/"><img src="https://img.shields.io/badge/Frontend-HTMX_2.x-3D72D7.svg?logo=htmx" alt="HTMX"></a>
   <a href="https://picocss.com/"><img src="https://img.shields.io/badge/CSS-Pico.css_v2-13795B.svg" alt="Pico.css"></a>
   <a href="https://sqlc.dev/"><img src="https://img.shields.io/badge/Queries-SQLC-00ADD8.svg?logo=go" alt="SQLC"></a>
-  <a href="https://www.sqlite.org/"><img src="https://img.shields.io/badge/Database-SQLite-003B57.svg?logo=sqlite" alt="SQLite"></a>
-  <a href="https://pkg.go.dev/modernc.org/sqlite"><img src="https://img.shields.io/badge/Driver-Pure_Go-00ADD8.svg?logo=go" alt="Pure Go SQLite"></a>
+  <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/Database-PostgreSQL-336791.svg?logo=postgresql" alt="PostgreSQL"></a>
+  <a href="https://pkg.go.dev/github.com/jackc/pgx/v5"><img src="https://img.shields.io/badge/Driver-pgx_v5-00ADD8.svg?logo=go" alt="pgx PostgreSQL Driver"></a>
   <a href="https://pkg.go.dev/log/slog"><img src="https://img.shields.io/badge/Logging-slog-00ADD8.svg?logo=go" alt="Go slog"></a>
   <a href="https://github.com/knadh/koanf"><img src="https://img.shields.io/badge/Config-Koanf-00ADD8.svg?logo=go" alt="Koanf"></a>
   <a href="https://github.com/pressly/goose"><img src="https://img.shields.io/badge/Migrations-Goose-00ADD8.svg?logo=go" alt="Goose"></a>
@@ -40,7 +40,7 @@ A production-ready template for modern web applications using **The Modern Go St
 **Key Features:**
 
 - **Echo v4 + Templ + HTMX**: High-performance web framework with type-safe templates and dynamic UX
-- **SQLC + SQLite + Pure Go Driver**: Type-safe database operations with zero CGO dependencies
+- **SQLC + PostgreSQL + pgx Driver**: Type-safe database operations with high performance
 - **Prometheus Metrics**: Comprehensive observability and performance monitoring
 - **Enterprise Security**: CSRF protection, input sanitization, structured error handling, request tracing
 - **Mage Build System**: Go-based automation with comprehensive quality checks
@@ -57,10 +57,10 @@ A production-ready template for modern web applications using **The Modern Go St
 | **Frontend**   | [HTMX](https://htmx.org/)                             | Dynamic interactions with smooth UX    |
 | **CSS**        | [Pico.css v2](https://picocss.com/)                         | Semantic CSS with dark/light themes    |
 | **Logging**    | [slog](https://pkg.go.dev/log/slog)                         | Structured logging with JSON output    |
-| **Database**   | [SQLite](https://www.sqlite.org/)                           | Self-contained, serverless database    |
+| **Database**   | [PostgreSQL](https://www.postgresql.org/)                   | Enterprise-grade relational database   |
 | **Queries**    | [SQLC](https://sqlc.dev/)                           | Generate type-safe Go from SQL         |
 | **Metrics**    | [Prometheus](https://prometheus.io/)                        | Performance monitoring & observability |
-| **DB Driver**  | [modernc.org/sqlite](https://pkg.go.dev/modernc.org/sqlite) | Pure Go, CGO-free SQLite driver        |
+| **DB Driver**  | [pgx v5](https://pkg.go.dev/github.com/jackc/pgx/v5)       | High-performance PostgreSQL driver     |
 | **Assets**     | [Go Embed](https://pkg.go.dev/embed)                        | Single binary with embedded resources  |
 | **Config**     | [Koanf](https://github.com/knadh/koanf)                     | Multi-source configuration management  |
 | **Migrations** | [Goose](https://github.com/pressly/goose)                   | Database migration management          |
@@ -209,7 +209,7 @@ go-web-server/
 mage build  # Creates optimized binary in bin/server (~14MB)
 ```
 
-The binary includes embedded Pico.css, HTMX, Templ templates, and SQLite database. **Zero external dependencies**, single file deployment with instant startup.
+The binary includes embedded Pico.css, HTMX, and Templ templates. **Minimal external dependencies** (requires PostgreSQL server), single file deployment with instant startup.
 
 ## Key Features Demonstrated
 
@@ -219,7 +219,7 @@ The binary includes embedded Pico.css, HTMX, Templ templates, and SQLite databas
 - Type-safe Templ templates with reusable components
 - HTMX dynamic interactions with smooth page transitions
 - Pico.css semantic styling with automatic dark/light themes
-- SQLC type-safe database queries with pure Go SQLite driver
+- SQLC type-safe database queries with high-performance pgx driver
 - Structured logging with slog and configurable JSON output
 - Prometheus metrics for observability and performance monitoring
 
@@ -238,7 +238,7 @@ The binary includes embedded Pico.css, HTMX, Templ templates, and SQLite databas
 - Multi-source configuration with Koanf (JSON, YAML, ENV)
 - Database migrations with Goose and graceful shutdown
 - Single binary deployment (~14MB) with embedded assets
-- Zero external dependencies and CGO-free compilation
+- Minimal external dependencies with enterprise PostgreSQL backend
 
 ---
 

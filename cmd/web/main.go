@@ -16,11 +16,11 @@ import (
 	"github.com/dunamismax/go-web-server/internal/handler"
 	"github.com/dunamismax/go-web-server/internal/middleware"
 	"github.com/dunamismax/go-web-server/internal/store"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 	"github.com/pressly/goose/v3"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	_ "modernc.org/sqlite"
 )
 
 //go:generate go install github.com/a-h/templ/cmd/templ@latest
@@ -59,31 +59,33 @@ func main() {
 		slog.Info("Prometheus metrics enabled", "endpoint", "/metrics")
 	}
 
+	// Create context for database operations
+	ctx := context.Background()
+
 	// Initialize database store
-	store, err := store.NewStore(cfg.Database.URL)
+	store, err := store.NewStore(ctx, cfg.Database.URL)
 	if err != nil {
 		slog.Error("failed to connect to database", "error", err, "database_url", cfg.Database.URL)
 		return
 	}
 
 	defer func() {
-		if err := store.Close(); err != nil {
-			slog.Error("failed to close database connection", "error", err)
-		}
+		store.Close()
+		slog.Info("Database connection pool closed")
 	}()
 
 	// Run migrations if enabled
 	if cfg.Database.RunMigrations {
 		slog.Info("Running database migrations with Goose")
 
-		if err := runGooseMigrations(cfg.Database.URL); err != nil {
+		if err := runGooseMigrations(ctx, cfg.Database.URL); err != nil {
 			slog.Error("failed to run migrations", "error", err)
 			return
 		}
 	}
 
 	// Initialize schema (fallback if migrations not used)
-	if err := store.InitSchema(); err != nil {
+	if err := store.InitSchema(ctx); err != nil {
 		slog.Error("failed to initialize schema", "error", err)
 		return
 	}
@@ -254,21 +256,26 @@ func main() {
 }
 
 // runGooseMigrations runs database migrations using Goose.
-func runGooseMigrations(databaseURL string) error {
-	// Open database connection
-	db, err := sql.Open("sqlite", databaseURL)
+func runGooseMigrations(ctx context.Context, databaseURL string) error {
+	// Open standard database connection for goose using pgx driver
+	db, err := sql.Open("pgx", databaseURL)
 	if err != nil {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
 
 	defer func() {
 		if err := db.Close(); err != nil {
-			slog.Error("failed to close database connection", "error", err)
+			slog.Error("failed to close migration database connection", "error", err)
 		}
 	}()
 
-	// Set Goose dialect to SQLite
-	if err := goose.SetDialect("sqlite3"); err != nil {
+	// Test the connection
+	if err := db.PingContext(ctx); err != nil {
+		return fmt.Errorf("failed to ping database: %w", err)
+	}
+
+	// Set Goose dialect to PostgreSQL
+	if err := goose.SetDialect("postgres"); err != nil {
 		return fmt.Errorf("failed to set goose dialect: %w", err)
 	}
 

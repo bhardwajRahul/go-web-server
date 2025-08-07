@@ -9,9 +9,9 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"database/sql"
 	"github.com/dunamismax/go-web-server/internal/store"
 	"github.com/dunamismax/go-web-server/internal/view/layout"
+	"github.com/jackc/pgx/v5/pgtype"
 	"strconv"
 )
 
@@ -222,15 +222,15 @@ func UserRow(user store.User) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if user.AvatarUrl.Valid && user.AvatarUrl.String != "" {
+		if user.AvatarUrl != nil && *user.AvatarUrl != "" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<img src=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var9 string
-			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(user.AvatarUrl.String)
+			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(*user.AvatarUrl)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 97, Col: 37}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 97, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
@@ -243,7 +243,7 @@ func UserRow(user store.User) templ.Component {
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(user.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 97, Col: 55}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 97, Col: 49}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -315,15 +315,15 @@ func UserRow(user store.User) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if user.Bio.Valid && user.Bio.String != "" {
+		if user.Bio != nil && *user.Bio != "" {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<small>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var15 string
-			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(user.Bio.String)
+			templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(*user.Bio)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 111, Col: 28}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 111, Col: 22}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 			if templ_7745c5c3_Err != nil {
@@ -343,7 +343,7 @@ func UserRow(user store.User) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if user.IsActive.Valid && user.IsActive.Bool {
+		if user.IsActive != nil && *user.IsActive {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<span style=\"color: var(--pico-color-green-500);\">● Active</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -359,9 +359,9 @@ func UserRow(user store.User) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var16 string
-		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(formatTimeFromNullTime(user.CreatedAt))
+		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(formatTimeFromPgTimestamptz(user.CreatedAt))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 124, Col: 50}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/users.templ`, Line: 124, Col: 55}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
@@ -384,7 +384,7 @@ func UserRow(user store.User) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		if user.IsActive.Valid && user.IsActive.Bool {
+		if user.IsActive != nil && *user.IsActive {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<button hx-patch=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -632,9 +632,9 @@ func UserCount(count int64) templ.Component {
 	})
 }
 
-func formatTimeFromNullTime(nullTime sql.NullTime) string {
-	if nullTime.Valid {
-		return nullTime.Time.Format("Jan 2, 2006")
+func formatTimeFromPgTimestamptz(ts pgtype.Timestamptz) string {
+	if ts.Valid {
+		return ts.Time.Format("Jan 2, 2006")
 	}
 	return "N/A"
 }
@@ -654,15 +654,15 @@ func getUserEmail(user *store.User) string {
 }
 
 func getUserBio(user *store.User) string {
-	if user != nil && user.Bio.Valid {
-		return user.Bio.String
+	if user != nil && user.Bio != nil {
+		return *user.Bio
 	}
 	return ""
 }
 
 func getUserAvatarUrl(user *store.User) string {
-	if user != nil && user.AvatarUrl.Valid {
-		return user.AvatarUrl.String
+	if user != nil && user.AvatarUrl != nil {
+		return *user.AvatarUrl
 	}
 	return ""
 }

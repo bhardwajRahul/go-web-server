@@ -17,7 +17,7 @@ Follow a **Plan → Code → Iterate → Deploy** workflow anchored in performan
 - **Templates**: Templ v0.3.924 (Type-Safe HTML Components) - **ALWAYS USE LATEST STABLE VERSION**
 - **Frontend**: HTMX 2.0.6 (Dynamic UI)
 - **CSS**: Pico.css v2 (Semantic & Minimal)
-- **Database**: SQLite (via `modernc.org/sqlite` Pure Go Driver)
+- **Database**: PostgreSQL (via `jackc/pgx/v5` High-Performance Driver)
 - **Queries**: SQLC v1.29.0 (Type-Safe Go from SQL)
 - **Metrics**: Prometheus (Performance Monitoring)
 - **Migrations**: Goose
@@ -109,7 +109,7 @@ templ userRow(user User) {
 
 - **SQL-first** - Write raw, clean SQL in `.sql` files for schema and queries.
 - **SQLC Generation** - Run `mage generate` to create fully type-safe, idiomatic Go methods for all database operations. This provides ORM-like safety with the performance of raw SQL.
-- **Pure Go Driver** - Use `modernc.org/sqlite` to avoid CGO, ensuring simple cross-compilation and a single static binary.
+- **High-Performance Driver** - Use `jackc/pgx/v5` for optimal PostgreSQL performance, connection pooling, and native type support.
 - **Goose Migrations** - Manage all schema changes through versioned SQL migration files executed by `mage migrate`.
 
 ### Modern Go Patterns
@@ -212,7 +212,7 @@ When providing code solutions, include:
 
 - Bypassing SQLC to write manual database access boilerplate.
 - Mixing business logic into Templ components or HTTP handlers.
-- Adding CGO dependencies, which breaks the single-binary goal.
+- Using suboptimal PostgreSQL drivers or connection patterns.
 - Introducing a client-side JS framework instead of using HTMX.
 
 ---
@@ -259,7 +259,7 @@ When providing code solutions, include:
 **Single Binary Deployment:**
 
 - Embedded static assets (CSS, JS, images)
-- Zero external dependencies
+- Minimal external dependencies (requires PostgreSQL server)
 - Instant startup and minimal resource usage
 - Cross-platform compilation support
 
