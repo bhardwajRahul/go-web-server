@@ -27,6 +27,12 @@
 
 ---
 
+## Live Demo
+
+**[View Live Demo →](https://go.dunamismax.com/)** - Self-hosted production deployment showcasing the complete Modern Go Stack in action.
+
+---
+
 ## About
 
 A production-ready template for modern web applications using **The Modern Go Stack** - a cohesive technology stack for building high-performance, maintainable applications. Creates single, self-contained binaries with zero external dependencies.
