@@ -33,11 +33,6 @@ localhost, localhost:80, localhost:443 {
 		format console
 		level INFO
 	}
-
-	# Access logging
-	access_log stdout {
-		format console
-	}
 }
 
 # Production domain configuration (uncomment and configure for production)

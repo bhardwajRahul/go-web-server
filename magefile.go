@@ -347,10 +347,10 @@ func Migrate() error {
 	if databaseURL == "" {
 		if isDockerPostgresAvailable() {
 			fmt.Println("  Using Docker PostgreSQL...")
-			databaseURL = "postgres://user:password@localhost:5432/gowebserver?sslmode=disable"
+			databaseURL = "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable"
 		} else {
 			fmt.Println("  Using local PostgreSQL...")
-			databaseURL = "postgres://user:password@localhost:5432/gowebserver?sslmode=disable"
+			databaseURL = "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable"
 		}
 	}
 
@@ -370,10 +370,10 @@ func MigrateDown() error {
 	if databaseURL == "" {
 		if isDockerPostgresAvailable() {
 			fmt.Println("  Using Docker PostgreSQL...")
-			databaseURL = "postgres://user:password@localhost:5432/gowebserver?sslmode=disable"
+			databaseURL = "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable"
 		} else {
 			fmt.Println("  Using local PostgreSQL...")
-			databaseURL = "postgres://user:password@localhost:5432/gowebserver?sslmode=disable"
+			databaseURL = "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable"
 		}
 	}
 
@@ -393,10 +393,10 @@ func MigrateStatus() error {
 	if databaseURL == "" {
 		if isDockerPostgresAvailable() {
 			fmt.Println("  Using Docker PostgreSQL...")
-			databaseURL = "postgres://user:password@localhost:5432/gowebserver?sslmode=disable"
+			databaseURL = "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable"
 		} else {
 			fmt.Println("  Using local PostgreSQL...")
-			databaseURL = "postgres://user:password@localhost:5432/gowebserver?sslmode=disable"
+			databaseURL = "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable"
 		}
 	}
 
@@ -420,7 +420,9 @@ func Quality() error {
 // Docker starts all services using docker-compose
 func Docker() error {
 	fmt.Println("Starting all services with Docker Compose...")
-	return sh.RunV("docker", "compose", "up", "--build", "-d")
+	// Use legacy Docker builder to work around buildx plugin issues
+	env := map[string]string{"DOCKER_BUILDKIT": "0"}
+	return sh.RunWithV(env, "docker", "compose", "up", "--build", "-d")
 }
 
 // DockerDown stops all Docker services
@@ -468,7 +470,7 @@ Quality:
   mage quality (q)      Run all quality checks (vet + lint + vulncheck)
 
 Docker:
-  mage docker           Start all services with Docker Compose (build + up -d)
+  mage docker           Start all services with Docker Compose (legacy builder for compatibility)
   mage dockerDown       Stop all Docker services
   mage dockerReset      Reset Docker environment (remove volumes and containers)
   mage dockerLogs       Show logs from all Docker services

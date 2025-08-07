@@ -11,7 +11,7 @@ scp bin/server user@server:/opt/app/
 
 # Set environment and run
 export APP_ENVIRONMENT=production
-export DATABASE_URL=postgres://user:password@localhost:5432/gowebserver?sslmode=disable
+export DATABASE_URL=postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable
 /opt/app/server
 ```
 

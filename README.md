@@ -91,6 +91,8 @@ docker compose up --build
 
 **Requirements:** Docker and Docker Compose
 
+> **Note:** This project uses the legacy Docker builder (`DOCKER_BUILDKIT=0`) for maximum compatibility. The Mage commands handle this automatically.
+
 ### Local Development
 
 ```bash
@@ -171,6 +173,18 @@ mage docker           # Start all services (PostgreSQL + App + Caddy)
 mage dockerDown       # Stop all Docker services
 mage dockerReset      # Reset Docker environment (remove volumes)
 mage dockerLogs       # Show logs from all Docker services
+```
+
+**Docker Build Issues:**
+
+If you encounter buildx plugin errors, the Mage commands automatically use the legacy builder. For manual commands:
+
+```bash
+# Use legacy builder for compatibility
+DOCKER_BUILDKIT=0 docker compose up --build
+
+# Or use the Mage command (handles this automatically)
+mage docker
 ```
 
 **Quality & Production:**

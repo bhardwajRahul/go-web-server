@@ -180,7 +180,7 @@ PostgreSQL connection security:
 
 ```bash
 # Secure connection strings
-DATABASE_URL="postgres://user:password@localhost:5432/gowebserver?sslmode=require"
+DATABASE_URL="postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=require"
 
 # Connection pooling limits
 DATABASE_MAX_CONNECTIONS=25

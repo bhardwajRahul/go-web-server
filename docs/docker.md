@@ -21,8 +21,8 @@ cd go-web-server
 cp .env.example .env
 # Edit .env with your database credentials (DATABASE_USER, DATABASE_PASSWORD, etc.)
 
-# Start all services
-docker compose up --build
+# Start all services (uses legacy builder for compatibility)
+DOCKER_BUILDKIT=0 docker compose up --build
 
 # Access application
 open http://localhost        # Via Caddy reverse proxy
@@ -241,6 +241,16 @@ docker compose logs postgres
 
 # Test connection
 docker exec -it gowebserver-postgres psql -U user -d gowebserver -c "SELECT 1;"
+```
+
+**Docker buildx issues:**
+
+```bash
+# If you see "fork/exec docker-buildx" errors, use legacy builder
+DOCKER_BUILDKIT=0 docker compose up --build
+
+# Or use Mage commands (handles this automatically)
+mage docker
 ```
 
 ### Performance Optimization

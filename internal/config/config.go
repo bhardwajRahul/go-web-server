@@ -146,7 +146,7 @@ func getDefaults() Config {
 			RunMigrations   bool          `koanf:"run_migrations"`
 			SSLMode         string        `koanf:"ssl_mode"`
 		}{
-			URL:             "postgres://user:password@localhost:5432/gowebserver?sslmode=disable",
+			URL:             "postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/gowebserver?sslmode=disable",
 			MaxConnections:  25,
 			MinConnections:  5,
 			Timeout:         30 * time.Second,

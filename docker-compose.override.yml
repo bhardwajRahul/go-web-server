@@ -21,7 +21,7 @@ services:
       LOG_LEVEL: debug
       
       # Development database connection
-      DATABASE_URL: postgres://user:password@postgres:5432/gowebserver?sslmode=disable
+      DATABASE_URL: postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@postgres:5432/gowebserver?sslmode=disable
       
       # Enable development features
       FEATURES_ENABLE_METRICS: "true"
