@@ -51,7 +51,7 @@ var validate = validator.New()
 func init() {
 	// Register custom validations
 	registerCustomValidations()
-	
+
 	// Use JSON tags for field names
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
@@ -68,13 +68,16 @@ func init() {
 // registerCustomValidations registers custom validation rules
 func registerCustomValidations() {
 	// Register password validation
-	validate.RegisterValidation("password", func(fl validator.FieldLevel) bool {
+	err := validate.RegisterValidation("password", func(fl validator.FieldLevel) bool {
 		password := fl.Field().String()
-		return len(password) >= 8 && 
-			   strings.ContainsAny(password, "ABCDEFGHIJKLMNOPQRSTUVWXYZ") &&
-			   strings.ContainsAny(password, "abcdefghijklmnopqrstuvwxyz") &&
-			   strings.ContainsAny(password, "0123456789")
+		return len(password) >= 8 &&
+			strings.ContainsAny(password, "ABCDEFGHIJKLMNOPQRSTUVWXYZ") &&
+			strings.ContainsAny(password, "abcdefghijklmnopqrstuvwxyz") &&
+			strings.ContainsAny(password, "0123456789")
 	})
+	if err != nil {
+		panic("failed to register password validation: " + err.Error())
+	}
 }
 
 // ValidateStruct validates a struct using go-playground/validator.

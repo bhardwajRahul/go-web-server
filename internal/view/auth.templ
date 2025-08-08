@@ -2,8 +2,8 @@ package view
 
 import (
 	"fmt"
-	"github.com/dunamismax/go-web-server/internal/view/layout"
 	"github.com/dunamismax/go-web-server/internal/middleware"
+	"github.com/dunamismax/go-web-server/internal/view/layout"
 )
 
 templ Login() {
@@ -25,7 +25,6 @@ templ LoginContent() {
 				<h1>Sign In</h1>
 				<p>Welcome back! Please sign in to your account.</p>
 			</hgroup>
-
 			<form hx-post="/auth/login" hx-swap="none" hx-indicator="#login-spinner">
 				<div>
 					<label for="email">Email Address</label>
@@ -38,7 +37,6 @@ templ LoginContent() {
 						autocomplete="email"
 					/>
 				</div>
-
 				<div>
 					<label for="password">Password</label>
 					<input
@@ -50,13 +48,11 @@ templ LoginContent() {
 						autocomplete="current-password"
 					/>
 				</div>
-
 				<button type="submit" style="width: 100%;">
 					Sign In
 					<span id="login-spinner" class="htmx-indicator css-spinner" style="margin-left: 0.5rem;" aria-hidden="true"></span>
 				</button>
 			</form>
-
 			<div style="text-align: center; margin-top: 2rem;">
 				<p>
 					<small>Don't have an account? <a href="/auth/register" hx-get="/auth/register" hx-target="main" hx-swap="innerHTML" hx-push-url="true">Create Account</a></small>
@@ -85,7 +81,6 @@ templ RegisterContent() {
 				<h1>Create Account</h1>
 				<p>Join us! Create your account to get started.</p>
 			</hgroup>
-
 			<form hx-post="/auth/register" hx-swap="none" hx-indicator="#register-spinner">
 				<div>
 					<label for="name">Full Name</label>
@@ -98,7 +93,6 @@ templ RegisterContent() {
 						autocomplete="name"
 					/>
 				</div>
-
 				<div>
 					<label for="email">Email Address</label>
 					<input
@@ -110,7 +104,6 @@ templ RegisterContent() {
 						autocomplete="email"
 					/>
 				</div>
-
 				<div>
 					<label for="password">Password</label>
 					<input
@@ -123,7 +116,6 @@ templ RegisterContent() {
 					/>
 					<small>Must be at least 8 characters with uppercase, lowercase, and numbers</small>
 				</div>
-
 				<div>
 					<label for="confirm_password">Confirm Password</label>
 					<input
@@ -135,7 +127,6 @@ templ RegisterContent() {
 						autocomplete="new-password"
 					/>
 				</div>
-
 				<div>
 					<label for="bio">Bio (Optional)</label>
 					<textarea
@@ -145,7 +136,6 @@ templ RegisterContent() {
 						rows="3"
 					></textarea>
 				</div>
-
 				<div>
 					<label for="avatar_url">Avatar URL (Optional)</label>
 					<input
@@ -155,13 +145,11 @@ templ RegisterContent() {
 						placeholder="https://example.com/avatar.jpg"
 					/>
 				</div>
-
 				<button type="submit" style="width: 100%;">
 					Create Account
 					<span id="register-spinner" class="htmx-indicator css-spinner" style="margin-left: 0.5rem;" aria-hidden="true"></span>
 				</button>
 			</form>
-
 			<div style="text-align: center; margin-top: 2rem;">
 				<p>
 					<small>Already have an account? <a href="/auth/login" hx-get="/auth/login" hx-target="main" hx-swap="innerHTML" hx-push-url="true">Sign In</a></small>
@@ -189,7 +177,6 @@ templ ProfileContent(user middleware.User) {
 			<h1>User Profile</h1>
 			<p>Welcome, { user.Name }!</p>
 		</hgroup>
-
 		<div class="grid">
 			<article>
 				<header>
@@ -198,7 +185,8 @@ templ ProfileContent(user middleware.User) {
 				<div>
 					<p><strong>Name:</strong> { user.Name }</p>
 					<p><strong>Email:</strong> { user.Email }</p>
-					<p><strong>Status:</strong> 
+					<p>
+						<strong>Status:</strong>
 						if user.IsActive {
 							<span style="color: var(--pico-color-green-600)">Active</span>
 						} else {
@@ -210,7 +198,7 @@ templ ProfileContent(user middleware.User) {
 				<footer>
 					<div role="group">
 						<button class="secondary outline">Edit Profile</button>
-						<button 
+						<button
 							hx-post="/auth/logout"
 							hx-swap="none"
 							class="outline"
@@ -221,7 +209,6 @@ templ ProfileContent(user middleware.User) {
 					</div>
 				</footer>
 			</article>
-
 			<article>
 				<header>
 					<h4>Quick Actions</h4>
@@ -239,7 +226,6 @@ templ ProfileContent(user middleware.User) {
 				</div>
 			</article>
 		</div>
-
 		<div id="demo-area" style="margin-top: 2rem;">
 			<!-- Dynamic content area -->
 		</div>

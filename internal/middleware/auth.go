@@ -14,20 +14,20 @@ import (
 
 // AuthConfig holds JWT authentication configuration
 type AuthConfig struct {
-	SigningKey     []byte
-	TokenDuration  time.Duration
+	SigningKey      []byte
+	TokenDuration   time.Duration
 	RefreshDuration time.Duration
-	Issuer         string
-	CookieName     string
-	CookieSecure   bool
-	CookieHTTPOnly bool
+	Issuer          string
+	CookieName      string
+	CookieSecure    bool
+	CookieHTTPOnly  bool
 }
 
 // DefaultAuthConfig provides sensible defaults for JWT authentication
 var DefaultAuthConfig = AuthConfig{
 	SigningKey:      []byte("your-secret-key"), // Should be set from environment
-	TokenDuration:   time.Hour * 24,           // 24 hours
-	RefreshDuration: time.Hour * 24 * 7,       // 7 days
+	TokenDuration:   time.Hour * 24,            // 24 hours
+	RefreshDuration: time.Hour * 24 * 7,        // 7 days
 	Issuer:          "go-web-server",
 	CookieName:      "auth_token",
 	CookieSecure:    true,

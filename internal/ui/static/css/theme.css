@@ -1,0 +1,67 @@
+/* Custom theme enhancements - Go/Golang color palette */
+:root {
+  /* Golang brand colors */
+  --go-blue: #00ADD8;
+  --go-cyan: #5DC9E2;
+  --go-purple: #375EAB;
+  --go-green: #40C463;
+  --go-dark-blue: #2F5F8F;
+  
+  /* Override Pico colors with Go theme */
+  --pico-primary-600: var(--go-blue);
+  --pico-primary-700: var(--go-purple);
+  --pico-color-primary-600: var(--go-blue);
+  --pico-color-primary-700: var(--go-purple);
+  
+  /* Inter font family */
+  --pico-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  
+  /* Minimum 16px font sizes */
+  --pico-font-size: 16px;
+  --pico-line-height: 1.6;
+}
+
+[data-theme="dark"] {
+  --pico-primary-600: var(--go-cyan);
+  --pico-primary-700: var(--go-blue);
+  --pico-color-primary-600: var(--go-cyan);
+  --pico-color-primary-700: var(--go-blue);
+  
+  /* Enhance contrast for dark theme */
+  --pico-contrast-600: var(--go-green);
+  --pico-contrast-700: #32A852;
+  
+  /* Better contrast for readability on mobile */
+  --pico-contrast: #ffffff;
+  --pico-background-color: #11191f;
+}
+
+/* Inter font application and minimum font sizes */
+body {
+  font-family: var(--pico-font-family);
+  font-size: max(16px, var(--pico-font-size));
+  line-height: var(--pico-line-height);
+  transition: opacity 0.15s ease-out !important;
+}
+
+/* Ensure minimum 16px across all text elements */
+p, li, td, th, span, div, label, input, textarea, select, button {
+  font-size: max(16px, 1rem);
+  font-family: var(--pico-font-family);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--pico-font-family);
+  font-weight: 600;
+}
+
+h1 { font-size: max(32px, 2rem); }
+h2 { font-size: max(28px, 1.75rem); }
+h3 { font-size: max(24px, 1.5rem); }
+h4 { font-size: max(20px, 1.25rem); }
+h5 { font-size: max(18px, 1.125rem); }
+h6 { font-size: max(16px, 1rem); }
+
+small, .small {
+  font-size: max(14px, 0.875rem) !important;
+}

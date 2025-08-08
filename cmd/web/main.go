@@ -69,7 +69,7 @@ func main() {
 		MaxConnLifetime: cfg.Database.MaxConnLifetime,
 		MaxConnIdleTime: cfg.Database.MaxConnIdleTime,
 	}
-	
+
 	store, err := store.NewStoreWithConfig(ctx, cfg.Database.URL, poolConfig)
 	if err != nil {
 		slog.Error("failed to connect to database", "error", err, "database_url", cfg.Database.URL)

@@ -34,7 +34,7 @@ func NewStore(ctx context.Context, databaseURL string) (*Store, error) {
 		MaxConnLifetime: 0,
 		MaxConnIdleTime: 0,
 	}
-	
+
 	return NewStoreWithConfig(ctx, databaseURL, poolConfig)
 }
 
