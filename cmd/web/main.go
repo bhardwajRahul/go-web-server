@@ -62,8 +62,15 @@ func main() {
 	// Create context for database operations
 	ctx := context.Background()
 
-	// Initialize database store
-	store, err := store.NewStore(ctx, cfg.Database.URL)
+	// Initialize database store with configurable pool settings
+	poolConfig := store.PoolConfig{
+		MaxConns:        cfg.Database.MaxConnections,
+		MinConns:        cfg.Database.MinConnections,
+		MaxConnLifetime: cfg.Database.MaxConnLifetime,
+		MaxConnIdleTime: cfg.Database.MaxConnIdleTime,
+	}
+	
+	store, err := store.NewStoreWithConfig(ctx, cfg.Database.URL, poolConfig)
 	if err != nil {
 		slog.Error("failed to connect to database", "error", err, "database_url", cfg.Database.URL)
 		return
@@ -211,8 +218,20 @@ func main() {
 		}
 	})
 
+	// Initialize authentication service
+	authConfig := middleware.AuthConfig{
+		SigningKey:      []byte(cfg.Auth.JWTSecret),
+		TokenDuration:   cfg.Auth.TokenDuration,
+		RefreshDuration: cfg.Auth.RefreshDuration,
+		Issuer:          "go-web-server",
+		CookieName:      cfg.Auth.CookieName,
+		CookieSecure:    cfg.Auth.CookieSecure,
+		CookieHTTPOnly:  true,
+	}
+	authService := middleware.NewAuthService(authConfig)
+
 	// Initialize handlers and register routes
-	handlers := handler.NewHandlers(store)
+	handlers := handler.NewHandlers(store, authService)
 	if err := handler.RegisterRoutes(e, handlers); err != nil {
 		slog.Error("failed to register routes", "error", err)
 		return

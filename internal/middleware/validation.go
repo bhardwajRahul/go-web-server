@@ -6,14 +6,14 @@ import (
 	"log/slog"
 	"net/http"
 	"reflect"
-	"strconv"
 	"strings"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 )
 
-// Validator interface for custom validation.
-type Validator interface {
+// CustomValidator interface for custom validation.
+type CustomValidator interface {
 	Validate() error
 }
 
@@ -22,6 +22,7 @@ type ValidationError struct {
 	Field   string `json:"field"`
 	Message string `json:"message"`
 	Value   any    `json:"value,omitempty"`
+	Tag     string `json:"tag,omitempty"`
 }
 
 func (ve ValidationError) Error() string {
@@ -44,287 +45,113 @@ func (ve ValidationErrors) Error() string {
 	return strings.Join(messages, "; ")
 }
 
-// ValidateStruct validates a struct using reflection and validate tags.
-func ValidateStruct(s any) ValidationErrors {
-	var errors ValidationErrors
+// Global validator instance
+var validate = validator.New()
 
-	val := reflect.ValueOf(s)
-	typ := reflect.TypeOf(s)
-
-	// Handle pointers
-	if val.Kind() == reflect.Ptr {
-		val = val.Elem()
-		typ = typ.Elem()
-	}
-
-	if val.Kind() != reflect.Struct {
-		return errors
-	}
-
-	for i := 0; i < val.NumField(); i++ {
-		field := val.Field(i)
-		fieldType := typ.Field(i)
-
-		// Skip unexported fields
-		if !field.CanInterface() {
-			continue
+func init() {
+	// Register custom validations
+	registerCustomValidations()
+	
+	// Use JSON tags for field names
+	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+		if name == "-" {
+			return ""
 		}
-
-		tagValue := fieldType.Tag.Get("validate")
-		if tagValue == "" {
-			continue
+		if name == "" {
+			return strings.ToLower(fld.Name)
 		}
-
-		fieldName := getFieldName(fieldType)
-		fieldValue := field.Interface()
-
-		// Parse validation rules
-		rules := parseValidationRules(tagValue)
-
-		for _, rule := range rules {
-			if err := validateRule(fieldName, fieldValue, rule); err != nil {
-				errors = append(errors, *err)
-			}
-		}
-	}
-
-	return errors
+		return name
+	})
 }
 
-// ValidationRule represents a single validation rule.
-type ValidationRule struct {
-	Name  string
-	Param string
+// registerCustomValidations registers custom validation rules
+func registerCustomValidations() {
+	// Register password validation
+	validate.RegisterValidation("password", func(fl validator.FieldLevel) bool {
+		password := fl.Field().String()
+		return len(password) >= 8 && 
+			   strings.ContainsAny(password, "ABCDEFGHIJKLMNOPQRSTUVWXYZ") &&
+			   strings.ContainsAny(password, "abcdefghijklmnopqrstuvwxyz") &&
+			   strings.ContainsAny(password, "0123456789")
+	})
 }
 
-// parseValidationRules parses validation tag into rules.
-func parseValidationRules(tag string) []ValidationRule {
-	var rules []ValidationRule
+// ValidateStruct validates a struct using go-playground/validator.
+func ValidateStruct(s interface{}) ValidationErrors {
+	var validationErrors ValidationErrors
 
-	parts := strings.Split(tag, ",")
-	for _, part := range parts {
-		part = strings.TrimSpace(part)
-		if part == "" {
-			continue
-		}
+	err := validate.Struct(s)
+	if err == nil {
+		return validationErrors
+	}
 
-		if strings.Contains(part, "=") {
-			kv := strings.SplitN(part, "=", 2)
-			rules = append(rules, ValidationRule{
-				Name:  strings.TrimSpace(kv[0]),
-				Param: strings.TrimSpace(kv[1]),
-			})
-		} else {
-			rules = append(rules, ValidationRule{
-				Name: part,
+	// Handle validation errors
+	var ve validator.ValidationErrors
+	if errors.As(err, &ve) {
+		for _, fieldErr := range ve {
+			validationErrors = append(validationErrors, ValidationError{
+				Field:   fieldErr.Field(),
+				Message: getErrorMessage(fieldErr),
+				Value:   fieldErr.Value(),
+				Tag:     fieldErr.Tag(),
 			})
 		}
 	}
 
-	return rules
+	return validationErrors
 }
 
-// validateRule validates a single rule against a field value.
-func validateRule(fieldName string, value any, rule ValidationRule) *ValidationError {
-	switch rule.Name {
+// getErrorMessage returns a human-readable error message for a validation error
+func getErrorMessage(fe validator.FieldError) string {
+	switch fe.Tag() {
 	case "required":
-		return validateRequired(fieldName, value)
-	case "min":
-		return validateMin(fieldName, value, rule.Param)
-	case "max":
-		return validateMax(fieldName, value, rule.Param)
+		return "field is required"
 	case "email":
-		return validateEmail(fieldName, value)
+		return "invalid email format"
 	case "url":
-		return validateURL(fieldName, value)
+		return "invalid URL format"
+	case "min":
+		if fe.Kind() == reflect.String {
+			return fmt.Sprintf("minimum length is %s", fe.Param())
+		}
+		return fmt.Sprintf("minimum value is %s", fe.Param())
+	case "max":
+		if fe.Kind() == reflect.String {
+			return fmt.Sprintf("maximum length is %s", fe.Param())
+		}
+		return fmt.Sprintf("maximum value is %s", fe.Param())
+	case "len":
+		return fmt.Sprintf("length must be %s", fe.Param())
 	case "oneof":
-		return validateOneOf(fieldName, value, rule.Param)
+		return fmt.Sprintf("must be one of: %s", fe.Param())
+	case "password":
+		return "password must be at least 8 characters with uppercase, lowercase, and numeric characters"
+	case "alphanum":
+		return "must contain only alphanumeric characters"
+	case "alpha":
+		return "must contain only alphabetic characters"
+	case "numeric":
+		return "must contain only numeric characters"
+	case "gt":
+		return fmt.Sprintf("must be greater than %s", fe.Param())
+	case "gte":
+		return fmt.Sprintf("must be greater than or equal to %s", fe.Param())
+	case "lt":
+		return fmt.Sprintf("must be less than %s", fe.Param())
+	case "lte":
+		return fmt.Sprintf("must be less than or equal to %s", fe.Param())
+	case "uuid":
+		return "must be a valid UUID"
+	case "datetime":
+		return "must be a valid datetime"
+	default:
+		return fmt.Sprintf("validation failed for tag '%s'", fe.Tag())
 	}
-
-	return nil
-}
-
-// validateRequired checks if a field is required.
-func validateRequired(fieldName string, value any) *ValidationError {
-	if isZeroValue(value) {
-		return &ValidationError{
-			Field:   fieldName,
-			Message: "field is required",
-			Value:   value,
-		}
-	}
-
-	return nil
-}
-
-// validateMin validates minimum length/value.
-func validateMin(fieldName string, value any, param string) *ValidationError {
-	minVal, err := strconv.Atoi(param)
-	if err != nil {
-		return &ValidationError{
-			Field:   fieldName,
-			Message: "invalid min parameter",
-		}
-	}
-
-	switch v := value.(type) {
-	case string:
-		if len(v) < minVal {
-			return &ValidationError{
-				Field:   fieldName,
-				Message: fmt.Sprintf("minimum length is %d", minVal),
-				Value:   len(v),
-			}
-		}
-	case int, int8, int16, int32, int64:
-		val := reflect.ValueOf(v).Int()
-		if val < int64(minVal) {
-			return &ValidationError{
-				Field:   fieldName,
-				Message: fmt.Sprintf("minimum value is %d", minVal),
-				Value:   val,
-			}
-		}
-	}
-
-	return nil
-}
-
-// validateMax validates maximum length/value.
-func validateMax(fieldName string, value any, param string) *ValidationError {
-	maxVal, err := strconv.Atoi(param)
-	if err != nil {
-		return &ValidationError{
-			Field:   fieldName,
-			Message: "invalid max parameter",
-		}
-	}
-
-	switch v := value.(type) {
-	case string:
-		if len(v) > maxVal {
-			return &ValidationError{
-				Field:   fieldName,
-				Message: fmt.Sprintf("maximum length is %d", maxVal),
-				Value:   len(v),
-			}
-		}
-	case int, int8, int16, int32, int64:
-		val := reflect.ValueOf(v).Int()
-		if val > int64(maxVal) {
-			return &ValidationError{
-				Field:   fieldName,
-				Message: fmt.Sprintf("maximum value is %d", maxVal),
-				Value:   val,
-			}
-		}
-	}
-
-	return nil
-}
-
-// validateEmail validates email format.
-func validateEmail(fieldName string, value any) *ValidationError {
-	str, ok := value.(string)
-	if !ok {
-		return &ValidationError{
-			Field:   fieldName,
-			Message: "field must be a string",
-		}
-	}
-
-	if !strings.Contains(str, "@") || !strings.Contains(str, ".") {
-		return &ValidationError{
-			Field:   fieldName,
-			Message: "invalid email format",
-			Value:   str,
-		}
-	}
-
-	return nil
-}
-
-// validateURL validates URL format.
-func validateURL(fieldName string, value any) *ValidationError {
-	str, ok := value.(string)
-	if !ok {
-		return &ValidationError{
-			Field:   fieldName,
-			Message: "field must be a string",
-		}
-	}
-
-	if !strings.HasPrefix(str, "http://") && !strings.HasPrefix(str, "https://") {
-		return &ValidationError{
-			Field:   fieldName,
-			Message: "invalid URL format",
-			Value:   str,
-		}
-	}
-
-	return nil
-}
-
-// validateOneOf validates that value is one of allowed values.
-func validateOneOf(fieldName string, value any, param string) *ValidationError {
-	allowedValues := strings.Split(param, " ")
-	valueStr := fmt.Sprintf("%v", value)
-
-	for _, allowed := range allowedValues {
-		if valueStr == allowed {
-			return nil
-		}
-	}
-
-	return &ValidationError{
-		Field:   fieldName,
-		Message: "value must be one of: " + param,
-		Value:   value,
-	}
-}
-
-// isZeroValue checks if a value is zero/empty.
-func isZeroValue(value any) bool {
-	if value == nil {
-		return true
-	}
-
-	val := reflect.ValueOf(value)
-	switch val.Kind() {
-	case reflect.String:
-		return val.String() == ""
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return val.Int() == 0
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return val.Uint() == 0
-	case reflect.Float32, reflect.Float64:
-		return val.Float() == 0
-	case reflect.Bool:
-		return !val.Bool()
-	case reflect.Ptr, reflect.Interface:
-		return val.IsNil()
-	case reflect.Slice, reflect.Map, reflect.Array:
-		return val.Len() == 0
-	}
-
-	return false
-}
-
-// getFieldName gets the field name for validation (prefers json tag).
-func getFieldName(field reflect.StructField) string {
-	jsonTag := field.Tag.Get("json")
-	if jsonTag != "" && jsonTag != "-" {
-		parts := strings.Split(jsonTag, ",")
-		if parts[0] != "" {
-			return parts[0]
-		}
-	}
-
-	return strings.ToLower(field.Name)
 }
 
 // ValidateAndBind is an Echo middleware that validates request body.
-func ValidateAndBind(target any) echo.MiddlewareFunc {
+func ValidateAndBind(target interface{}) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			// Create new instance of target type
@@ -339,32 +166,36 @@ func ValidateAndBind(target any) echo.MiddlewareFunc {
 			if err := c.Bind(instance); err != nil {
 				slog.Error("failed to bind request data", "error", err)
 
-				return echo.NewHTTPError(http.StatusBadRequest, map[string]any{
-					"error":   "invalid request format",
-					"details": err.Error(),
-				})
+				return NewAppError(
+					ErrorTypeValidation,
+					http.StatusBadRequest,
+					"Invalid request format",
+				).WithContext(c).WithInternal(err)
 			}
 
 			// Run custom validation if implemented
-			if validator, ok := instance.(Validator); ok {
-				if err := validator.Validate(); err != nil {
+			if customValidator, ok := instance.(CustomValidator); ok {
+				if err := customValidator.Validate(); err != nil {
 					slog.Warn("custom validation failed", "error", err)
 
-					return echo.NewHTTPError(http.StatusBadRequest, map[string]any{
-						"error":   "validation failed",
-						"details": err.Error(),
-					})
+					return NewAppError(
+						ErrorTypeValidation,
+						http.StatusBadRequest,
+						"Custom validation failed",
+					).WithContext(c).WithInternal(err)
 				}
 			}
 
-			// Run struct validation
+			// Run struct validation using go-playground/validator
 			if validationErrors := ValidateStruct(instance); len(validationErrors) > 0 {
 				slog.Warn("struct validation failed", "errors", validationErrors)
 
-				return echo.NewHTTPError(http.StatusBadRequest, map[string]any{
-					"error":  "validation failed",
-					"fields": validationErrors,
-				})
+				return NewAppErrorWithDetails(
+					ErrorTypeValidation,
+					http.StatusBadRequest,
+					"Validation failed",
+					validationErrors,
+				).WithContext(c)
 			}
 
 			// Store validated data in context
@@ -388,4 +219,12 @@ func GetValidated[T any](c echo.Context) (*T, error) {
 	}
 
 	return data, nil
+}
+
+// Validate validates a single struct instance
+func Validate(s interface{}) error {
+	if validationErrors := ValidateStruct(s); len(validationErrors) > 0 {
+		return validationErrors
+	}
+	return nil
 }

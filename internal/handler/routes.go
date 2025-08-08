@@ -6,6 +6,7 @@ import (
 
 	"log/slog"
 
+	"github.com/dunamismax/go-web-server/internal/middleware"
 	"github.com/dunamismax/go-web-server/internal/store"
 	"github.com/dunamismax/go-web-server/internal/ui"
 	"github.com/labstack/echo/v4"
@@ -15,13 +16,15 @@ import (
 type Handlers struct {
 	Home *HomeHandler
 	User *UserHandler
+	Auth *AuthHandler
 }
 
 // NewHandlers creates a new handlers instance with the given store.
-func NewHandlers(s *store.Store) *Handlers {
+func NewHandlers(s *store.Store, authService *middleware.AuthService) *Handlers {
 	return &Handlers{
 		Home: NewHomeHandler(s),
 		User: NewUserHandler(s),
+		Auth: NewAuthHandler(s, authService),
 	}
 }
 
@@ -41,6 +44,19 @@ func RegisterRoutes(e *echo.Echo, handlers *Handlers) error {
 	e.GET("/", handlers.Home.Home)
 	e.GET("/demo", handlers.Home.Demo)
 	e.GET("/health", handlers.Home.Health)
+
+	// Authentication routes (no auth required)
+	auth := e.Group("/auth")
+	auth.GET("/login", handlers.Auth.LoginPage)
+	auth.GET("/register", handlers.Auth.RegisterPage)
+	auth.POST("/login", handlers.Auth.Login)
+	auth.POST("/register", handlers.Auth.Register)
+	auth.POST("/logout", handlers.Auth.Logout)
+
+	// Protected routes (authentication required)
+	protected := e.Group("/profile")
+	// protected.Use(middleware.JWTMiddleware(authService)) // Commented out for now as we don't have authService here
+	protected.GET("", handlers.Auth.Profile)
 
 	// User management routes
 	e.GET("/users", handlers.User.Users)

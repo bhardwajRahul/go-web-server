@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -194,6 +195,14 @@ func ErrorHandler(err error, c echo.Context) {
 		return
 	}
 
+	// Get timestamp with fallback
+	var timestamp string
+	if ts := c.Request().Context().Value("timestamp"); ts != nil {
+		timestamp = fmt.Sprintf("%d", ts)
+	} else {
+		timestamp = fmt.Sprintf("%d", time.Now().Unix())
+	}
+
 	// Create enhanced error response
 	errorResp := ErrorResponse{
 		Type:      errorType,
@@ -204,12 +213,7 @@ func ErrorHandler(err error, c echo.Context) {
 		Path:      c.Request().URL.Path,
 		Method:    c.Request().Method,
 		RequestID: c.Response().Header().Get(echo.HeaderXRequestID),
-		Timestamp: fmt.Sprintf("%d", c.Request().Context().Value("timestamp")),
-	}
-
-	// Set timestamp if not available from context
-	if errorResp.Timestamp == "<nil>" || errorResp.Timestamp == "" {
-		errorResp.Timestamp = "server-time"
+		Timestamp: timestamp,
 	}
 
 	// Remove details in production for security

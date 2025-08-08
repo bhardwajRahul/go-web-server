@@ -407,6 +407,24 @@ templ BaseWithCSRF(title, csrfToken string) {
 							>Users</a>
 						</li>
 						<li>
+							<a
+								href="/auth/login"
+								hx-get="/auth/login"
+								hx-target="main"
+								hx-swap="innerHTML swap:0s settle:0s"
+								hx-push-url="true"
+							>Login</a>
+						</li>
+						<li>
+							<a
+								href="/profile"
+								hx-get="/profile"
+								hx-target="main"
+								hx-swap="innerHTML swap:0s settle:0s"
+								hx-push-url="true"
+							>Profile</a>
+						</li>
+						<li>
 							<details role="list">
 								<summary aria-haspopup="listbox" role="button">Theme</summary>
 								<ul role="listbox">

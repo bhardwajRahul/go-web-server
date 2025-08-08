@@ -4,6 +4,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -16,18 +17,39 @@ type Store struct {
 	db *pgxpool.Pool
 }
 
+// PoolConfig holds database connection pool configuration.
+type PoolConfig struct {
+	MaxConns        int32
+	MinConns        int32
+	MaxConnLifetime time.Duration
+	MaxConnIdleTime time.Duration
+}
+
 // NewStore creates a new store instance with database connection pool.
 func NewStore(ctx context.Context, databaseURL string) (*Store, error) {
+	// Default pool configuration
+	poolConfig := PoolConfig{
+		MaxConns:        25,
+		MinConns:        5,
+		MaxConnLifetime: 0,
+		MaxConnIdleTime: 0,
+	}
+	
+	return NewStoreWithConfig(ctx, databaseURL, poolConfig)
+}
+
+// NewStoreWithConfig creates a new store instance with custom pool configuration.
+func NewStoreWithConfig(ctx context.Context, databaseURL string, poolConfig PoolConfig) (*Store, error) {
 	config, err := pgxpool.ParseConfig(databaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse database URL: %w", err)
 	}
 
-	// Set connection pool settings
-	config.MaxConns = 25
-	config.MinConns = 5
-	config.MaxConnLifetime = 0
-	config.MaxConnIdleTime = 0
+	// Set connection pool settings from config
+	config.MaxConns = poolConfig.MaxConns
+	config.MinConns = poolConfig.MinConns
+	config.MaxConnLifetime = poolConfig.MaxConnLifetime
+	config.MaxConnIdleTime = poolConfig.MaxConnIdleTime
 
 	db, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {

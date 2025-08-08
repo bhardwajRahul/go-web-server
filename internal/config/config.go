@@ -25,8 +25,8 @@ type Config struct {
 	// Database configuration
 	Database struct {
 		URL             string        `mapstructure:"url"`
-		MaxConnections  int           `mapstructure:"max_connections"`
-		MinConnections  int           `mapstructure:"min_connections"`
+		MaxConnections  int32         `mapstructure:"max_connections"`
+		MinConnections  int32         `mapstructure:"min_connections"`
 		Timeout         time.Duration `mapstructure:"timeout"`
 		MaxConnLifetime time.Duration `mapstructure:"max_conn_lifetime"`
 		MaxConnIdleTime time.Duration `mapstructure:"max_conn_idle_time"`
@@ -54,6 +54,15 @@ type Config struct {
 		EnableMetrics bool `mapstructure:"enable_metrics"`
 		EnablePprof   bool `mapstructure:"enable_pprof"`
 	} `mapstructure:"features"`
+
+	// JWT/Authentication configuration
+	Auth struct {
+		JWTSecret       string        `mapstructure:"jwt_secret"`
+		TokenDuration   time.Duration `mapstructure:"token_duration"`
+		RefreshDuration time.Duration `mapstructure:"refresh_duration"`
+		CookieName      string        `mapstructure:"cookie_name"`
+		CookieSecure    bool          `mapstructure:"cookie_secure"`
+	} `mapstructure:"auth"`
 }
 
 // New creates and returns a new configuration instance with defaults, file, and environment overrides.
@@ -178,6 +187,13 @@ func setDefaults(v *viper.Viper) {
 	// Feature flags defaults
 	v.SetDefault("features.enable_metrics", false)
 	v.SetDefault("features.enable_pprof", false)
+
+	// Authentication defaults
+	v.SetDefault("auth.jwt_secret", "change-this-in-production")
+	v.SetDefault("auth.token_duration", 24*time.Hour)
+	v.SetDefault("auth.refresh_duration", 7*24*time.Hour)
+	v.SetDefault("auth.cookie_name", "auth_token")
+	v.SetDefault("auth.cookie_secure", true)
 }
 
 // GetLogLevel converts the string log level to slog.Level.
