@@ -178,7 +178,6 @@ mage migrateDown      # Roll back last migration
 mage migrateStatus    # Show migration status
 ```
 
-
 **Quality & Production:**
 
 ```bash
@@ -227,7 +226,7 @@ Interactive user management application demonstrating:
 - **Enterprise Security**: Input sanitization, XSS/SQL injection prevention, and structured error handling
 
 <p align="center">
-  <img src="https://github.com/dunamismax/images/blob/main/golang/go-web-server-user-screenshot.png" alt="Go Web Server Screenshot" width="800" />
+  <img src="hhttps://github.com/dunamismax/images/blob/main/golang/go-web-server-screenshot.png" alt="Go Web Server Screenshot" width="800" />
 </p>
 
 > **Easter Egg**: The default user database comes pre-populated with Robert Griesemer, Rob Pike, and Ken Thompson - the three brilliant minds who created the Go programming language at Google starting in 2007. A small tribute to the creators of the language that powers this entire stack!
