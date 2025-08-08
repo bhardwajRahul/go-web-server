@@ -35,6 +35,7 @@ mage dev          # Start with hot reload
 mage generate     # Generate SQLC + Templ code
 mage quality      # Run vet + lint + vulncheck
 mage build        # Production binary
+mage ci           # Complete CI pipeline
 ```
 
 ## Database Development
@@ -44,135 +45,223 @@ mage build        # Production binary
 ```bash
 sudo systemctl start postgresql  # Start PostgreSQL service
 mage migrate                     # Run migrations up
-mage migrateDown                # Rollback last migration
-mage migrateStatus              # Show migration status
+mage migrateDown                 # Rollback last migration
+mage migrateStatus               # Show migration status
 ```
 
-**Creating migrations:**
+**Database Reset:**
 
 ```bash
-goose -dir internal/store/migrations create feature_name sql
+mage reset        # Reset to fresh state with sample data
 ```
 
-**Writing queries in `internal/store/queries.sql`:**
+This command:
+- Cleans build artifacts
+- Removes generated code
+- Regenerates code and templates
+- Runs fresh migrations with sample data
 
-```sql
--- name: GetActiveUsers :many
-SELECT * FROM users WHERE is_active = true ORDER BY created_at DESC;
-```
+## Environment Configuration
 
-## Template Development
-
-**Base layout (`internal/view/layout/base.templ`):**
-
-```go
-package layout
-
-templ Base(title string) {
-    <!DOCTYPE html>
-    <html lang="en" data-theme="dark">
-        <head>
-            <title>{title} - Go Web Server</title>
-            <link rel="stylesheet" href="/static/css/pico.min.css">
-            <script src="/static/js/htmx.min.js"></script>
-        </head>
-        <body>
-            { children... }
-        </body>
-    </html>
-}
-```
-
-**Page template with HTMX:**
-
-```go
-templ UserForm(user *store.User, token string) {
-    <form hx-post="/users" hx-target="#user-list">
-        <input type="hidden" name="csrf_token" value={token}/>
-        <input type="text" name="name" required/>
-        <button type="submit">Create User</button>
-    </form>
-}
-```
-
-## Handler Development
-
-**Basic handler pattern:**
-
-```go
-func (h *UserHandler) CreateUser(c echo.Context) error {
-    ctx := c.Request().Context()
-    
-    // Validate input
-    name := c.FormValue("name")
-    if name == "" {
-        return middleware.NewAppError(
-            middleware.ErrorTypeValidation,
-            http.StatusBadRequest,
-            "Name is required",
-        ).WithContext(c)
-    }
-    
-    // Database operation
-    user, err := h.store.CreateUser(ctx, store.CreateUserParams{
-        Name: name,
-        Email: c.FormValue("email"),
-    })
-    if err != nil {
-        return middleware.NewAppError(
-            middleware.ErrorTypeInternal,
-            http.StatusInternalServerError,
-            "Failed to create user",
-        ).WithContext(c).WithInternal(err)
-    }
-    
-    // Return HTML for HTMX
-    component := view.UserRow(user)
-    return component.Render(ctx, c.Response().Writer)
-}
-```
-
-## Configuration
-
-**Development environment variables (.env file):**
+**Required Environment Variables (.env file):**
 
 ```bash
-APP_ENVIRONMENT=development
-APP_DEBUG=true
-SERVER_PORT=8080
-DATABASE_USER=your_username
+# Database Configuration
+DATABASE_USER=your_user
 DATABASE_PASSWORD=your_password
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
 DATABASE_NAME=gowebserver
-DATABASE_URL=postgres://your_username:your_password@localhost:5432/gowebserver?sslmode=disable
-FEATURES_ENABLE_METRICS=true
+DATABASE_SSLMODE=disable
+
+# Optional: Complete DATABASE_URL (overrides individual vars)
+# DATABASE_URL=postgres://user:password@localhost:5432/gowebserver?sslmode=disable
+
+# JWT Configuration
+JWT_SECRET=your-secret-key-change-in-production
+TOKEN_DURATION=24h
+REFRESH_DURATION=168h  # 7 days
+
+# Server Configuration
+SERVER_PORT=8080
+SERVER_HOST=
+DEBUG=true
+ENVIRONMENT=development
+LOG_LEVEL=debug
+LOG_FORMAT=text
+
+# Feature Flags
+FEATURES_ENABLE_METRICS=false
+FEATURES_ENABLE_PPROF=false
+
+# Security
+ENABLE_CORS=true
+ALLOWED_ORIGINS=*
 ```
 
-## Debugging
+## Code Generation Workflow
 
-**Database:**
+The application uses code generation for type safety:
 
 ```bash
-# Connect to PostgreSQL in Docker (replace with your credentials)
-docker exec -it gowebserver-postgres psql -U ${DATABASE_USER} -d ${DATABASE_NAME}
+# Generate database code from SQL
+mage generateSqlc    # or: sqlc generate
 
-# Or using local psql client with your credentials from .env
-psql postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:5432/${DATABASE_NAME}
+# Generate templates from .templ files  
+mage generateTempl   # or: templ generate
 
-# Common commands
-\dt                          # List tables
-\d users                     # Describe users table
-SELECT * FROM users LIMIT 5; # Query users
+# Generate both
+mage generate
 ```
 
-**Monitoring:**
+**When to regenerate:**
+
+- After modifying `internal/store/queries.sql`
+- After modifying `internal/store/schema.sql`
+- After creating/modifying `.templ` files
+- After pulling changes that affect generated code
+
+## Hot Reload Development
+
+Using Air for hot reload:
 
 ```bash
-curl http://localhost:8080/health
-curl http://localhost:8080/metrics
+mage dev  # Starts Air with automatic recompilation
 ```
+
+**What triggers reload:**
+- Go source file changes
+- Template file changes (`.templ`)
+- Static asset changes
+- Configuration changes
+
+**Air Configuration:**
+- Builds to `tmp/main` for faster startups
+- Excludes generated files from watch
+- Includes SQL and template files in watch
+
+## Quality Assurance
+
+**Static Analysis:**
+
+```bash
+mage vet          # Go vet analysis
+mage lint         # golangci-lint (comprehensive)
+mage vulncheck    # Security vulnerability scanning
+mage quality      # All quality checks
+```
+
+**Formatting:**
+
+```bash
+mage fmt          # Format with goimports + go mod tidy
+```
+
+**Complete CI Pipeline:**
+
+```bash
+mage ci           # generate + fmt + quality + build + info
+```
+
+## Testing Guidelines
+
+**Manual Testing:**
+
+1. **Authentication Flow**: Test login/register/logout
+2. **User Management**: Create, update, deactivate users
+3. **HTMX Interactions**: Test dynamic page updates
+4. **Error Handling**: Test validation and error responses
+5. **CSRF Protection**: Test form submissions
+6. **Theme Switching**: Test dark/light mode persistence
+
+**Browser Testing:**
+- Chrome/Firefox/Safari compatibility
+- Mobile responsiveness
+- HTMX request/response inspection
+- Network tab for partial updates
+- Console for JavaScript errors
+
+## Development Workflow
+
+**Daily Development:**
+
+1. Start PostgreSQL: `sudo systemctl start postgresql`
+2. Start dev server: `mage dev`
+3. Make changes to code
+4. Auto-reload happens via Air
+5. Test changes in browser
+6. Run quality checks: `mage quality`
+7. Commit changes with meaningful messages
+
+**Adding New Features:**
+
+1. **Database Changes**:
+   - Add migration in `internal/store/migrations/`
+   - Update `schema.sql` and `queries.sql`
+   - Run `mage generate` to update Go code
+
+2. **Handler Changes**:
+   - Add routes in `internal/handler/routes.go`
+   - Implement handlers in appropriate files
+   - Add middleware if needed
+
+3. **Template Changes**:
+   - Create/modify `.templ` files
+   - Run `mage generate` to compile templates
+   - Update CSS if needed
+
+4. **Testing**:
+   - Manual testing in browser
+   - Run `mage quality` for static analysis
+   - Test CSRF protection on forms
+   - Test HTMX interactions
 
 ## Common Issues
 
-- **Hot reload not working:** Check `mage dev` and ensure Air is running
-- **SQLC errors:** Run `sqlc vet` to check SQL syntax
-- **Template errors:** Run `templ generate` to check syntax
+**Database Connection:**
+```bash
+# Check PostgreSQL status
+sudo systemctl status postgresql
+
+# Check database exists
+psql -U postgres -l
+
+# Create database if missing
+sudo -u postgres createdb gowebserver
+sudo -u postgres createuser -P gowebserver
+```
+
+**Generation Issues:**
+```bash
+# Clean and regenerate everything
+mage clean
+mage generate
+```
+
+**Port Already in Use:**
+```bash
+# Kill process on port 8080
+sudo lsof -ti:8080 | xargs kill -9
+```
+
+**Permission Issues:**
+```bash
+# Fix PostgreSQL authentication
+sudo -u postgres psql
+\password postgres
+```
+
+## IDE Configuration
+
+**VS Code Extensions:**
+- Go extension for Go development
+- Templ extension for template syntax highlighting
+- PostgreSQL extension for database management
+- Thunder Client for API testing
+
+**GoLand/IntelliJ:**
+- Go plugin
+- Database tools and SQL plugin
+- File watchers for auto-generation
+
+This development setup provides hot reload, comprehensive tooling, and immediate feedback for productive Go web development.

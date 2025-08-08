@@ -44,26 +44,69 @@ Request → Middleware Stack → Router → Handler → Store → Database
 
 | Layer | Technology | Purpose |
 |-------|------------|---------|
-| **Server** | Echo v4 | HTTP framework with middleware |
-| **Templates** | Templ v0.3.924 | Type-safe HTML templates |
-| **Frontend** | HTMX 2.0.6 | Dynamic interactions |
-| **Styling** | Pico.css v2 | Semantic CSS with themes |
-| **Database** | PostgreSQL + pgx/v5 | High-performance PostgreSQL driver |
-| **Queries** | SQLC v1.29.0 | Type-safe Go from SQL |
-| **Build** | Mage | Go-based automation |
-| **Dev** | Air | Hot reload development |
+| **Language** | Go 1.24+ | Latest performance & language features |
+| **Server** | Echo v4 | High-performance HTTP framework with middleware |
+| **Templates** | Templ v0.3.924 | Type-safe Go HTML components |
+| **Frontend** | HTMX 2.x | Dynamic interactions without JavaScript complexity |
+| **Styling** | Pico.css v2 | Semantic CSS with automatic dark/light themes |
+| **Authentication** | JWT + bcrypt | Secure token-based auth with password hashing |
+| **Database** | PostgreSQL + pgx/v5 | Enterprise-grade database with high-performance driver |
+| **Queries** | SQLC v1.29.0 | Generate type-safe Go from SQL |
+| **Validation** | go-playground/validator | Comprehensive input validation |
+| **Logging** | slog | Structured logging with JSON output |
+| **Metrics** | Prometheus | Performance monitoring & observability |
+| **Config** | Viper | Multi-source configuration management |
+| **Migrations** | Goose | Database migration management |
+| **Build** | Mage | Go-based build automation |
+| **Dev** | Air | Hot reload development server |
+| **Assets** | Go Embed | Single binary with embedded resources |
 
 ## Project Structure
 
 ```
-cmd/web/main.go           # Entry point & server setup
+cmd/web/                     # Application entry point
+├── main.go                  # Server setup, middleware stack, graceful shutdown
 internal/
-├── config/              # Viper configuration
-├── handler/             # HTTP request handlers
-├── middleware/          # Security & validation
-├── store/               # SQLC database layer
-├── ui/                  # Embedded static assets
-└── view/                # Templ templates
+├── config/                  # Configuration management
+│   └── config.go           # Viper multi-source config with defaults
+├── handler/                 # HTTP request handlers
+│   ├── routes.go           # Route registration and static file serving
+│   ├── auth.go            # JWT authentication (login, register, logout)
+│   ├── home.go            # Home page and health check endpoints
+│   └── user.go            # User CRUD operations with HTMX
+├── middleware/              # Security and validation middleware
+│   ├── auth.go            # JWT middleware and password hashing
+│   ├── csrf.go            # CSRF protection with token rotation
+│   ├── errors.go          # Structured error handling and recovery
+│   ├── metrics.go         # Prometheus metrics collection
+│   ├── sanitize.go        # Input sanitization (XSS/SQL injection)
+│   └── validation.go      # Request validation with go-playground/validator
+├── store/                   # Database layer (SQLC generated)
+│   ├── db.go              # Database connection and health checks
+│   ├── models.go          # Generated Go structs from SQL schema
+│   ├── queries.sql        # SQL queries for SQLC generation
+│   ├── queries.sql.go     # Generated type-safe Go code from SQL
+│   ├── schema.sql         # Database schema definition
+│   ├── store.go           # Store interface and initialization
+│   └── migrations/        # Goose database migrations
+│       └── 20241231000001_initial_schema.sql
+├── ui/                      # Embedded static assets
+│   ├── embed.go           # Go embed directives for static files
+│   └── static/            # Static web assets
+│       ├── css/           # Stylesheets (Pico.css, custom themes)
+│       ├── js/            # JavaScript (HTMX)
+│       └── favicon.ico    # Application favicon
+└── view/                    # Templ templates
+    ├── auth.templ         # Authentication forms (login/register)
+    ├── home.templ         # Home page and demo components
+    ├── users.templ        # User management interface
+    └── layout/            # Layout components
+        └── base.templ     # Base HTML layout with HTMX configuration
+scripts/                     # Deployment and automation
+├── deploy.sh              # Ubuntu deployment script
+└── gowebserver.service    # SystemD service configuration
+magefile.go                  # Mage build automation with comprehensive tasks
+sqlc.yaml                    # SQLC configuration for code generation
 ```
 
 ## Data Flow
@@ -153,12 +196,50 @@ Build → Single binary with embedded assets
 
 **Request Tracing:**
 
-- Unique ID per request with structured logging
+- Unique request ID for correlation across logs
+- Structured logging with slog (JSON format in production)
+- Context propagation through middleware stack
+- Error tracking with stack traces and request context
 
-**Metrics Collection:**
+**Prometheus Metrics:**
 
-- HTTP request metrics (duration, status, method)
-- Database connection and query metrics
-- Business metrics (user operations)
+- **HTTP Metrics**: Request duration, status codes, in-flight requests
+- **Database Metrics**: Connection pool stats, query duration, operation counts
+- **Application Metrics**: Version info, startup time, active users
+- **HTMX Metrics**: HTMX-specific request tracking
+- **Security Metrics**: CSRF token generation and validation failures
+- **Business Metrics**: User creation, authentication events
 
-This architecture provides production-ready performance and security while maintaining simplicity and developer experience.
+**Health Monitoring:**
+
+- Database connectivity checks
+- Connection pool health
+- System resource monitoring
+- Configurable health check endpoints
+
+**Error Handling:**
+
+- Structured error responses with correlation IDs
+- Production-safe error messages (no internal details exposed)
+- Comprehensive error categorization (validation, authentication, etc.)
+- Panic recovery with detailed logging
+
+## Performance Characteristics
+
+**Optimizations:**
+
+- **Compiled Templates**: No runtime template parsing overhead
+- **Connection Pooling**: Configurable PostgreSQL connection management
+- **Embedded Assets**: All static files embedded in binary (no file I/O)
+- **Type-Safe Queries**: SQLC eliminates reflection and runtime query parsing
+- **Minimal Allocations**: Efficient request handling with object reuse
+- **Context Cancellation**: Proper request timeout and cancellation handling
+
+**Scalability Features:**
+
+- **Horizontal Scaling**: Stateless design allows multiple instances
+- **Database Scaling**: Connection pooling with configurable limits
+- **Resource Management**: Memory and connection limits via SystemD
+- **Graceful Shutdown**: Clean connection closure and request completion
+
+This architecture provides production-ready performance, security, and operational visibility while maintaining Go's simplicity and developer experience.
