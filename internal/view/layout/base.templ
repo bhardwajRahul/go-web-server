@@ -145,17 +145,26 @@ templ BaseWithCSRF(title, csrfToken string) {
 					// Track current CSRF token
 					let currentCSRFToken = null;
 					
+					// Update hidden CSRF token fields
+					const updateCSRFTokenFields = (token) => {
+						const csrfFields = document.querySelectorAll('input[name="csrf_token"]');
+						csrfFields.forEach(field => {
+							field.value = token;
+						});
+					};
+					
 					// Initialize CSRF token from page load or fetch it
 					const initializeCSRFToken = () => {
 						// First try to get token from a meta tag (set by server)
 						const metaToken = document.querySelector('meta[name="csrf-token"]');
 						if (metaToken) {
 							currentCSRFToken = metaToken.getAttribute('content');
+							updateCSRFTokenFields(currentCSRFToken);
 							return;
 						}
 						
-						// If no meta token, make a request to get one
-						fetch('/users', {
+						// If no meta token, make a request to get one from a safe endpoint
+						fetch('/', {
 							method: 'GET',
 							headers: {
 								'X-Requested-With': 'XMLHttpRequest'
@@ -164,6 +173,7 @@ templ BaseWithCSRF(title, csrfToken string) {
 							const token = response.headers.get('X-CSRF-Token');
 							if (token) {
 								currentCSRFToken = token;
+								updateCSRFTokenFields(currentCSRFToken);
 							}
 						}).catch(e => {
 							console.warn('Failed to initialize CSRF token:', e);
@@ -185,6 +195,7 @@ templ BaseWithCSRF(title, csrfToken string) {
 						const newToken = evt.detail.xhr.getResponseHeader('X-CSRF-Token');
 						if (newToken) {
 							currentCSRFToken = newToken;
+							updateCSRFTokenFields(currentCSRFToken);
 						}
 					});
 					
@@ -228,13 +239,33 @@ templ BaseWithCSRF(title, csrfToken string) {
 							// Re-initialize theme
 							const savedTheme = localStorage.getItem('preferred-theme') || 'dark';
 							setTheme(savedTheme);
+							
+							// Update CSRF tokens in new content
+							if (currentCSRFToken) {
+								updateCSRFTokenFields(currentCSRFToken);
+							}
 						}
 					});
 					
 					// Handle errors
 					document.body.addEventListener('htmx:responseError', function(evt) {
 						pageLoading.classList.remove('active');
-						showFlash('Failed to load page. Please try again.', 'error');
+						let errorMessage = 'Request failed. Please try again.';
+						
+						// Handle specific error codes
+						if (evt.detail.xhr.status === 403) {
+							errorMessage = 'Access forbidden. Please refresh the page and try again.';
+							// Try to refresh CSRF token
+							initializeCSRFToken();
+						} else if (evt.detail.xhr.status === 400) {
+							errorMessage = 'Invalid request. Please check your input and try again.';
+						} else if (evt.detail.xhr.status === 401) {
+							errorMessage = 'Authentication required. Please log in.';
+						} else if (evt.detail.xhr.status >= 500) {
+							errorMessage = 'Server error. Please try again later.';
+						}
+						
+						showFlash(errorMessage, 'error');
 					});
 					
 					document.body.addEventListener('htmx:timeout', function(evt) {

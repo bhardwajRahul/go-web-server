@@ -26,6 +26,7 @@ templ LoginContent() {
 				<p>Welcome back! Please sign in to your account.</p>
 			</hgroup>
 			<form hx-post="/auth/login" hx-swap="none" hx-indicator="#login-spinner">
+				<input type="hidden" name="csrf_token" id="csrf-token-login"/>
 				<div>
 					<label for="email">Email Address</label>
 					<input
@@ -82,6 +83,7 @@ templ RegisterContent() {
 				<p>Join us! Create your account to get started.</p>
 			</hgroup>
 			<form hx-post="/auth/register" hx-swap="none" hx-indicator="#register-spinner">
+				<input type="hidden" name="csrf_token" id="csrf-token-register"/>
 				<div>
 					<label for="name">Full Name</label>
 					<input
@@ -198,14 +200,18 @@ templ ProfileContent(user middleware.User) {
 				<footer>
 					<div role="group">
 						<button class="secondary outline">Edit Profile</button>
-						<button
-							hx-post="/auth/logout"
-							hx-swap="none"
-							class="outline"
-							hx-confirm="Are you sure you want to log out?"
-						>
-							Logout
-						</button>
+						<form style="display: inline;">
+							<input type="hidden" name="csrf_token" id="csrf-token-logout"/>
+							<button
+								hx-post="/auth/logout"
+								hx-swap="none"
+								class="outline"
+								hx-confirm="Are you sure you want to log out?"
+								type="submit"
+							>
+								Logout
+							</button>
+						</form>
 					</div>
 				</footer>
 			</article>

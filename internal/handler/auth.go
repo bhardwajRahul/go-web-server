@@ -26,18 +26,18 @@ func NewAuthHandler(s *store.Store, authService *middleware.AuthService) *AuthHa
 
 // LoginRequest represents a login request
 type LoginRequest struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=1"`
+	Email    string `json:"email" form:"email" validate:"required,email"`
+	Password string `json:"password" form:"password" validate:"required,min=1"`
 }
 
 // RegisterRequest represents a registration request
 type RegisterRequest struct {
-	Email           string `json:"email" validate:"required,email"`
-	Name            string `json:"name" validate:"required,min=2,max=100"`
-	Password        string `json:"password" validate:"required,password"`
-	ConfirmPassword string `json:"confirm_password" validate:"required"`
-	Bio             string `json:"bio,omitempty" validate:"max=500"`
-	AvatarURL       string `json:"avatar_url,omitempty" validate:"omitempty,url"`
+	Email           string `json:"email" form:"email" validate:"required,email"`
+	Name            string `json:"name" form:"name" validate:"required,min=2,max=100"`
+	Password        string `json:"password" form:"password" validate:"required,password"`
+	ConfirmPassword string `json:"confirm_password" form:"confirm_password" validate:"required"`
+	Bio             string `json:"bio,omitempty" form:"bio" validate:"max=500"`
+	AvatarURL       string `json:"avatar_url,omitempty" form:"avatar_url" validate:"omitempty,url"`
 }
 
 // Validate implements custom validation for RegisterRequest
