@@ -5,14 +5,14 @@ package view
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
-import (
-	"strconv"
+import "github.com/a-h/templ"
+import templruntime "github.com/a-h/templ/runtime"
 
-	"github.com/a-h/templ"
-	templruntime "github.com/a-h/templ/runtime"
+import (
 	"github.com/dunamismax/go-web-server/internal/store"
 	"github.com/dunamismax/go-web-server/internal/view/layout"
 	"github.com/jackc/pgx/v5/pgtype"
+	"strconv"
 )
 
 func Users() templ.Component {
