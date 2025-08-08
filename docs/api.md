@@ -31,6 +31,7 @@ Returns comprehensive system health with database connectivity check.
 ```
 
 **Response Status:**
+
 - `200 OK` - All systems healthy
 - `503 Service Unavailable` - System degraded
 
@@ -41,6 +42,7 @@ Returns comprehensive system health with database connectivity check.
 Prometheus metrics endpoint (enabled with `FEATURES_ENABLE_METRICS=true`).
 
 **Metrics Included:**
+
 - HTTP request metrics (duration, status, count)
 - Database connection and query metrics  
 - HTMX interaction metrics
@@ -70,12 +72,14 @@ Embedded static files served directly from binary:
 Main landing page showcasing the Modern Go Stack features.
 
 **Features:**
+
 - Interactive HTMX demo area
 - Technology stack overview
 - Live system information
 - Theme switching (dark/light/auto)
 
 **HTMX Integration:**
+
 - Smooth page transitions
 - Dynamic content loading
 - Real-time demos
@@ -107,12 +111,14 @@ Interactive demo showcasing HTMX functionality.
 Login form with CSRF protection.
 
 **Features:**
+
 - CSRF token integration
 - HTMX form submission
 - Automatic redirect if authenticated
 - Theme-aware styling
 
 **HTMX Support:**
+
 - Partial page updates
 - Smooth transitions
 - Error handling
@@ -124,6 +130,7 @@ Login form with CSRF protection.
 User registration form with validation.
 
 **Features:**
+
 - Comprehensive input validation
 - Password strength requirements
 - Email format validation
@@ -136,6 +143,7 @@ User registration form with validation.
 Authenticate user and create JWT session.
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -144,6 +152,7 @@ Authenticate user and create JWT session.
 ```
 
 **Response:**
+
 - `200 OK` - Login successful, JWT cookie set
 - `400 Bad Request` - Validation errors
 - `401 Unauthorized` - Invalid credentials
@@ -159,6 +168,7 @@ Authenticate user and create JWT session.
 Create new user account with automatic login.
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -171,6 +181,7 @@ Create new user account with automatic login.
 ```
 
 **Validation Rules:**
+
 - Email: Valid email format, unique
 - Name: 2-100 characters
 - Password: 8+ chars with uppercase, lowercase, numbers
@@ -178,6 +189,7 @@ Create new user account with automatic login.
 - Avatar URL: Valid URL format (optional)
 
 **Response:**
+
 - `200 OK` - Registration successful, user logged in
 - `400 Bad Request` - Validation errors
 - `409 Conflict` - Email already exists
@@ -189,6 +201,7 @@ Create new user account with automatic login.
 Clear JWT authentication cookie.
 
 **Response:**
+
 - `200 OK` - Logout successful
 - Redirects to `/auth/login`
 
@@ -203,6 +216,7 @@ Clear JWT authentication cookie.
 User management interface with CRUD operations.
 
 **Features:**
+
 - User list with real-time updates
 - Create/edit/delete functionality
 - Search and filtering
@@ -247,6 +261,7 @@ Edit existing user form.
 Create new user.
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -257,6 +272,7 @@ Create new user.
 ```
 
 **Response:**
+
 - `201 Created` - User created successfully
 - `400 Bad Request` - Validation errors
 - `409 Conflict` - Email already exists
@@ -270,11 +286,13 @@ Create new user.
 Update existing user.
 
 **Path Parameters:**
+
 - `id` - User ID (integer)
 
 **Request Body:** Same as create user
 
 **Response:**
+
 - `200 OK` - User updated successfully
 - `400 Bad Request` - Validation errors
 - `404 Not Found` - User not found
@@ -288,6 +306,7 @@ Update existing user.
 Mark user as inactive (soft delete).
 
 **Response:**
+
 - `200 OK` - User deactivated
 - `404 Not Found` - User not found
 
@@ -300,6 +319,7 @@ Mark user as inactive (soft delete).
 Permanently delete user.
 
 **Response:**
+
 - `200 OK` - User deleted successfully
 - `404 Not Found` - User not found
 
@@ -314,6 +334,7 @@ Permanently delete user.
 Get total count of active users.
 
 **Response:**
+
 ```json
 {
   "count": 42
@@ -331,6 +352,7 @@ User profile page (authentication required).
 **Authentication:** JWT cookie required
 
 **Features:**
+
 - Display current user information
 - Profile editing capabilities
 - Session management
@@ -391,11 +413,13 @@ HTMX error responses include structured error information:
 All state-changing operations (POST, PUT, PATCH, DELETE) require CSRF tokens:
 
 **Form-based:**
+
 ```html
 <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
 ```
 
 **Header-based (HTMX):**
+
 ```html
 <button hx-post="/users" hx-headers='{"X-CSRF-Token": "{{.CSRFToken}}"}'>
 ```
@@ -406,6 +430,7 @@ HTMX requests automatically include tokens via configured JavaScript.
 ### Rate Limiting
 
 All endpoints protected by rate limiting:
+
 - **Limit:** 20 requests per minute per IP address
 - **Response:** 429 Too Many Requests when exceeded
 - **Headers:** Rate limit information in response headers
@@ -413,6 +438,7 @@ All endpoints protected by rate limiting:
 ### Input Validation
 
 All request payloads validated:
+
 - Email format validation
 - String length limits  
 - Required field validation
@@ -421,6 +447,7 @@ All request payloads validated:
 ### Authentication
 
 JWT-based authentication with:
+
 - HTTPOnly secure cookies
 - 24-hour token expiration
 - Automatic token refresh
@@ -455,11 +482,13 @@ fetch('/api/users/count', {
 ### cURL Examples
 
 **Health Check:**
+
 ```bash
 curl http://localhost:8080/health
 ```
 
 **User Login:**
+
 ```bash
 curl -X POST http://localhost:8080/auth/login \
   -H "Content-Type: application/json" \

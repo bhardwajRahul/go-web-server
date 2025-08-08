@@ -56,6 +56,7 @@ mage reset        # Reset to fresh state with sample data
 ```
 
 This command:
+
 - Cleans build artifacts
 - Removes generated code
 - Regenerates code and templates
@@ -130,12 +131,14 @@ mage dev  # Starts Air with automatic recompilation
 ```
 
 **What triggers reload:**
+
 - Go source file changes
 - Template file changes (`.templ`)
 - Static asset changes
 - Configuration changes
 
 **Air Configuration:**
+
 - Builds to `tmp/main` for faster startups
 - Excludes generated files from watch
 - Includes SQL and template files in watch
@@ -175,6 +178,7 @@ mage ci           # generate + fmt + quality + build + info
 6. **Theme Switching**: Test dark/light mode persistence
 
 **Browser Testing:**
+
 - Chrome/Firefox/Safari compatibility
 - Mobile responsiveness
 - HTMX request/response inspection
@@ -219,6 +223,7 @@ mage ci           # generate + fmt + quality + build + info
 ## Common Issues
 
 **Database Connection:**
+
 ```bash
 # Check PostgreSQL status
 sudo systemctl status postgresql
@@ -232,6 +237,7 @@ sudo -u postgres createuser -P gowebserver
 ```
 
 **Generation Issues:**
+
 ```bash
 # Clean and regenerate everything
 mage clean
@@ -239,12 +245,14 @@ mage generate
 ```
 
 **Port Already in Use:**
+
 ```bash
 # Kill process on port 8080
 sudo lsof -ti:8080 | xargs kill -9
 ```
 
 **Permission Issues:**
+
 ```bash
 # Fix PostgreSQL authentication
 sudo -u postgres psql
@@ -254,12 +262,14 @@ sudo -u postgres psql
 ## IDE Configuration
 
 **VS Code Extensions:**
+
 - Go extension for Go development
 - Templ extension for template syntax highlighting
 - PostgreSQL extension for database management
 - Thunder Client for API testing
 
 **GoLand/IntelliJ:**
+
 - Go plugin
 - Database tools and SQL plugin
 - File watchers for auto-generation

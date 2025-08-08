@@ -35,6 +35,7 @@ CSRFConfig{
 ```
 
 **Features:**
+
 - **Token Rotation**: New token generated for each request
 - **Multiple Sources**: Supports header and form-based tokens
 - **Constant-Time Validation**: Prevents timing attacks
@@ -80,6 +81,7 @@ CSRFConfig{
 Secure JWT implementation in `internal/middleware/auth.go` with:
 
 **Security Features:**
+
 - HMAC-SHA256 signing (configurable signing keys)
 - Secure cookie storage with HTTPOnly and SameSite attributes
 - Configurable token expiration (24 hours default)
@@ -138,6 +140,7 @@ func ProfileHandler(c echo.Context) error {
 Custom sanitization middleware in `internal/middleware/sanitize.go`:
 
 **Features:**
+
 - HTML entity escaping
 - JavaScript protocol removal
 - Event handler removal  
@@ -155,6 +158,7 @@ SanitizeConfig{
 ```
 
 **Automatic Sanitization:**
+
 - All form values automatically sanitized
 - POST form values cleaned
 - Custom sanitization functions supported
@@ -178,6 +182,7 @@ RETURNING *;
 **Secondary Defense - Input Sanitization:**
 
 Additional SQL injection patterns filtered by sanitization middleware:
+
 - SQL comment removal (`--`, `/*`, `#`)
 - Dangerous keyword detection (`UNION SELECT`, `DROP TABLE`, etc.)
 - Quote escaping as fallback
@@ -224,6 +229,7 @@ font-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com;
 ```
 
 **Policy Rationale:**
+
 - `'unsafe-inline'` for styles: Required for Pico.css and dynamic theme switching
 - `'unsafe-eval'` for scripts: Required for HTMX functionality
 - External fonts: Google Fonts for typography
@@ -250,6 +256,7 @@ echomiddleware.RateLimiterWithConfig(echomiddleware.RateLimiterConfig{
 ```
 
 **Features:**
+
 - Memory-based storage (suitable for single instance)
 - Real IP detection (works behind proxies)
 - Configurable limits per endpoint
@@ -263,6 +270,7 @@ echomiddleware.RateLimiterWithConfig(echomiddleware.RateLimiterConfig{
 Using `go-playground/validator` with custom rules:
 
 **Built-in Validations:**
+
 - Email format validation
 - Password strength requirements
 - String length limits
@@ -300,6 +308,7 @@ type RegisterRequest struct {
 Comprehensive error handling in `internal/middleware/errors.go`:
 
 **Error Categories:**
+
 - Validation errors (400)
 - Authentication errors (401)  
 - Authorization errors (403)
@@ -308,6 +317,7 @@ Comprehensive error handling in `internal/middleware/errors.go`:
 - Internal server errors (500)
 
 **Production Safety:**
+
 - Internal error details never exposed to clients
 - Generic error messages in production
 - Detailed logging for debugging
@@ -365,6 +375,7 @@ slog.Warn("Failed login attempt",
 ## Security Checklist
 
 ### Development
+
 - [ ] All forms include CSRF tokens
 - [ ] Passwords hashed with bcrypt
 - [ ] Input validation on all endpoints
@@ -374,6 +385,7 @@ slog.Warn("Failed login attempt",
 - [ ] Rate limiting active
 
 ### Production
+
 - [ ] HTTPS enabled (TLS certificates)
 - [ ] Secure JWT signing keys
 - [ ] Database access restricted

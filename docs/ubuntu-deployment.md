@@ -315,6 +315,7 @@ sudo systemctl start gowebserver
 ### Common Issues
 
 **Service won't start:**
+
 ```bash
 # Check service logs
 sudo journalctl -u gowebserver -n 50
@@ -327,6 +328,7 @@ sudo cat /opt/gowebserver/.env
 ```
 
 **Database connection errors:**
+
 ```bash
 # Test database connection
 sudo -u postgres psql -d gowebserver -c "SELECT version();"
@@ -336,6 +338,7 @@ sudo systemctl status postgresql
 ```
 
 **Permission errors:**
+
 ```bash
 # Fix ownership
 sudo chown -R gowebserver:gowebserver /opt/gowebserver

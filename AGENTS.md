@@ -13,16 +13,19 @@ Follow a **Security-First → Performance → Maintainability → Deploy** workf
 ### Complete Modern Stack (per `go.mod`, `magefile.go`, and production requirements)
 
 **Core Framework & Language:**
+
 - **Language**: Go 1.24+ (latest performance and language features)
 - **Framework**: Echo v4 (high-performance HTTP framework with comprehensive middleware)
 
 **Frontend & Templates:**
+
 - **Templates**: Templ v0.3.924 (type-safe Go HTML components with compile-time validation) - **ALWAYS USE LATEST STABLE VERSION**
 - **Frontend**: HTMX 2.x (dynamic interactions without JavaScript complexity)
 - **CSS**: Pico.css v2 (semantic CSS with automatic dark/light themes)
 - **Assets**: Go Embed (single binary with embedded resources)
 
 **Security & Authentication:**
+
 - **Authentication**: JWT with bcrypt password hashing and secure cookie storage
 - **CSRF Protection**: Custom middleware with token rotation and constant-time validation
 - **Input Sanitization**: XSS and SQL injection prevention
@@ -31,6 +34,7 @@ Follow a **Security-First → Performance → Maintainability → Deploy** workf
 - **Rate Limiting**: IP-based rate limiting (20 req/min default)
 
 **Database & Storage:**
+
 - **Database**: PostgreSQL (enterprise-grade relational database)
 - **Driver**: pgx/v5 (high-performance PostgreSQL driver with connection pooling)
 - **Queries**: SQLC v1.29.0 (generate type-safe Go from SQL)
@@ -38,18 +42,21 @@ Follow a **Security-First → Performance → Maintainability → Deploy** workf
 - **Connection Management**: Configurable connection pooling with health monitoring
 
 **Observability & Operations:**
+
 - **Logging**: slog (structured logging with JSON output for production)
 - **Metrics**: Prometheus (comprehensive HTTP, database, CSRF, and business metrics)
 - **Configuration**: Viper (multi-source configuration management)
 - **Error Handling**: Structured error responses with correlation IDs
 
 **Development & Build:**
+
 - **Build/Automation**: Mage (Go-based automation with quality checks)
 - **Hot Reload**: Air (development server with live reload)
 - **Quality Assurance**: golangci-lint, go vet, govulncheck integration
 - **Code Generation**: Automatic SQLC and Templ code generation
 
 **Deployment & Production:**
+
 - **Packaging**: Single binary (~15MB) with embedded assets
 - **Process Management**: SystemD service with security hardening
 - **Reverse Proxy**: Caddy integration with automatic HTTPS
