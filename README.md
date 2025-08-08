@@ -40,12 +40,13 @@ A production-ready template for modern web applications using **The Modern Go St
 **Key Features:**
 
 - **Echo v4 + Templ + HTMX**: High-performance web framework with type-safe templates and dynamic UX
-- **SQLC + PostgreSQL + pgx Driver**: Type-safe database operations with high performance
-- **Prometheus Metrics**: Comprehensive observability and performance monitoring
-- **Enterprise Security**: CSRF protection, input sanitization, structured error handling, request tracing
-- **Mage Build System**: Go-based automation with comprehensive quality checks
-- **Production Ready**: Rate limiting, CORS, secure headers, graceful shutdown
-- **Developer Experience**: Hot reload with Air, database migrations with Goose, multi-source config
+- **SQLC + PostgreSQL + pgx Driver**: Type-safe database operations with high performance and connection pooling
+- **JWT Authentication**: Secure token-based authentication with configurable expiration and cookie support
+- **Prometheus Metrics**: Comprehensive observability and performance monitoring with custom business metrics
+- **Enterprise Security**: CSRF protection, input sanitization, XSS/SQL injection prevention, structured error handling
+- **Mage Build System**: Go-based automation with comprehensive quality checks and vulnerability scanning
+- **Production Ready**: Rate limiting, CORS, security headers, graceful shutdown, and embedded static assets
+- **Developer Experience**: Hot reload with Air, database migrations with Goose, multi-source config with Viper
 
 ## Tech Stack
 
@@ -56,11 +57,13 @@ A production-ready template for modern web applications using **The Modern Go St
 | **Templates**  | [Templ](https://templ.guide/)                      | Type-safe Go HTML components           |
 | **Frontend**   | [HTMX](https://htmx.org/)                             | Dynamic interactions with smooth UX    |
 | **CSS**        | [Pico.css v2](https://picocss.com/)                         | Semantic CSS with dark/light themes    |
+| **Authentication** | [JWT](https://golang.org/x/crypto) + [bcrypt](https://pkg.go.dev/golang.org/x/crypto/bcrypt) | Secure token-based auth with password hashing |
 | **Logging**    | [slog](https://pkg.go.dev/log/slog)                         | Structured logging with JSON output    |
 | **Database**   | [PostgreSQL](https://www.postgresql.org/)                   | Enterprise-grade relational database   |
 | **Queries**    | [SQLC](https://sqlc.dev/)                           | Generate type-safe Go from SQL         |
+| **Validation** | [go-playground/validator](https://github.com/go-playground/validator) | Comprehensive input validation |
 | **Metrics**    | [Prometheus](https://prometheus.io/)                        | Performance monitoring & observability |
-| **DB Driver**  | [pgx v5](https://pkg.go.dev/github.com/jackc/pgx/v5)       | High-performance PostgreSQL driver     |
+| **DB Driver**  | [pgx v5](https://pkg.go.dev/github.com/jackc/pgx/v5)       | High-performance PostgreSQL driver with pooling |
 | **Assets**     | [Go Embed](https://pkg.go.dev/embed)                        | Single binary with embedded resources  |
 | **Config**     | [Viper](https://github.com/spf13/viper)                     | Multi-source configuration management  |
 | **Migrations** | [Goose](https://github.com/pressly/goose)                   | Database migration management          |
@@ -197,6 +200,18 @@ FEATURES_ENABLE_METRICS=true mage run
 
 # Enhanced health checks with database connectivity
 curl http://localhost:8080/health
+
+# Test JWT authentication endpoints
+curl -X POST http://localhost:8080/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","name":"Test User","password":"StrongPass123"}'
+
+curl -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"StrongPass123"}'
+
+# Note: Demo mode currently bypasses password validation for existing users.
+# For production, implement proper password hashing and validation in auth handlers.
 ```
 
 ## Live Demo
@@ -205,10 +220,11 @@ curl http://localhost:8080/health
 
 Interactive user management application demonstrating:
 
+- **JWT Authentication**: Login/register system with secure token-based auth
 - **CRUD Operations**: Type-safe database queries with CSRF protection
 - **Real-time Updates**: HTMX interactions with smooth page transitions
 - **Responsive Design**: Automatic dark/light theme switching with Pico.css
-- **Enterprise Security**: Input sanitization and structured error handling
+- **Enterprise Security**: Input sanitization, XSS/SQL injection prevention, and structured error handling
 
 <p align="center">
   <img src="https://github.com/dunamismax/images/blob/main/golang/go-web-server-user-screenshot.png" alt="Go Web Server Screenshot" width="800" />
@@ -220,20 +236,24 @@ Interactive user management application demonstrating:
 
 ```sh
 go-web-server/
-├── cmd/web/              # Application entry point
+├── cmd/web/              # Application entry point with main.go
 ├── docs/                 # Complete documentation
 ├── internal/
 │   ├── config/           # Viper configuration management
-│   ├── handler/          # HTTP handlers with Echo routes
-│   ├── middleware/       # Security, validation, error handling
-│   ├── store/            # Database layer with SQLC
+│   ├── handler/          # HTTP handlers (auth, home, user, routes)
+│   ├── middleware/       # Security, auth, CSRF, validation, error handling, metrics
+│   ├── store/            # Database layer with SQLC (models, queries, migrations)
 │   │   └── migrations/   # Goose database migrations
-│   ├── ui/               # Static assets (embedded)
+│   ├── ui/               # Static assets (embedded CSS, JS, favicon)
 │   └── view/             # Templ templates and components
+├── scripts/              # Deployment scripts and systemd service
 ├── bin/                  # Compiled binaries
-├── magefile.go          # Mage build automation
+├── tmp/                  # Development hot reload directory  
+├── magefile.go          # Mage build automation with comprehensive commands
 ├── .golangci.yml        # Linter configuration
-└── sqlc.yaml            # SQLC configuration
+├── sqlc.yaml            # SQLC configuration
+├── go.mod/go.sum        # Go module dependencies
+└── .env.example         # Environment configuration template
 
 ```
 
@@ -262,30 +282,34 @@ The binary includes embedded Pico.css, HTMX, and Templ templates. **Single binar
 
 **Modern Web Stack:**
 
-- Echo framework with comprehensive middleware stack
-- Type-safe Templ templates with reusable components
-- HTMX dynamic interactions with smooth page transitions
+- Echo framework with comprehensive middleware stack (recovery, CORS, rate limiting, timeouts)
+- JWT authentication with secure cookie handling and configurable expiration
+- Type-safe Templ templates with reusable components and embedded static assets
+- HTMX dynamic interactions with smooth page transitions and custom events
 - Pico.css semantic styling with automatic dark/light themes
-- SQLC type-safe database queries with high-performance pgx driver
-- Structured logging with slog and configurable JSON output
-- Prometheus metrics for observability and performance monitoring
+- SQLC type-safe database queries with high-performance pgx driver and connection pooling
+- Structured logging with slog and configurable JSON/text output
+- Prometheus metrics for observability with HTTP, database, and business metrics
 
 **Developer Experience:**
 
 - Hot reloading with Air for rapid development
-- Comprehensive error handling with structured logging
+- Comprehensive error handling with custom error types and structured logging
 - Static analysis suite (golangci-lint, govulncheck, go vet)
-- Mage build automation with goimports and templ formatting
-- Single-command CI pipeline with quality checks
+- Mage build automation with goimports, templ formatting, and vulnerability scanning
+- Single-command CI pipeline with quality checks and linting
+- Environment-based configuration with sensible defaults
 
 **Production Ready:**
 
-- Enterprise security with CSRF protection and input sanitization
-- Structured error handling with request tracing and monitoring
-- Multi-source configuration with Viper (JSON, YAML, ENV)
-- Database migrations with Goose and graceful shutdown
-- Single binary deployment (~15MB) with embedded assets
-- Minimal external dependencies with enterprise PostgreSQL backend
+- Enterprise security with CSRF protection, input sanitization, and XSS/SQL injection prevention
+- JWT authentication with bcrypt password hashing and secure cookie management
+- Structured error handling with request tracing, correlation IDs, and monitoring
+- Multi-source configuration with Viper supporting JSON, YAML, ENV, and .env files
+- Database migrations with Goose, connection pooling, and graceful shutdown
+- Single binary deployment (~15MB) with embedded assets (CSS, JS, templates)
+- Comprehensive middleware stack with rate limiting, CORS, security headers, and timeouts
+- Prometheus metrics integration with custom business and performance metrics
 
 ---
 
@@ -311,7 +335,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 <p align="center">
   <strong>The Modern Go Stack</strong><br>
-  <sub>Echo • Templ • HTMX • Pico.css • SQLC • PostgreSQL • slog • Viper • Goose • Mage • Air</sub>
+  <sub>Echo • Templ • HTMX • JWT • SQLC • PostgreSQL • pgx • Prometheus • slog • Viper • Goose • Mage • Air</sub>
 </p>
 
 <p align="center">
