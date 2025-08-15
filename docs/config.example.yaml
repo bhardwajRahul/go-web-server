@@ -1,0 +1,57 @@
+# Example configuration for go-web-server
+# Copy this to config.yaml and customize for your environment
+
+# Server configuration
+server:
+  port: "8080"
+  host: ""
+  read_timeout: 10s
+  write_timeout: 10s
+  shutdown_timeout: 30s
+
+# Database configuration
+database:
+  # Complete DATABASE_URL (recommended)
+  url: "postgres://user:password@localhost:5432/gowebserver?sslmode=disable"
+  
+  # Individual components (used if url is empty)
+  # user: "gowebserver"
+  # password: "your_password"
+  # host: "localhost"
+  # port: "5432"
+  # name: "gowebserver"
+  # sslmode: "disable"
+  
+  # Connection pool settings
+  max_connections: 25
+  min_connections: 5
+  timeout: 30s
+  max_conn_lifetime: 1h
+  max_conn_idle_time: 30m
+  run_migrations: true
+
+# Application configuration
+app:
+  environment: "development"  # development, staging, production
+  debug: false
+  log_level: "info"          # debug, info, warn, error
+  log_format: "text"         # text, json
+
+# Security configuration
+security:
+  trusted_proxies: ["127.0.0.1"]
+  enable_cors: true
+  allowed_origins: ["*"]     # ["https://yourdomain.com"] for production
+
+# Feature flags
+features:
+  enable_metrics: false
+  enable_pprof: false
+
+# Authentication configuration
+auth:
+  jwt_secret: "change-this-in-production-to-a-secure-random-string"
+  token_duration: 24h
+  refresh_duration: 168h    # 7 days
+  cookie_name: "auth_token"
+  cookie_secure: true       # Set to false for local development over HTTP

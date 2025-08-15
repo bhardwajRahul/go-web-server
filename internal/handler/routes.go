@@ -20,7 +20,7 @@ type Handlers struct {
 }
 
 // NewHandlers creates a new handlers instance with the given store.
-func NewHandlers(s *store.Store, authService *middleware.AuthService) *Handlers {
+func NewHandlers(s *store.Store, authService *middleware.SessionAuthService) *Handlers {
 	return &Handlers{
 		Home: NewHomeHandler(s),
 		User: NewUserHandler(s),

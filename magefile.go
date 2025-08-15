@@ -131,7 +131,7 @@ func getGoBinaryPath(binaryName string) (string, error) {
 // Generate runs all code generation
 func Generate() error {
 	fmt.Println("Generating code...")
-	mg.Deps(generateSqlc, generateTempl)
+	mg.Deps(generateSqlc, generateTempl, buildCSS)
 	return nil
 }
 
@@ -151,6 +151,27 @@ func generateTempl() error {
 		return fmt.Errorf("templ not found: %w", err)
 	}
 	return sh.RunV(templPath, "generate")
+}
+
+func buildCSS() error {
+	fmt.Println("  Building Tailwind CSS...")
+
+	// Check if npm is available
+	if err := sh.Run("which", "npm"); err != nil {
+		fmt.Println("    Warning: npm not found, skipping CSS build")
+		return nil
+	}
+
+	// Check if node_modules exists
+	if _, err := os.Stat("node_modules"); os.IsNotExist(err) {
+		fmt.Println("    Installing npm dependencies...")
+		if err := sh.RunV("npm", "install"); err != nil {
+			return fmt.Errorf("failed to install npm dependencies: %w", err)
+		}
+	}
+
+	// Build CSS
+	return sh.RunV("npm", "run", "build-css")
 }
 
 // Fmt formats and tidies code using goimports and standard tooling
@@ -273,6 +294,11 @@ func Clean() error {
 		return fmt.Errorf("failed to remove tmp directory: %w", err)
 	}
 
+	// Remove generated CSS
+	if err := sh.Rm("internal/ui/static/css/styles.css"); err != nil && !os.IsNotExist(err) {
+		fmt.Printf("Warning: failed to remove generated CSS: %v\n", err)
+	}
+
 	fmt.Println("Clean complete!")
 	return nil
 }
@@ -336,7 +362,6 @@ func Setup() error {
 		"air":         "github.com/air-verse/air@latest",
 
 		"goimports": "golang.org/x/tools/cmd/goimports@latest",
-		"goose":     "github.com/pressly/goose/v3/cmd/goose@latest",
 	}
 
 	for tool, pkg := range tools {
@@ -361,154 +386,95 @@ func Setup() error {
 	return nil
 }
 
-// Migrate runs database migrations up
+// buildDatabaseURL constructs database URL from environment variables or uses default
+func buildDatabaseURL() string {
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL != "" {
+		return databaseURL
+	}
+
+	fmt.Println("  Using local PostgreSQL...")
+	// Build database URL from individual environment variables
+	user := os.Getenv("DATABASE_USER")
+	password := os.Getenv("DATABASE_PASSWORD")
+	host := os.Getenv("DATABASE_HOST")
+	port := os.Getenv("DATABASE_PORT")
+	name := os.Getenv("DATABASE_NAME")
+	sslmode := os.Getenv("DATABASE_SSLMODE")
+
+	// Set defaults if not specified
+	if host == "" {
+		host = "localhost"
+	}
+	if port == "" {
+		port = "5432"
+	}
+	if name == "" {
+		name = "gowebserver"
+	}
+	if sslmode == "" {
+		sslmode = "disable"
+	}
+	if user == "" || password == "" {
+		fmt.Println("  Warning: DATABASE_USER and DATABASE_PASSWORD must be set in .env file")
+		return "postgres://user:password@localhost:5432/gowebserver?sslmode=disable"
+	}
+
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", user, password, host, port, name, sslmode)
+}
+
+// Migrate runs database migrations up using Atlas
 func Migrate() error {
-	fmt.Println("Running database migrations...")
+	fmt.Println("Running database migrations with Atlas...")
 
 	// Load environment variables from .env file
 	if err := loadEnvFile(); err != nil {
 		return fmt.Errorf("failed to load .env file: %w", err)
 	}
 
-	goosePath, err := getGoBinaryPath("goose")
-	if err != nil {
-		return fmt.Errorf("goose not found: %w", err)
+	// Check if atlas is installed
+	if err := sh.Run("which", "atlas"); err != nil {
+		fmt.Println("Atlas not found, please install it:")
+		fmt.Println("  curl -sSf https://atlasgo.sh | sh")
+		fmt.Println("  or")
+		fmt.Println("  brew install ariga/tap/atlas")
+		return fmt.Errorf("atlas CLI not found")
 	}
 
-	// Use local PostgreSQL
-	databaseURL := os.Getenv("DATABASE_URL")
-	if databaseURL == "" {
-		fmt.Println("  Using local PostgreSQL...")
-		// Build database URL from individual environment variables
-		user := os.Getenv("DATABASE_USER")
-		password := os.Getenv("DATABASE_PASSWORD")
-		host := os.Getenv("DATABASE_HOST")
-		port := os.Getenv("DATABASE_PORT")
-		name := os.Getenv("DATABASE_NAME")
-		sslmode := os.Getenv("DATABASE_SSLMODE")
+	databaseURL := buildDatabaseURL()
+	os.Setenv("DATABASE_URL", databaseURL)
 
-		// Set defaults if not specified
-		if host == "" {
-			host = "localhost"
-		}
-		if port == "" {
-			port = "5432"
-		}
-		if name == "" {
-			name = "gowebserver"
-		}
-		if sslmode == "" {
-			sslmode = "disable"
-		}
-		if user == "" || password == "" {
-			fmt.Println("  Warning: DATABASE_USER and DATABASE_PASSWORD must be set in .env file")
-			databaseURL = "postgres://user:password@localhost:5432/gowebserver?sslmode=disable"
-		} else {
-			databaseURL = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", user, password, host, port, name, sslmode)
-		}
-	}
-
-	return sh.RunV(goosePath, "-dir", "internal/store/migrations", "postgres", databaseURL, "up")
+	return sh.RunV("atlas", "migrate", "apply", "--env", "dev")
 }
 
-// MigrateDown rolls back the last migration
+// MigrateDown shows Atlas migration status (Atlas doesn't support automatic rollbacks)
 func MigrateDown() error {
-	fmt.Println("Rolling back last migration...")
-
-	// Load environment variables from .env file
-	if err := loadEnvFile(); err != nil {
-		return fmt.Errorf("failed to load .env file: %w", err)
-	}
-
-	goosePath, err := getGoBinaryPath("goose")
-	if err != nil {
-		return fmt.Errorf("goose not found: %w", err)
-	}
-
-	// Use local PostgreSQL
-	databaseURL := os.Getenv("DATABASE_URL")
-	if databaseURL == "" {
-		fmt.Println("  Using local PostgreSQL...")
-		// Build database URL from individual environment variables
-		user := os.Getenv("DATABASE_USER")
-		password := os.Getenv("DATABASE_PASSWORD")
-		host := os.Getenv("DATABASE_HOST")
-		port := os.Getenv("DATABASE_PORT")
-		name := os.Getenv("DATABASE_NAME")
-		sslmode := os.Getenv("DATABASE_SSLMODE")
-
-		// Set defaults if not specified
-		if host == "" {
-			host = "localhost"
-		}
-		if port == "" {
-			port = "5432"
-		}
-		if name == "" {
-			name = "gowebserver"
-		}
-		if sslmode == "" {
-			sslmode = "disable"
-		}
-		if user == "" || password == "" {
-			fmt.Println("  Warning: DATABASE_USER and DATABASE_PASSWORD must be set in .env file")
-			databaseURL = "postgres://user:password@localhost:5432/gowebserver?sslmode=disable"
-		} else {
-			databaseURL = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", user, password, host, port, name, sslmode)
-		}
-	}
-
-	return sh.RunV(goosePath, "-dir", "internal/store/migrations", "postgres", databaseURL, "down")
+	fmt.Println("Atlas doesn't support automatic rollbacks like Goose.")
+	fmt.Println("To rollback, create a new migration that reverses the changes.")
+	fmt.Println("Use 'mage migratestatus' to see current migration state.")
+	return nil
 }
 
-// MigrateStatus shows migration status
+// MigrateStatus shows migration status using Atlas
 func MigrateStatus() error {
-	fmt.Println("Checking migration status...")
+	fmt.Println("Checking migration status with Atlas...")
 
 	// Load environment variables from .env file
 	if err := loadEnvFile(); err != nil {
 		return fmt.Errorf("failed to load .env file: %w", err)
 	}
 
-	goosePath, err := getGoBinaryPath("goose")
-	if err != nil {
-		return fmt.Errorf("goose not found: %w", err)
+	// Check if atlas is installed
+	if err := sh.Run("which", "atlas"); err != nil {
+		fmt.Println("Atlas not found, please install it:")
+		fmt.Println("  curl -sSf https://atlasgo.sh | sh")
+		return fmt.Errorf("atlas CLI not found")
 	}
 
-	// Use local PostgreSQL
-	databaseURL := os.Getenv("DATABASE_URL")
-	if databaseURL == "" {
-		fmt.Println("  Using local PostgreSQL...")
-		// Build database URL from individual environment variables
-		user := os.Getenv("DATABASE_USER")
-		password := os.Getenv("DATABASE_PASSWORD")
-		host := os.Getenv("DATABASE_HOST")
-		port := os.Getenv("DATABASE_PORT")
-		name := os.Getenv("DATABASE_NAME")
-		sslmode := os.Getenv("DATABASE_SSLMODE")
+	databaseURL := buildDatabaseURL()
+	os.Setenv("DATABASE_URL", databaseURL)
 
-		// Set defaults if not specified
-		if host == "" {
-			host = "localhost"
-		}
-		if port == "" {
-			port = "5432"
-		}
-		if name == "" {
-			name = "gowebserver"
-		}
-		if sslmode == "" {
-			sslmode = "disable"
-		}
-		if user == "" || password == "" {
-			fmt.Println("  Warning: DATABASE_USER and DATABASE_PASSWORD must be set in .env file")
-			databaseURL = "postgres://user:password@localhost:5432/gowebserver?sslmode=disable"
-		} else {
-			databaseURL = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", user, password, host, port, name, sslmode)
-		}
-	}
-
-	return sh.RunV(goosePath, "-dir", "internal/store/migrations", "postgres", databaseURL, "status")
+	return sh.RunV("atlas", "migrate", "status", "--env", "dev")
 }
 
 // CI runs the complete CI pipeline
@@ -523,6 +489,36 @@ func Quality() error {
 	fmt.Println("Running all quality checks...")
 	mg.Deps(Vet, Lint, VulnCheck)
 	return nil
+}
+
+// Release builds and creates a release using GoReleaser
+func Release() error {
+	fmt.Println("Creating release with GoReleaser...")
+
+	// Check if goreleaser is installed
+	if err := sh.Run("which", "goreleaser"); err != nil {
+		fmt.Println("GoReleaser not found, please install it:")
+		fmt.Println("  go install github.com/goreleaser/goreleaser/v2@latest")
+		fmt.Println("  or")
+		fmt.Println("  brew install goreleaser")
+		return fmt.Errorf("goreleaser CLI not found")
+	}
+
+	return sh.RunV("goreleaser", "release", "--clean")
+}
+
+// Snapshot builds a snapshot release using GoReleaser (no publishing)
+func Snapshot() error {
+	fmt.Println("Creating snapshot release with GoReleaser...")
+
+	// Check if goreleaser is installed
+	if err := sh.Run("which", "goreleaser"); err != nil {
+		fmt.Println("GoReleaser not found, please install it:")
+		fmt.Println("  go install github.com/goreleaser/goreleaser/v2@latest")
+		return fmt.Errorf("goreleaser CLI not found")
+	}
+
+	return sh.RunV("goreleaser", "build", "--snapshot", "--clean")
 }
 
 // Help prints a help message with available commands
@@ -551,6 +547,9 @@ Quality:
   mage vulncheck (vc)   Check for security vulnerabilities
   mage quality (q)      Run all quality checks (vet + lint + vulncheck)
 
+Release:
+  mage release          Create and publish release using GoReleaser
+  mage snapshot         Build snapshot release using GoReleaser (no publishing)
 
 Production:
   mage ci               Complete CI pipeline (generate + fmt + quality + build)

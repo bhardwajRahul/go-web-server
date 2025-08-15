@@ -17,11 +17,11 @@ A production-ready web application template using a cohesive technology stack fo
 
 **Core Technologies:**
 
-- **Backend**: Go 1.24+ + Echo v4 + SQLC + PostgreSQL (pgx/v5 driver)
-- **Frontend**: Templ v0.3.924 + HTMX 2.x + Pico.css v2
-- **Security**: JWT Authentication + CSRF Protection + Input Sanitization
+- **Backend**: Go 1.25+ + Echo v4 + SQLC + PostgreSQL (pgx/v5 driver)
+- **Frontend**: Templ v0.3.924 + HTMX 2.x + Tailwind CSS + DaisyUI
+- **Security**: Session Authentication + CSRF Protection + Input Sanitization
 - **Build**: Mage automation + Air hot reload + comprehensive quality checks
-- **Monitoring**: Prometheus metrics + structured logging (slog) + request tracing
+- **Config**: Koanf multi-source + structured logging (slog) + request tracing
 - **Deploy**: Single binary (~15MB) + Ubuntu SystemD + embedded assets
 
 **Key Benefits:**
@@ -31,7 +31,7 @@ A production-ready web application template using a cohesive technology stack fo
 - **Developer Experience**: Hot reload, comprehensive tooling, static analysis, vulnerability scanning
 - **Production Ready**: Single binary deployment, graceful shutdown, connection pooling, structured logging
 - **High Performance**: Compiled templates, embedded assets, PostgreSQL with pgx driver
-- **Enterprise Features**: JWT authentication, Prometheus metrics, comprehensive error handling
+- **Enterprise Features**: Session authentication, Atlas migrations, comprehensive error handling
 
 ## Quick Start
 
@@ -85,12 +85,12 @@ mage reset       # Reset to fresh state
 - Server-side rendering with dynamic HTMX interactions
 - Type-safe HTML templates with Templ
 - Progressive enhancement without JavaScript complexity
-- Automatic dark/light theme switching
+- Modern Tailwind CSS + DaisyUI styling with multiple themes
 - Real-time updates with smooth page transitions
 
 **Enterprise Security:**
 
-- JWT authentication with secure cookie handling
+- Session authentication with Argon2id password hashing
 - CSRF protection with token rotation
 - Input sanitization for XSS/SQL injection prevention
 - Security headers (CSP, HSTS, X-Frame-Options)
@@ -98,9 +98,9 @@ mage reset       # Reset to fresh state
 
 **Production Operations:**
 
-- Comprehensive Prometheus metrics
 - Structured logging with request tracing
 - Database connection pooling and health checks
+- Atlas declarative schema management
 - Graceful shutdown and configuration management
 - Single binary deployment with SystemD integration
 

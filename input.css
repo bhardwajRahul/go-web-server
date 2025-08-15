@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom animations */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-in {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+/* HTMX loading styles */
+.htmx-indicator {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.htmx-request .htmx-indicator {
+  opacity: 1;
+}
+
+.htmx-request.htmx-indicator {
+  opacity: 1;
+}
+
+/* Custom component styles */
+.prose {
+  @apply max-w-none;
+}
+
+.btn-loading::after {
+  content: "";
+  @apply inline-block w-4 h-4 ml-2 border-2 border-current border-t-transparent rounded-full animate-spin;
+}
+
+/* Form enhancements */
+.form-control {
+  @apply mb-4;
+}
+
+.input-group {
+  @apply flex items-center;
+}
+
+.input-group .btn {
+  @apply rounded-l-none;
+}
+
+.input-group .input {
+  @apply rounded-r-none;
+}
+
+/* Toast notifications */
+.toast {
+  @apply fixed top-4 right-4 z-50 max-w-sm;
+}
+
+/* Modal enhancements */
+.modal-backdrop {
+  @apply bg-black bg-opacity-50;
+}
+
+/* Table enhancements */
+.table-zebra tbody tr:nth-child(even) {
+  @apply bg-base-200;
+}
+
+/* Card hover effects */
+.card-hover {
+  @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-1;
+}
+
+/* Loading skeleton */
+.skeleton {
+  @apply animate-pulse bg-base-300 rounded;
+}
+
+/* Error states */
+.input-error {
+  @apply border-error focus:border-error focus:ring-error;
+}
+
+.label-error {
+  @apply text-error text-sm mt-1;
+}
+
+/* Success states */
+.input-success {
+  @apply border-success focus:border-success focus:ring-success;
+}
+
+.label-success {
+  @apply text-success text-sm mt-1;
+}

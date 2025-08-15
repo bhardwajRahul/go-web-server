@@ -5,7 +5,7 @@ System design and components of the Modern Go Stack web server.
 ## System Overview
 
 ```
-Browser (HTMX + Pico.css)
+Browser (HTMX + Tailwind CSS + DaisyUI)
          ↓
    Caddy (Reverse Proxy)
          ↓
@@ -44,19 +44,18 @@ Request → Middleware Stack → Router → Handler → Store → Database
 
 | Layer | Technology | Purpose |
 |-------|------------|---------|
-| **Language** | Go 1.24+ | Latest performance & language features |
+| **Language** | Go 1.25+ | Latest performance & language features |
 | **Server** | Echo v4 | High-performance HTTP framework with middleware |
 | **Templates** | Templ v0.3.924 | Type-safe Go HTML components |
 | **Frontend** | HTMX 2.x | Dynamic interactions without JavaScript complexity |
-| **Styling** | Pico.css v2 | Semantic CSS with automatic dark/light themes |
-| **Authentication** | JWT + bcrypt | Secure token-based auth with password hashing |
+| **Styling** | Tailwind CSS + DaisyUI | Utility-first CSS with component library |
+| **Authentication** | Session-based + Argon2id | Secure session auth with password hashing |
 | **Database** | PostgreSQL + pgx/v5 | Enterprise-grade database with high-performance driver |
 | **Queries** | SQLC v1.29.0 | Generate type-safe Go from SQL |
 | **Validation** | go-playground/validator | Comprehensive input validation |
 | **Logging** | slog | Structured logging with JSON output |
-| **Metrics** | Prometheus | Performance monitoring & observability |
-| **Config** | Viper | Multi-source configuration management |
-| **Migrations** | Goose | Database migration management |
+| **Config** | Koanf | Multi-source configuration management |
+| **Migrations** | Atlas | Declarative schema management |
 | **Build** | Mage | Go-based build automation |
 | **Dev** | Air | Hot reload development server |
 | **Assets** | Go Embed | Single binary with embedded resources |
@@ -68,14 +67,14 @@ cmd/web/                     # Application entry point
 ├── main.go                  # Server setup, middleware stack, graceful shutdown
 internal/
 ├── config/                  # Configuration management
-│   └── config.go           # Viper multi-source config with defaults
+│   └── config.go           # Koanf multi-source config with defaults
 ├── handler/                 # HTTP request handlers
 │   ├── routes.go           # Route registration and static file serving
-│   ├── auth.go            # JWT authentication (login, register, logout)
+│   ├── auth.go            # Session authentication (login, register, logout)
 │   ├── home.go            # Home page and health check endpoints
 │   └── user.go            # User CRUD operations with HTMX
 ├── middleware/              # Security and validation middleware
-│   ├── auth.go            # JWT middleware and password hashing
+│   ├── auth.go            # Session middleware and Argon2id password hashing
 │   ├── csrf.go            # CSRF protection with token rotation
 │   ├── errors.go          # Structured error handling and recovery
 │   ├── metrics.go         # Prometheus metrics collection
@@ -88,12 +87,13 @@ internal/
 │   ├── queries.sql.go     # Generated type-safe Go code from SQL
 │   ├── schema.sql         # Database schema definition
 │   ├── store.go           # Store interface and initialization
-│   └── migrations/        # Goose database migrations
-│       └── 20241231000001_initial_schema.sql
+│   └── migrations/        # Atlas database migrations
+│       ├── 20241231000001_initial_schema.sql
+│       └── 20250815000001_add_sessions_and_passwords.sql
 ├── ui/                      # Embedded static assets
 │   ├── embed.go           # Go embed directives for static files
 │   └── static/            # Static web assets
-│       ├── css/           # Stylesheets (Pico.css, custom themes)
+│       ├── css/           # Stylesheets (Tailwind CSS, custom animations)
 │       ├── js/            # JavaScript (HTMX)
 │       └── favicon.ico    # Application favicon
 └── view/                    # Templ templates
@@ -166,6 +166,7 @@ bin/server                # ~15MB executable
 ```
 SQL changes → SQLC generates Go code
 Template changes → Templ generates Go functions
+CSS changes → Tailwind builds optimized stylesheet
 Build → Single binary with embedded assets
 ```
 

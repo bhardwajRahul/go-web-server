@@ -9,17 +9,18 @@
 </p>
 
 <p align="center">
-  <a href="https://golang.org/"><img src="https://img.shields.io/badge/Go-1.24+-00ADD8.svg?logo=go" alt="Go Version"></a>
+  <a href="https://golang.org/"><img src="https://img.shields.io/badge/Go-1.25+-00ADD8.svg?logo=go" alt="Go Version"></a>
   <a href="https://echo.labstack.com/"><img src="https://img.shields.io/badge/Framework-Echo_v4-00ADD8.svg?logo=go" alt="Echo Framework"></a>
   <a href="https://templ.guide/"><img src="https://img.shields.io/badge/Templates-Templ-00ADD8.svg?logo=go" alt="Templ"></a>
   <a href="https://htmx.org/"><img src="https://img.shields.io/badge/Frontend-HTMX_2.x-3D72D7.svg?logo=htmx" alt="HTMX"></a>
-  <a href="https://picocss.com/"><img src="https://img.shields.io/badge/CSS-Pico.css_v2-13795B.svg" alt="Pico.css"></a>
+  <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/CSS-Tailwind_CSS-06B6D4.svg?logo=tailwindcss" alt="Tailwind CSS"></a>
+  <a href="https://daisyui.com/"><img src="https://img.shields.io/badge/Components-DaisyUI-5A0EF8.svg" alt="DaisyUI"></a>
   <a href="https://sqlc.dev/"><img src="https://img.shields.io/badge/Queries-SQLC-00ADD8.svg?logo=go" alt="SQLC"></a>
   <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/Database-PostgreSQL-336791.svg?logo=postgresql" alt="PostgreSQL"></a>
   <a href="https://pkg.go.dev/github.com/jackc/pgx/v5"><img src="https://img.shields.io/badge/Driver-pgx_v5-00ADD8.svg?logo=go" alt="pgx PostgreSQL Driver"></a>
   <a href="https://pkg.go.dev/log/slog"><img src="https://img.shields.io/badge/Logging-slog-00ADD8.svg?logo=go" alt="Go slog"></a>
-  <a href="https://github.com/spf13/viper"><img src="https://img.shields.io/badge/Config-Viper-00ADD8.svg?logo=go" alt="Viper"></a>
-  <a href="https://github.com/pressly/goose"><img src="https://img.shields.io/badge/Migrations-Goose-00ADD8.svg?logo=go" alt="Goose"></a>
+  <a href="https://github.com/knadh/koanf"><img src="https://img.shields.io/badge/Config-Koanf-00ADD8.svg?logo=go" alt="Koanf"></a>
+  <a href="https://atlasgo.io/"><img src="https://img.shields.io/badge/Migrations-Atlas-FF6B6B.svg" alt="Atlas"></a>
   <a href="https://magefile.org/"><img src="https://img.shields.io/badge/Build-Mage-purple.svg?logo=go" alt="Mage"></a>
   <a href="https://github.com/air-verse/air"><img src="https://img.shields.io/badge/HotReload-Air-FF6B6B.svg?logo=go" alt="Air"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License"></a>
@@ -41,32 +42,32 @@ A production-ready template for modern web applications using **The Modern Go St
 
 - **Echo v4 + Templ + HTMX**: High-performance web framework with type-safe templates and dynamic UX
 - **SQLC + PostgreSQL + pgx Driver**: Type-safe database operations with high performance and connection pooling
-- **JWT Authentication**: Secure token-based authentication with configurable expiration and cookie support
-- **Prometheus Metrics**: Comprehensive observability and performance monitoring with custom business metrics
+- **Session Authentication**: Secure session-based authentication with Argon2id password hashing
+- **Tailwind CSS + DaisyUI**: Modern utility-first CSS framework with comprehensive component library
 - **Enterprise Security**: CSRF protection, input sanitization, XSS/SQL injection prevention, structured error handling
+- **Atlas Migrations**: Declarative schema management with automatic migration generation
 - **Mage Build System**: Go-based automation with comprehensive quality checks and vulnerability scanning
 - **Production Ready**: Rate limiting, CORS, security headers, graceful shutdown, and embedded static assets
-- **Developer Experience**: Hot reload with Air, database migrations with Goose, multi-source config with Viper
+- **Developer Experience**: Hot reload with Air, schema migrations with Atlas, multi-source config with Koanf
 
 ## Tech Stack
 
 | Layer          | Technology                                                  | Purpose                                |
 | -------------- | ----------------------------------------------------------- | -------------------------------------- |
-| **Language**   | [Go 1.24+](https://go.dev/doc/)                             | Latest performance & language features |
+| **Language**   | [Go 1.25+](https://go.dev/doc/)                             | Latest performance & language features |
 | **Framework**  | [Echo v4](https://echo.labstack.com/)                       | High-performance web framework         |
 | **Templates**  | [Templ](https://templ.guide/)                      | Type-safe Go HTML components           |
 | **Frontend**   | [HTMX](https://htmx.org/)                             | Dynamic interactions with smooth UX    |
-| **CSS**        | [Pico.css v2](https://picocss.com/)                         | Semantic CSS with dark/light themes    |
-| **Authentication** | [JWT](https://golang.org/x/crypto) + [bcrypt](https://pkg.go.dev/golang.org/x/crypto/bcrypt) | Secure token-based auth with password hashing |
+| **CSS**        | [Tailwind CSS](https://tailwindcss.com/) + [DaisyUI](https://daisyui.com/) | Utility-first CSS with component library |
+| **Authentication** | [Session-based](https://github.com/alexedwards/scs) + [Argon2id](https://pkg.go.dev/golang.org/x/crypto/argon2) | Secure session auth with password hashing |
 | **Logging**    | [slog](https://pkg.go.dev/log/slog)                         | Structured logging with JSON output    |
 | **Database**   | [PostgreSQL](https://www.postgresql.org/)                   | Enterprise-grade relational database   |
 | **Queries**    | [SQLC](https://sqlc.dev/)                           | Generate type-safe Go from SQL         |
 | **Validation** | [go-playground/validator](https://github.com/go-playground/validator) | Comprehensive input validation |
-| **Metrics**    | [Prometheus](https://prometheus.io/)                        | Performance monitoring & observability |
 | **DB Driver**  | [pgx v5](https://pkg.go.dev/github.com/jackc/pgx/v5)       | High-performance PostgreSQL driver with pooling |
 | **Assets**     | [Go Embed](https://pkg.go.dev/embed)                        | Single binary with embedded resources  |
-| **Config**     | [Viper](https://github.com/spf13/viper)                     | Multi-source configuration management  |
-| **Migrations** | [Goose](https://github.com/pressly/goose)                   | Database migration management          |
+| **Config**     | [Koanf](https://github.com/knadh/koanf)                     | Multi-source configuration management  |
+| **Migrations** | [Atlas](https://atlasgo.io/)                   | Declarative schema management          |
 | **Build**      | [Mage](https://magefile.org/)                               | Go-based build automation              |
 | **Hot Reload** | [Air](https://github.com/air-verse/air)                     | Development server with live reload    |
 
@@ -103,7 +104,7 @@ mage migrate
 # Server binary available at: bin/server
 ```
 
-**Requirements:** Ubuntu 20.04+, PostgreSQL, Go 1.24+
+**Requirements:** Ubuntu 20.04+, PostgreSQL, Go 1.25+
 
 ### Local Development
 
@@ -132,9 +133,10 @@ mage dev
 
 **Requirements:**
 
-- Go 1.24+
+- Go 1.25+
 - Mage build tool (`go install github.com/magefile/mage@latest`)
 - PostgreSQL database (local installation)
+- Node.js + npm (for Tailwind CSS build)
 
 **Note:** First run of `mage setup` installs all development tools automatically.
 
@@ -219,10 +221,10 @@ curl -X POST http://localhost:8080/auth/login \
 
 Interactive user management application demonstrating:
 
-- **JWT Authentication**: Login/register system with secure token-based auth
+- **Session Authentication**: Login/register system with secure session-based auth and Argon2id hashing
 - **CRUD Operations**: Type-safe database queries with CSRF protection
 - **Real-time Updates**: HTMX interactions with smooth page transitions
-- **Responsive Design**: Automatic dark/light theme switching with Pico.css
+- **Responsive Design**: Modern Tailwind CSS styling with DaisyUI components and multiple themes
 - **Enterprise Security**: Input sanitization, XSS/SQL injection prevention, and structured error handling
 
 <p align="center">
@@ -275,20 +277,19 @@ sudo systemctl enable gowebserver
 sudo systemctl start gowebserver
 ```
 
-The binary includes embedded Pico.css, HTMX, and Templ templates. **Single binary deployment** with local PostgreSQL backend. Perfect for traditional Ubuntu servers behind Caddy reverse proxy with Cloudflare DNS.
+The binary includes embedded Tailwind CSS, DaisyUI, HTMX, and Templ templates. **Single binary deployment** with local PostgreSQL backend. Perfect for traditional Ubuntu servers behind Caddy reverse proxy with Cloudflare DNS.
 
 ## Key Features Demonstrated
 
 **Modern Web Stack:**
 
 - Echo framework with comprehensive middleware stack (recovery, CORS, rate limiting, timeouts)
-- JWT authentication with secure cookie handling and configurable expiration
+- Session-based authentication with Argon2id password hashing and PostgreSQL session store
 - Type-safe Templ templates with reusable components and embedded static assets
 - HTMX dynamic interactions with smooth page transitions and custom events
-- Pico.css semantic styling with automatic dark/light themes
+- Tailwind CSS + DaisyUI styling with comprehensive component library and multiple themes
 - SQLC type-safe database queries with high-performance pgx driver and connection pooling
 - Structured logging with slog and configurable JSON/text output
-- Prometheus metrics for observability with HTTP, database, and business metrics
 
 **Developer Experience:**
 
@@ -302,13 +303,12 @@ The binary includes embedded Pico.css, HTMX, and Templ templates. **Single binar
 **Production Ready:**
 
 - Enterprise security with CSRF protection, input sanitization, and XSS/SQL injection prevention
-- JWT authentication with bcrypt password hashing and secure cookie management
+- Session-based authentication with Argon2id password hashing and PostgreSQL session store
 - Structured error handling with request tracing, correlation IDs, and monitoring
-- Multi-source configuration with Viper supporting JSON, YAML, ENV, and .env files
-- Database migrations with Goose, connection pooling, and graceful shutdown
+- Multi-source configuration with Koanf supporting JSON, YAML, ENV, and .env files
+- Atlas declarative schema management with automatic migration generation
 - Single binary deployment (~15MB) with embedded assets (CSS, JS, templates)
 - Comprehensive middleware stack with rate limiting, CORS, security headers, and timeouts
-- Prometheus metrics integration with custom business and performance metrics
 
 ---
 
@@ -334,7 +334,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 <p align="center">
   <strong>The Modern Go Stack</strong><br>
-  <sub>Echo • Templ • HTMX • JWT • SQLC • PostgreSQL • pgx • Prometheus • slog • Viper • Goose • Mage • Air</sub>
+  <sub>Echo • Templ • HTMX • Sessions • SQLC • PostgreSQL • pgx • Tailwind • DaisyUI • slog • Koanf • Atlas • Mage • Air</sub>
 </p>
 
 <p align="center">

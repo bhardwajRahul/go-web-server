@@ -127,7 +127,6 @@ func CSRFWithConfig(config CSRFConfig) echo.MiddlewareFunc {
 				token := generateCSRFToken(config.TokenLength)
 				setCSRFCookie(c, config, token)
 				c.Set(config.ContextKey, token)
-				RecordCSRFTokenGenerated()
 
 				return next(c)
 			}
@@ -155,7 +154,6 @@ func CSRFWithConfig(config CSRFConfig) echo.MiddlewareFunc {
 
 			// Validate token
 			if !validateCSRFToken(cookieToken, requestToken) {
-				RecordCSRFValidationFailure()
 
 				return config.ErrorHandler(errors.New("CSRF token mismatch"), c)
 			}
@@ -164,7 +162,6 @@ func CSRFWithConfig(config CSRFConfig) echo.MiddlewareFunc {
 			newToken := generateCSRFToken(config.TokenLength)
 			setCSRFCookie(c, config, newToken)
 			c.Set(config.ContextKey, newToken)
-			RecordCSRFTokenGenerated()
 
 			return next(c)
 		}

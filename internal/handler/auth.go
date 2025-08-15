@@ -13,11 +13,11 @@ import (
 // AuthHandler handles authentication-related requests
 type AuthHandler struct {
 	store       *store.Store
-	authService *middleware.AuthService
+	authService *middleware.SessionAuthService
 }
 
 // NewAuthHandler creates a new AuthHandler
-func NewAuthHandler(s *store.Store, authService *middleware.AuthService) *AuthHandler {
+func NewAuthHandler(s *store.Store, authService *middleware.SessionAuthService) *AuthHandler {
 	return &AuthHandler{
 		store:       s,
 		authService: authService,
@@ -53,63 +53,33 @@ func (r RegisterRequest) Validate() error {
 // LoginPage renders the login page
 func (h *AuthHandler) LoginPage(c echo.Context) error {
 	// Check if user is already authenticated
-	if user, exists := middleware.GetCurrentUser(c); exists && user.IsActive {
-		// Redirect to dashboard or home page
-		return c.Redirect(http.StatusFound, "/")
+	if user, exists := h.authService.GetCurrentUser(c); exists && user.IsActive {
+		return c.Redirect(http.StatusFound, RouteHome)
 	}
 
-	// Get CSRF token for the form
 	token := middleware.GetCSRFToken(c)
-	if token != "" {
-		c.Response().Header().Set("X-CSRF-Token", token)
-	}
 
-	// Check if this is an HTMX request for partial content
-	if c.Request().Header.Get("HX-Request") == HtmxRequestHeader {
-		component := view.LoginContent()
-		return component.Render(c.Request().Context(), c.Response().Writer)
-	}
-
-	// Return full page with layout and CSRF token
-	if token != "" {
-		component := view.LoginWithCSRF(token)
-		return component.Render(c.Request().Context(), c.Response().Writer)
-	}
-
-	// Fallback to basic template
-	component := view.Login()
-	return component.Render(c.Request().Context(), c.Response().Writer)
+	return renderWithCSRF(c,
+		view.LoginContent(),       // HTMX component
+		view.LoginWithCSRF(token), // Full page component with CSRF
+		view.Login(),              // Basic component
+	)
 }
 
 // RegisterPage renders the registration page
 func (h *AuthHandler) RegisterPage(c echo.Context) error {
 	// Check if user is already authenticated
-	if user, exists := middleware.GetCurrentUser(c); exists && user.IsActive {
-		// Redirect to dashboard or home page
-		return c.Redirect(http.StatusFound, "/")
+	if user, exists := h.authService.GetCurrentUser(c); exists && user.IsActive {
+		return c.Redirect(http.StatusFound, RouteHome)
 	}
 
-	// Get CSRF token for the form
 	token := middleware.GetCSRFToken(c)
-	if token != "" {
-		c.Response().Header().Set("X-CSRF-Token", token)
-	}
 
-	// Check if this is an HTMX request for partial content
-	if c.Request().Header.Get("HX-Request") == HtmxRequestHeader {
-		component := view.RegisterContent()
-		return component.Render(c.Request().Context(), c.Response().Writer)
-	}
-
-	// Return full page with layout and CSRF token
-	if token != "" {
-		component := view.RegisterWithCSRF(token)
-		return component.Render(c.Request().Context(), c.Response().Writer)
-	}
-
-	// Fallback to basic template
-	component := view.Register()
-	return component.Render(c.Request().Context(), c.Response().Writer)
+	return renderWithCSRF(c,
+		view.RegisterContent(),       // HTMX component
+		view.RegisterWithCSRF(token), // Full page component with CSRF
+		view.Register(),              // Basic component
+	)
 }
 
 // Login handles user login
@@ -119,20 +89,11 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	// Parse and validate request
 	var req LoginRequest
 	if err := c.Bind(&req); err != nil {
-		return middleware.NewAppError(
-			middleware.ErrorTypeValidation,
-			http.StatusBadRequest,
-			"Invalid request format",
-		).WithContext(c).WithInternal(err)
+		return validationError(c, "Invalid request format", err)
 	}
 
 	if validationErrors := middleware.ValidateStruct(req); len(validationErrors) > 0 {
-		return middleware.NewAppErrorWithDetails(
-			middleware.ErrorTypeValidation,
-			http.StatusBadRequest,
-			"Validation failed",
-			validationErrors,
-		).WithContext(c)
+		return validationErrorWithDetails(c, "Validation failed", validationErrors)
 	}
 
 	// Find user by email
@@ -143,29 +104,32 @@ func (h *AuthHandler) Login(c echo.Context) error {
 			"error", err,
 			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
 
-		return middleware.NewAppError(
-			middleware.ErrorTypeAuthentication,
-			http.StatusUnauthorized,
-			"Invalid email or password",
-		).WithContext(c)
+		return authenticationError(c, "Invalid email or password")
 	}
 
-	// For this demo, we'll assume users don't have passwords stored yet
-	// In a real application, you'd validate the password here
-	// if !middleware.CheckPassword(req.Password, user.PasswordHash) {
-	//     return middleware.NewAppError(...)
-	// }
+	// Verify password if user has a password hash
+	if user.PasswordHash != nil {
+		valid, err := h.authService.VerifyPasswordArgon2(req.Password, *user.PasswordHash)
+		if err != nil {
+			slog.Error("Password verification failed",
+				"error", err,
+				"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
+			return internalError(c, "Authentication error", err)
+		}
+		if !valid {
+			return authenticationError(c, "Invalid email or password")
+		}
+	} else {
+		// For demo users without passwords, allow any password
+		slog.Warn("User logging in without password set", "email", req.Email)
+	}
 
 	// Check if user is active
 	if user.IsActive == nil || !*user.IsActive {
-		return middleware.NewAppError(
-			middleware.ErrorTypeAuthentication,
-			http.StatusUnauthorized,
-			"Account is inactive",
-		).WithContext(c)
+		return authenticationError(c, "Account is inactive")
 	}
 
-	// Generate JWT token
+	// Create user session
 	authUser := middleware.User{
 		ID:       user.ID,
 		Email:    user.Email,
@@ -173,9 +137,9 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		IsActive: *user.IsActive,
 	}
 
-	token, err := h.authService.GenerateToken(authUser)
+	err = h.authService.LoginUser(c, authUser)
 	if err != nil {
-		slog.Error("Failed to generate JWT token",
+		slog.Error("Failed to create user session",
 			"user_id", user.ID,
 			"error", err,
 			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
@@ -183,12 +147,9 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		return middleware.NewAppError(
 			middleware.ErrorTypeInternal,
 			http.StatusInternalServerError,
-			"Failed to generate authentication token",
+			"Failed to create user session",
 		).WithContext(c).WithInternal(err)
 	}
-
-	// Set authentication cookie
-	h.authService.SetAuthCookie(c, token)
 
 	slog.Info("User logged in successfully",
 		"user_id", user.ID,
@@ -196,16 +157,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
 
 	// Return success response
-	if c.Request().Header.Get("HX-Request") == HtmxRequestHeader {
-		// For HTMX requests, trigger a redirect
-		c.Response().Header().Set("HX-Redirect", "/")
-		return c.JSON(http.StatusOK, map[string]string{
-			"message": "Login successful",
-		})
-	}
-
-	// For regular requests, redirect to home page
-	return c.Redirect(http.StatusFound, "/")
+	return redirectOrHtmx(c, RouteHome, MsgLoginSuccess)
 }
 
 // Register handles user registration
@@ -215,37 +167,31 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	// Parse and validate request
 	var req RegisterRequest
 	if err := c.Bind(&req); err != nil {
-		return middleware.NewAppError(
-			middleware.ErrorTypeValidation,
-			http.StatusBadRequest,
-			"Invalid request format",
-		).WithContext(c).WithInternal(err)
+		return validationError(c, "Invalid request format", err)
 	}
 
 	if validationErrors := middleware.ValidateStruct(req); len(validationErrors) > 0 {
-		return middleware.NewAppErrorWithDetails(
-			middleware.ErrorTypeValidation,
-			http.StatusBadRequest,
-			"Validation failed",
-			validationErrors,
-		).WithContext(c)
+		return validationErrorWithDetails(c, "Validation failed", validationErrors)
 	}
 
 	// Custom validation
 	if err := req.Validate(); err != nil {
-		return middleware.NewAppErrorWithDetails(
-			middleware.ErrorTypeValidation,
-			http.StatusBadRequest,
-			"Validation failed",
-			err,
-		).WithContext(c)
+		return validationErrorWithDetails(c, "Validation failed", err)
 	}
 
-	// Hash password (for demo purposes, we'll skip this since we don't have a password field)
-	// hashedPassword, err := middleware.HashPassword(req.Password)
-	// if err != nil {
-	//     return middleware.NewAppError(...)
-	// }
+	// Hash password using Argon2id
+	hashedPassword, err := h.authService.HashPasswordArgon2(req.Password)
+	if err != nil {
+		slog.Error("Failed to hash password",
+			"error", err,
+			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
+
+		return middleware.NewAppError(
+			middleware.ErrorTypeInternal,
+			http.StatusInternalServerError,
+			"Failed to process password",
+		).WithContext(c).WithInternal(err)
+	}
 
 	// Create user
 	var bioPtr *string
@@ -259,11 +205,11 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	}
 
 	params := store.CreateUserParams{
-		Email:     req.Email,
-		Name:      req.Name,
-		Bio:       bioPtr,
-		AvatarUrl: avatarURLPtr,
-		// PasswordHash: hashedPassword, // Would add this field to the database
+		Email:        req.Email,
+		Name:         req.Name,
+		Bio:          bioPtr,
+		AvatarUrl:    avatarURLPtr,
+		PasswordHash: &hashedPassword,
 	}
 
 	user, err := h.store.CreateUser(ctx, params)
@@ -281,7 +227,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		).WithContext(c).WithInternal(err)
 	}
 
-	// Generate JWT token for automatic login
+	// Create user session for automatic login
 	authUser := middleware.User{
 		ID:       user.ID,
 		Email:    user.Email,
@@ -289,9 +235,9 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		IsActive: *user.IsActive,
 	}
 
-	token, err := h.authService.GenerateToken(authUser)
+	err = h.authService.LoginUser(c, authUser)
 	if err != nil {
-		slog.Error("Failed to generate JWT token after registration",
+		slog.Error("Failed to create user session after registration",
 			"user_id", user.ID,
 			"error", err,
 			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
@@ -299,12 +245,9 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		return middleware.NewAppError(
 			middleware.ErrorTypeInternal,
 			http.StatusInternalServerError,
-			"Failed to generate authentication token",
+			"Failed to create user session",
 		).WithContext(c).WithInternal(err)
 	}
-
-	// Set authentication cookie
-	h.authService.SetAuthCookie(c, token)
 
 	slog.Info("User registered and logged in successfully",
 		"user_id", user.ID,
@@ -312,70 +255,43 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
 
 	// Return success response
-	if c.Request().Header.Get("HX-Request") == HtmxRequestHeader {
-		// For HTMX requests, trigger a redirect
-		c.Response().Header().Set("HX-Redirect", "/")
-		return c.JSON(http.StatusOK, map[string]string{
-			"message": "Registration successful",
-		})
-	}
-
-	// For regular requests, redirect to home page
-	return c.Redirect(http.StatusFound, "/")
+	return redirectOrHtmx(c, RouteHome, MsgRegisterSuccess)
 }
 
 // Logout handles user logout
 func (h *AuthHandler) Logout(c echo.Context) error {
-	// Clear authentication cookie
-	h.authService.ClearAuthCookie(c)
-
 	// Log the logout
-	if user, exists := middleware.GetCurrentUser(c); exists {
+	if user, exists := h.authService.GetCurrentUser(c); exists {
 		slog.Info("User logged out successfully",
 			"user_id", user.ID,
 			"email", user.Email,
 			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
 	}
 
-	// Return success response
-	if c.Request().Header.Get("HX-Request") == HtmxRequestHeader {
-		// For HTMX requests, trigger a redirect
-		c.Response().Header().Set("HX-Redirect", "/login")
-		return c.JSON(http.StatusOK, map[string]string{
-			"message": "Logout successful",
-		})
+	// Destroy user session
+	err := h.authService.LogoutUser(c)
+	if err != nil {
+		slog.Error("Failed to destroy session",
+			"error", err,
+			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
 	}
 
-	// For regular requests, redirect to login page
-	return c.Redirect(http.StatusFound, "/login")
+	// Return success response
+	return redirectOrHtmx(c, RouteLogin, MsgLogoutSuccess)
 }
 
 // Profile handles user profile page
 func (h *AuthHandler) Profile(c echo.Context) error {
-	user, exists := middleware.GetCurrentUser(c)
+	user, exists := h.authService.GetCurrentUser(c)
 	if !exists {
-		return c.Redirect(http.StatusFound, "/login")
+		return c.Redirect(http.StatusFound, RouteLogin)
 	}
 
-	// Get CSRF token
 	token := middleware.GetCSRFToken(c)
-	if token != "" {
-		c.Response().Header().Set("X-CSRF-Token", token)
-	}
 
-	// Check if this is an HTMX request for partial content
-	if c.Request().Header.Get("HX-Request") == HtmxRequestHeader {
-		component := view.ProfileContent(*user)
-		return component.Render(c.Request().Context(), c.Response().Writer)
-	}
-
-	// Return full page with layout and CSRF token
-	if token != "" {
-		component := view.ProfileWithCSRF(*user, token)
-		return component.Render(c.Request().Context(), c.Response().Writer)
-	}
-
-	// Fallback to basic template
-	component := view.Profile(*user)
-	return component.Render(c.Request().Context(), c.Response().Writer)
+	return renderWithCSRF(c,
+		view.ProfileContent(*user),         // HTMX component
+		view.ProfileWithCSRF(*user, token), // Full page component with CSRF
+		view.Profile(*user),                // Basic component
+	)
 }

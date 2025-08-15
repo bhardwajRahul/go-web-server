@@ -12,10 +12,8 @@ import (
 )
 
 const (
-	// HtmxRequestHeader is a constant for the HX-Request header value.
-	HtmxRequestHeader = "true"
-	statusError       = "error"
-	statusWarning     = "warning"
+	statusError   = "error"
+	statusWarning = "warning"
 )
 
 // HomeHandler handles requests for the home page and health checks.
@@ -30,30 +28,13 @@ func NewHomeHandler(s *store.Store) *HomeHandler {
 
 // Home handles requests to the root path, returning either full page or partial content.
 func (h *HomeHandler) Home(c echo.Context) error {
-	// Set CSRF token in response header for initial requests
 	token := middleware.GetCSRFToken(c)
-	if token != "" {
-		c.Response().Header().Set("X-CSRF-Token", token)
-	}
 
-	// Check if this is an HTMX request for partial content
-	if c.Request().Header.Get("HX-Request") == htmxRequestHeader {
-		component := view.HomeContent()
-
-		return component.Render(c.Request().Context(), c.Response().Writer)
-	}
-
-	// Return full page with layout and CSRF token
-	if token != "" {
-		component := view.HomeWithCSRF(token)
-
-		return component.Render(c.Request().Context(), c.Response().Writer)
-	}
-
-	// Fallback to basic template
-	component := view.Home()
-
-	return component.Render(c.Request().Context(), c.Response().Writer)
+	return renderWithCSRF(c,
+		view.HomeContent(),       // HTMX component
+		view.HomeWithCSRF(token), // Full page component with CSRF
+		view.Home(),              // Basic component
+	)
 }
 
 // Demo provides a demonstration of HTMX functionality.
@@ -71,7 +52,7 @@ func (h *HomeHandler) Demo(c echo.Context) error {
 	}
 
 	// Check if this is an HTMX request for formatted HTML display
-	if c.Request().Header.Get("HX-Request") == htmxRequestHeader {
+	if isHtmxRequest(c) {
 		c.Response().Header().Set("Content-Type", "text/html; charset=utf-8")
 
 		component := view.DemoContent(demoData.Message, demoData.Features, demoData.ServerTime, demoData.RequestID)
@@ -130,7 +111,7 @@ func (h *HomeHandler) Health(c echo.Context) error {
 	}
 
 	// Check if this is an HTMX request for formatted HTML display
-	if c.Request().Header.Get("HX-Request") == htmxRequestHeader {
+	if isHtmxRequest(c) {
 		component := view.HealthCheck(
 			health["status"].(string),
 			health["service"].(string),

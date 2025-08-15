@@ -1,47 +1,18 @@
 package middleware
 
 import (
+	"crypto/rand"
+	"crypto/subtle"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/alexedwards/scs/v2"
 	"github.com/labstack/echo/v4"
-	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/crypto/argon2"
 )
-
-// AuthConfig holds JWT authentication configuration
-type AuthConfig struct {
-	SigningKey      []byte
-	TokenDuration   time.Duration
-	RefreshDuration time.Duration
-	Issuer          string
-	CookieName      string
-	CookieSecure    bool
-	CookieHTTPOnly  bool
-}
-
-// DefaultAuthConfig provides sensible defaults for JWT authentication
-var DefaultAuthConfig = AuthConfig{
-	SigningKey:      []byte("your-secret-key"), // Should be set from environment
-	TokenDuration:   time.Hour * 24,            // 24 hours
-	RefreshDuration: time.Hour * 24 * 7,        // 7 days
-	Issuer:          "go-web-server",
-	CookieName:      "auth_token",
-	CookieSecure:    true,
-	CookieHTTPOnly:  true,
-}
-
-// Claims represents JWT claims with user information
-type Claims struct {
-	UserID   int64  `json:"user_id"`
-	Email    string `json:"email"`
-	Name     string `json:"name"`
-	IsActive bool   `json:"is_active"`
-	jwt.RegisteredClaims
-}
 
 // User represents authenticated user information
 type User struct {
@@ -51,120 +22,137 @@ type User struct {
 	IsActive bool   `json:"is_active"`
 }
 
-// AuthService provides JWT token operations
-type AuthService struct {
-	config AuthConfig
+// Argon2 parameters for password hashing
+type Argon2Params struct {
+	Memory      uint32
+	Iterations  uint32
+	Parallelism uint8
+	SaltLength  uint32
+	KeyLength   uint32
 }
 
-// NewAuthService creates a new authentication service
-func NewAuthService(config AuthConfig) *AuthService {
-	return &AuthService{config: config}
+// DefaultArgon2Params provides secure defaults for Argon2id
+var DefaultArgon2Params = Argon2Params{
+	Memory:      64 * 1024, // 64 MB
+	Iterations:  3,         // 3 iterations
+	Parallelism: 2,         // 2 threads
+	SaltLength:  16,        // 16 bytes salt
+	KeyLength:   32,        // 32 bytes key
 }
 
-// NewAuthServiceWithDefaults creates a new authentication service with default config
-func NewAuthServiceWithDefaults() *AuthService {
-	return &AuthService{config: DefaultAuthConfig}
+// SessionAuthService provides session-based authentication
+type SessionAuthService struct {
+	sessionManager *scs.SessionManager
+	argon2Params   Argon2Params
 }
 
-// GenerateToken generates a JWT token for a user
-func (a *AuthService) GenerateToken(user User) (string, error) {
-	claims := Claims{
-		UserID:   user.ID,
-		Email:    user.Email,
-		Name:     user.Name,
-		IsActive: user.IsActive,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(a.config.TokenDuration)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			NotBefore: jwt.NewNumericDate(time.Now()),
-			Issuer:    a.config.Issuer,
-			Subject:   fmt.Sprintf("%d", user.ID),
-		},
+// NewSessionAuthService creates a new session-based auth service
+func NewSessionAuthService(sessionManager *scs.SessionManager) *SessionAuthService {
+	return &SessionAuthService{
+		sessionManager: sessionManager,
+		argon2Params:   DefaultArgon2Params,
 	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(a.config.SigningKey)
 }
 
-// ValidateToken validates a JWT token and returns the claims
-func (a *AuthService) ValidateToken(tokenString string) (*Claims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return a.config.SigningKey, nil
-	})
-
+// HashPasswordArgon2 hashes a password using Argon2id
+func (s *SessionAuthService) HashPasswordArgon2(password string) (string, error) {
+	// Generate random salt
+	salt, err := generateRandomBytes(s.argon2Params.SaltLength)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
-		return claims, nil
+	// Hash the password using Argon2id
+	hash := argon2.IDKey([]byte(password), salt, s.argon2Params.Iterations, s.argon2Params.Memory, s.argon2Params.Parallelism, s.argon2Params.KeyLength)
+
+	// Encode the result as base64
+	b64Salt := base64.RawStdEncoding.EncodeToString(salt)
+	b64Hash := base64.RawStdEncoding.EncodeToString(hash)
+
+	// Format: $argon2id$v=19$m=65536,t=3,p=2$salt$hash
+	encoded := fmt.Sprintf("$argon2id$v=19$m=%d,t=%d,p=%d$%s$%s", s.argon2Params.Memory, s.argon2Params.Iterations, s.argon2Params.Parallelism, b64Salt, b64Hash)
+	return encoded, nil
+}
+
+// VerifyPasswordArgon2 verifies a password against an Argon2id hash
+func (s *SessionAuthService) VerifyPasswordArgon2(password, encoded string) (bool, error) {
+	// Parse the encoded hash
+	params, salt, hash, err := decodeArgon2Hash(encoded)
+	if err != nil {
+		return false, err
 	}
 
-	return nil, errors.New("invalid token")
-}
+	// Hash the password with the same parameters
+	otherHash := argon2.IDKey([]byte(password), salt, params.Iterations, params.Memory, params.Parallelism, params.KeyLength)
 
-// SetAuthCookie sets an authentication cookie
-func (a *AuthService) SetAuthCookie(c echo.Context, token string) {
-	cookie := &http.Cookie{
-		Name:     a.config.CookieName,
-		Value:    token,
-		Path:     "/",
-		MaxAge:   int(a.config.TokenDuration.Seconds()),
-		Secure:   a.config.CookieSecure,
-		HttpOnly: a.config.CookieHTTPOnly,
-		SameSite: http.SameSiteStrictMode,
+	// Compare the hashes using constant time comparison
+	if subtle.ConstantTimeCompare(hash, otherHash) == 1 {
+		return true, nil
 	}
-	c.SetCookie(cookie)
+	return false, nil
 }
 
-// ClearAuthCookie clears the authentication cookie
-func (a *AuthService) ClearAuthCookie(c echo.Context) {
-	cookie := &http.Cookie{
-		Name:     a.config.CookieName,
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		Secure:   a.config.CookieSecure,
-		HttpOnly: a.config.CookieHTTPOnly,
-		SameSite: http.SameSiteStrictMode,
+// LoginUser creates a session for an authenticated user
+func (s *SessionAuthService) LoginUser(c echo.Context, user User) error {
+	ctx := c.Request().Context()
+
+	// Store user information in session
+	s.sessionManager.Put(ctx, "user_id", user.ID)
+	s.sessionManager.Put(ctx, "user_email", user.Email)
+	s.sessionManager.Put(ctx, "user_name", user.Name)
+	s.sessionManager.Put(ctx, "user_is_active", user.IsActive)
+	s.sessionManager.Put(ctx, "authenticated", true)
+
+	return nil
+}
+
+// LogoutUser destroys the user session
+func (s *SessionAuthService) LogoutUser(c echo.Context) error {
+	ctx := c.Request().Context()
+	return s.sessionManager.Destroy(ctx)
+}
+
+// GetCurrentUser retrieves the current authenticated user from session
+func (s *SessionAuthService) GetCurrentUser(c echo.Context) (*User, bool) {
+	ctx := c.Request().Context()
+
+	authenticated := s.sessionManager.GetBool(ctx, "authenticated")
+	if !authenticated {
+		return nil, false
 	}
-	c.SetCookie(cookie)
+
+	userID := s.sessionManager.GetInt64(ctx, "user_id")
+	if userID == 0 {
+		return nil, false
+	}
+
+	user := User{
+		ID:       userID,
+		Email:    s.sessionManager.GetString(ctx, "user_email"),
+		Name:     s.sessionManager.GetString(ctx, "user_name"),
+		IsActive: s.sessionManager.GetBool(ctx, "user_is_active"),
+	}
+
+	return &user, true
 }
 
-// HashPassword hashes a password using bcrypt
-func HashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	return string(bytes), err
+// SessionMiddleware wraps the SCS session middleware for Echo
+func (s *SessionAuthService) SessionMiddleware() echo.MiddlewareFunc {
+	return echo.WrapMiddleware(s.sessionManager.LoadAndSave)
 }
 
-// CheckPassword checks if a password matches the hashed password
-func CheckPassword(password, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	return err == nil
-}
-
-// JWTMiddleware creates a JWT authentication middleware
-func JWTMiddleware(authService *AuthService) echo.MiddlewareFunc {
+// RequireAuth middleware that requires session-based authentication
+func (s *SessionAuthService) RequireAuth() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			// Try to get token from Authorization header first
-			authHeader := c.Request().Header.Get("Authorization")
-			var tokenString string
-
-			if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
-				tokenString = strings.TrimPrefix(authHeader, "Bearer ")
-			} else {
-				// Try to get token from cookie
-				cookie, err := c.Cookie(authService.config.CookieName)
-				if err == nil {
-					tokenString = cookie.Value
+			user, exists := s.GetCurrentUser(c)
+			if !exists {
+				// Redirect to login page for browser requests
+				if c.Request().Header.Get("HX-Request") != "true" &&
+					c.Request().Header.Get("Accept") != "application/json" {
+					return c.Redirect(http.StatusFound, "/auth/login")
 				}
-			}
 
-			if tokenString == "" {
 				return NewAppError(
 					ErrorTypeAuthentication,
 					http.StatusUnauthorized,
@@ -172,18 +160,8 @@ func JWTMiddleware(authService *AuthService) echo.MiddlewareFunc {
 				).WithContext(c)
 			}
 
-			// Validate token
-			claims, err := authService.ValidateToken(tokenString)
-			if err != nil {
-				return NewAppError(
-					ErrorTypeAuthentication,
-					http.StatusUnauthorized,
-					"Invalid or expired token",
-				).WithContext(c).WithInternal(err)
-			}
-
-			// Check if user is active
-			if !claims.IsActive {
+			if !user.IsActive {
+				s.LogoutUser(c)
 				return NewAppError(
 					ErrorTypeAuthentication,
 					http.StatusUnauthorized,
@@ -191,73 +169,77 @@ func JWTMiddleware(authService *AuthService) echo.MiddlewareFunc {
 				).WithContext(c)
 			}
 
-			// Store user information in context
-			user := User{
-				ID:       claims.UserID,
-				Email:    claims.Email,
-				Name:     claims.Name,
-				IsActive: claims.IsActive,
-			}
-			c.Set("user", user)
-			c.Set("user_id", claims.UserID)
+			// Store user in context for backwards compatibility
+			c.Set("user", *user)
+			c.Set("user_id", user.ID)
 
 			return next(c)
 		}
 	}
 }
 
-// OptionalJWTMiddleware creates a JWT middleware that doesn't require authentication
-func OptionalJWTMiddleware(authService *AuthService) echo.MiddlewareFunc {
+// OptionalAuth middleware that loads user if authenticated but doesn't require it
+func (s *SessionAuthService) OptionalAuth() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			// Try to get token from Authorization header first
-			authHeader := c.Request().Header.Get("Authorization")
-			var tokenString string
-
-			if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
-				tokenString = strings.TrimPrefix(authHeader, "Bearer ")
-			} else {
-				// Try to get token from cookie
-				cookie, err := c.Cookie(authService.config.CookieName)
-				if err == nil {
-					tokenString = cookie.Value
-				}
+			user, exists := s.GetCurrentUser(c)
+			if exists && user.IsActive {
+				// Store user in context for backwards compatibility
+				c.Set("user", *user)
+				c.Set("user_id", user.ID)
 			}
-
-			// If no token, continue without authentication
-			if tokenString == "" {
-				return next(c)
-			}
-
-			// Validate token if present
-			claims, err := authService.ValidateToken(tokenString)
-			if err != nil {
-				// Invalid token, continue without authentication
-				return next(c)
-			}
-
-			// Check if user is active
-			if !claims.IsActive {
-				// Inactive user, continue without authentication
-				return next(c)
-			}
-
-			// Store user information in context
-			user := User{
-				ID:       claims.UserID,
-				Email:    claims.Email,
-				Name:     claims.Name,
-				IsActive: claims.IsActive,
-			}
-			c.Set("user", user)
-			c.Set("user_id", claims.UserID)
 
 			return next(c)
 		}
 	}
 }
 
-// GetCurrentUser retrieves the current authenticated user from context
+// Helper functions
+
+// generateRandomBytes generates cryptographically secure random bytes
+func generateRandomBytes(n uint32) ([]byte, error) {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+// decodeArgon2Hash parses an encoded Argon2 hash
+func decodeArgon2Hash(encoded string) (params Argon2Params, salt, hash []byte, err error) {
+	var version int
+	_, err = fmt.Sscanf(encoded, "$argon2id$v=%d$m=%d,t=%d,p=%d$", &version, &params.Memory, &params.Iterations, &params.Parallelism)
+	if err != nil {
+		return params, nil, nil, errors.New("invalid hash format")
+	}
+
+	if version != argon2.Version {
+		return params, nil, nil, errors.New("incompatible version of argon2")
+	}
+
+	// Extract salt and hash parts
+	parts := strings.Split(encoded, "$")
+	if len(parts) != 6 {
+		return params, nil, nil, errors.New("invalid hash format")
+	}
+
+	salt, err = base64.RawStdEncoding.DecodeString(parts[4])
+	if err != nil {
+		return params, nil, nil, err
+	}
+	params.SaltLength = uint32(len(salt))
+
+	hash, err = base64.RawStdEncoding.DecodeString(parts[5])
+	if err != nil {
+		return params, nil, nil, err
+	}
+	params.KeyLength = uint32(len(hash))
+
+	return params, salt, hash, nil
+}
+
+// Backwards compatibility functions
 func GetCurrentUser(c echo.Context) (*User, bool) {
 	user := c.Get("user")
 	if user == nil {
@@ -271,7 +253,6 @@ func GetCurrentUser(c echo.Context) (*User, bool) {
 	return nil, false
 }
 
-// GetCurrentUserID retrieves the current authenticated user ID from context
 func GetCurrentUserID(c echo.Context) (int64, bool) {
 	userID := c.Get("user_id")
 	if userID == nil {
@@ -283,37 +264,4 @@ func GetCurrentUserID(c echo.Context) (int64, bool) {
 	}
 
 	return 0, false
-}
-
-// RequireAuth is a helper middleware that requires authentication
-func RequireAuth(authService *AuthService) echo.MiddlewareFunc {
-	return JWTMiddleware(authService)
-}
-
-// AdminOnly middleware that requires admin privileges (example)
-func AdminOnly() echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			user, exists := GetCurrentUser(c)
-			if !exists {
-				return NewAppError(
-					ErrorTypeAuthentication,
-					http.StatusUnauthorized,
-					"Authentication required",
-				).WithContext(c)
-			}
-
-			// Example: Check if user is admin (you'd need to add this field to your user model)
-			// For now, we'll just check if user exists and is active
-			if !user.IsActive {
-				return NewAppError(
-					ErrorTypeAuthorization,
-					http.StatusForbidden,
-					"Admin privileges required",
-				).WithContext(c)
-			}
-
-			return next(c)
-		}
-	}
 }

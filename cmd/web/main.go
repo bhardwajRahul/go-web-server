@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -11,16 +10,16 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/alexedwards/scs/pgxstore"
+	"github.com/alexedwards/scs/v2"
 	"github.com/dunamismax/go-web-server/internal/config"
 	"github.com/dunamismax/go-web-server/internal/handler"
 	"github.com/dunamismax/go-web-server/internal/middleware"
 	"github.com/dunamismax/go-web-server/internal/store"
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
-	"github.com/pressly/goose/v3"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 //go:generate go install github.com/a-h/templ/cmd/templ@latest
@@ -49,15 +48,9 @@ func main() {
 	slog.Info("Starting Go Web Server",
 		"version", "1.0.0",
 		"environment", cfg.App.Environment,
-		"go_version", "1.24+",
+		"go_version", "1.25+",
 		"port", cfg.Server.Port,
 		"debug", cfg.App.Debug)
-
-	// Initialize metrics if enabled
-	if cfg.Features.EnableMetrics {
-		middleware.InitializeMetrics("1.0.0", "1.24+", cfg.App.Environment)
-		slog.Info("Prometheus metrics enabled", "endpoint", "/metrics")
-	}
 
 	// Create context for database operations
 	ctx := context.Background()
@@ -81,15 +74,8 @@ func main() {
 		slog.Info("Database connection pool closed")
 	}()
 
-	// Run migrations if enabled
-	if cfg.Database.RunMigrations {
-		slog.Info("Running database migrations with Goose")
-
-		if err := runGooseMigrations(ctx, cfg.Database.URL); err != nil {
-			slog.Error("failed to run migrations", "error", err)
-			return
-		}
-	}
+	// Note: Database migrations are now managed by Atlas CLI
+	// Run: atlas migrate apply --url $DATABASE_URL --dir file://migrations
 
 	// Initialize schema (fallback if migrations not used)
 	if err := store.InitSchema(ctx); err != nil {
@@ -135,11 +121,6 @@ func main() {
 
 	// Request ID middleware for tracing
 	e.Use(echomiddleware.RequestID())
-
-	// Prometheus metrics middleware (if enabled)
-	if cfg.Features.EnableMetrics {
-		e.Use(middleware.PrometheusMiddleware())
-	}
 
 	// Structured logging middleware
 	e.Use(echomiddleware.RequestLoggerWithConfig(echomiddleware.RequestLoggerConfig{
@@ -218,28 +199,26 @@ func main() {
 		}
 	})
 
-	// Initialize authentication service
-	authConfig := middleware.AuthConfig{
-		SigningKey:      []byte(cfg.Auth.JWTSecret),
-		TokenDuration:   cfg.Auth.TokenDuration,
-		RefreshDuration: cfg.Auth.RefreshDuration,
-		Issuer:          "go-web-server",
-		CookieName:      cfg.Auth.CookieName,
-		CookieSecure:    cfg.Auth.CookieSecure,
-		CookieHTTPOnly:  true,
-	}
-	authService := middleware.NewAuthService(authConfig)
+	// Initialize session manager
+	sessionManager := scs.New()
+	sessionManager.Store = pgxstore.New(store.DB())
+	sessionManager.Lifetime = 24 * time.Hour
+	sessionManager.Cookie.Name = cfg.Auth.CookieName
+	sessionManager.Cookie.HttpOnly = true
+	sessionManager.Cookie.Secure = cfg.Auth.CookieSecure
+	sessionManager.Cookie.SameSite = http.SameSiteStrictMode
+
+	// Initialize session-based authentication service
+	authService := middleware.NewSessionAuthService(sessionManager)
+
+	// Add session middleware to Echo
+	e.Use(authService.SessionMiddleware())
 
 	// Initialize handlers and register routes
 	handlers := handler.NewHandlers(store, authService)
 	if err := handler.RegisterRoutes(e, handlers); err != nil {
 		slog.Error("failed to register routes", "error", err)
 		return
-	}
-
-	// Add metrics endpoint if enabled
-	if cfg.Features.EnableMetrics {
-		e.GET("/metrics", echo.WrapHandler(promhttp.Handler()))
 	}
 
 	// Graceful shutdown
@@ -272,38 +251,4 @@ func main() {
 	}
 
 	slog.Info("Server shutdown complete")
-}
-
-// runGooseMigrations runs database migrations using Goose.
-func runGooseMigrations(ctx context.Context, databaseURL string) error {
-	// Open standard database connection for goose using pgx driver
-	db, err := sql.Open("pgx", databaseURL)
-	if err != nil {
-		return fmt.Errorf("failed to open database: %w", err)
-	}
-
-	defer func() {
-		if err := db.Close(); err != nil {
-			slog.Error("failed to close migration database connection", "error", err)
-		}
-	}()
-
-	// Test the connection
-	if err := db.PingContext(ctx); err != nil {
-		return fmt.Errorf("failed to ping database: %w", err)
-	}
-
-	// Set Goose dialect to PostgreSQL
-	if err := goose.SetDialect("postgres"); err != nil {
-		return fmt.Errorf("failed to set goose dialect: %w", err)
-	}
-
-	// Run migrations
-	if err := goose.Up(db, "internal/store/migrations"); err != nil {
-		return fmt.Errorf("failed to run goose migrations: %w", err)
-	}
-
-	slog.Info("Database migrations completed successfully with Goose")
-
-	return nil
 }

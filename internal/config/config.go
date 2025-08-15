@@ -1,4 +1,4 @@
-// Package config provides application configuration management using Viper.
+// Package config provides application configuration management using koanf.
 package config
 
 import (
@@ -8,7 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/viper"
+	"github.com/knadh/koanf/parsers/dotenv"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/confmap"
+	"github.com/knadh/koanf/providers/env"
+	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/v2"
 )
 
 // Config holds all application configuration settings.
@@ -67,60 +72,53 @@ type Config struct {
 
 // New creates and returns a new configuration instance with defaults, file, and environment overrides.
 func New() *Config {
-	v := viper.New()
+	k := koanf.New(".")
 
 	// Set defaults
-	setDefaults(v)
-
-	// Set config file name and paths
-	v.SetConfigName("config")
-	v.SetConfigType("yaml") // Default, but will try others
-	v.AddConfigPath(".")
-	v.AddConfigPath("./config")
+	setDefaults(k)
 
 	// Try to read .env file first
-	v.SetConfigFile(".env")
-	v.SetConfigType("env")
-	if err := v.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			slog.Debug("no .env file found")
-		} else {
-			slog.Warn("failed to read .env file", "error", err)
-		}
+	if err := k.Load(file.Provider(".env"), dotenv.Parser()); err != nil {
+		slog.Debug("no .env file found")
+	} else {
+		slog.Debug("loaded .env file")
 	}
 
 	// Try to read config file (optional)
-	v.SetConfigName("config")
-	v.SetConfigType("yaml") // Default, but will try others
-	if err := v.MergeInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			slog.Debug("no config file found, using defaults and environment variables")
-		} else {
-			slog.Warn("failed to read config file", "error", err)
+	configFiles := []string{"config.yaml", "config.yml", "./config/config.yaml", "./config/config.yml"}
+	configLoaded := false
+	for _, configFile := range configFiles {
+		if err := k.Load(file.Provider(configFile), yaml.Parser()); err == nil {
+			slog.Info("loaded configuration from file", "file", configFile)
+			configLoaded = true
+			break
 		}
-	} else {
-		slog.Info("loaded configuration from file", "file", v.ConfigFileUsed())
+	}
+	if !configLoaded {
+		slog.Debug("no config file found, using defaults and environment variables")
 	}
 
 	// Environment variable handling
-	v.AutomaticEnv()
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	k.Load(env.Provider("", ".", func(s string) string {
+		// Convert environment variables to lowercase and replace _ with .
+		return strings.ReplaceAll(strings.ToLower(s), "_", ".")
+	}), nil)
 
 	// Unmarshal into config struct
 	var cfg Config
-	if err := v.Unmarshal(&cfg); err != nil {
+	if err := k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{Tag: "mapstructure"}); err != nil {
 		slog.Error("failed to unmarshal config", "error", err)
 		os.Exit(1)
 	}
 
 	// Construct database URL if not provided directly
 	if cfg.Database.URL == "" {
-		user := v.GetString("DATABASE_USER")
-		password := v.GetString("DATABASE_PASSWORD")
-		host := v.GetString("DATABASE_HOST")
-		port := v.GetString("DATABASE_PORT")
-		name := v.GetString("DATABASE_NAME")
-		sslmode := v.GetString("DATABASE_SSLMODE")
+		user := k.String("database.user")
+		password := k.String("database.password")
+		host := k.String("database.host")
+		port := k.String("database.port")
+		name := k.String("database.name")
+		sslmode := k.String("database.sslmode")
 
 		// Set defaults for missing values
 		if host == "" {
@@ -155,45 +153,51 @@ func New() *Config {
 	return &cfg
 }
 
-func setDefaults(v *viper.Viper) {
-	// Server defaults
-	v.SetDefault("server.port", "8080")
-	v.SetDefault("server.host", "")
-	v.SetDefault("server.read_timeout", 10*time.Second)
-	v.SetDefault("server.write_timeout", 10*time.Second)
-	v.SetDefault("server.shutdown_timeout", 30*time.Second)
+func setDefaults(k *koanf.Koanf) {
+	// Create a defaults map
+	defaults := map[string]interface{}{
+		// Server defaults
+		"server.port":             "8080",
+		"server.host":             "",
+		"server.read_timeout":     10 * time.Second,
+		"server.write_timeout":    10 * time.Second,
+		"server.shutdown_timeout": 30 * time.Second,
 
-	// Database defaults - will be overridden by environment variables
-	v.SetDefault("database.url", "") // Will be constructed from individual vars if not set
-	v.SetDefault("database.max_connections", 25)
-	v.SetDefault("database.min_connections", 5)
-	v.SetDefault("database.timeout", 30*time.Second)
-	v.SetDefault("database.max_conn_lifetime", time.Hour)
-	v.SetDefault("database.max_conn_idle_time", 30*time.Minute)
-	v.SetDefault("database.run_migrations", true)
-	v.SetDefault("database.ssl_mode", "disable")
+		// Database defaults - will be overridden by environment variables
+		"database.url":                "", // Will be constructed from individual vars if not set
+		"database.max_connections":    25,
+		"database.min_connections":    5,
+		"database.timeout":            30 * time.Second,
+		"database.max_conn_lifetime":  time.Hour,
+		"database.max_conn_idle_time": 30 * time.Minute,
+		"database.run_migrations":     true,
+		"database.ssl_mode":           "disable",
 
-	// Application defaults
-	v.SetDefault("app.environment", "development")
-	v.SetDefault("app.debug", false)
-	v.SetDefault("app.log_level", "info")
-	v.SetDefault("app.log_format", "text")
+		// Application defaults
+		"app.environment": "development",
+		"app.debug":       false,
+		"app.log_level":   "info",
+		"app.log_format":  "text",
 
-	// Security defaults
-	v.SetDefault("security.trusted_proxies", []string{"127.0.0.1"})
-	v.SetDefault("security.enable_cors", true)
-	v.SetDefault("security.allowed_origins", []string{"*"})
+		// Security defaults
+		"security.trusted_proxies": []string{"127.0.0.1"},
+		"security.enable_cors":     true,
+		"security.allowed_origins": []string{"*"},
 
-	// Feature flags defaults
-	v.SetDefault("features.enable_metrics", false)
-	v.SetDefault("features.enable_pprof", false)
+		// Feature flags defaults
+		"features.enable_metrics": false,
+		"features.enable_pprof":   false,
 
-	// Authentication defaults
-	v.SetDefault("auth.jwt_secret", "change-this-in-production")
-	v.SetDefault("auth.token_duration", 24*time.Hour)
-	v.SetDefault("auth.refresh_duration", 7*24*time.Hour)
-	v.SetDefault("auth.cookie_name", "auth_token")
-	v.SetDefault("auth.cookie_secure", true)
+		// Authentication defaults
+		"auth.jwt_secret":       "change-this-in-production",
+		"auth.token_duration":   24 * time.Hour,
+		"auth.refresh_duration": 7 * 24 * time.Hour,
+		"auth.cookie_name":      "auth_token",
+		"auth.cookie_secure":    true,
+	}
+
+	// Load defaults using the confmap provider
+	k.Load(confmap.Provider(defaults, "."), nil)
 }
 
 // GetLogLevel converts the string log level to slog.Level.

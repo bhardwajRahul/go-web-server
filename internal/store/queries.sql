@@ -13,8 +13,8 @@ ORDER BY created_at DESC;
 SELECT * FROM users ORDER BY created_at DESC;
 
 -- name: CreateUser :one
-INSERT INTO users (email, name, bio, avatar_url) 
-VALUES ($1, $2, $3, $4)
+INSERT INTO users (email, name, bio, avatar_url, password_hash) 
+VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: UpdateUser :one

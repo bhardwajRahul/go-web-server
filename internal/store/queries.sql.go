@@ -21,16 +21,17 @@ func (q *Queries) CountUsers(ctx context.Context) (int64, error) {
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (email, name, bio, avatar_url) 
-VALUES ($1, $2, $3, $4)
-RETURNING id, email, name, avatar_url, bio, is_active, created_at, updated_at
+INSERT INTO users (email, name, bio, avatar_url, password_hash) 
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, email, name, avatar_url, bio, password_hash, is_active, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	Email     string  `db:"email" json:"email"`
-	Name      string  `db:"name" json:"name"`
-	Bio       *string `db:"bio" json:"bio"`
-	AvatarUrl *string `db:"avatar_url" json:"avatar_url"`
+	Email        string  `db:"email" json:"email"`
+	Name         string  `db:"name" json:"name"`
+	Bio          *string `db:"bio" json:"bio"`
+	AvatarUrl    *string `db:"avatar_url" json:"avatar_url"`
+	PasswordHash *string `db:"password_hash" json:"password_hash"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -39,6 +40,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Name,
 		arg.Bio,
 		arg.AvatarUrl,
+		arg.PasswordHash,
 	)
 	var i User
 	err := row.Scan(
@@ -47,6 +49,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Name,
 		&i.AvatarUrl,
 		&i.Bio,
+		&i.PasswordHash,
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -75,7 +78,7 @@ func (q *Queries) DeleteUser(ctx context.Context, id int64) error {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, email, name, avatar_url, bio, is_active, created_at, updated_at FROM users WHERE id = $1 LIMIT 1
+SELECT id, email, name, avatar_url, bio, password_hash, is_active, created_at, updated_at FROM users WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
@@ -87,6 +90,7 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 		&i.Name,
 		&i.AvatarUrl,
 		&i.Bio,
+		&i.PasswordHash,
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -95,7 +99,7 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, name, avatar_url, bio, is_active, created_at, updated_at FROM users WHERE email = $1 LIMIT 1
+SELECT id, email, name, avatar_url, bio, password_hash, is_active, created_at, updated_at FROM users WHERE email = $1 LIMIT 1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
@@ -107,6 +111,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.Name,
 		&i.AvatarUrl,
 		&i.Bio,
+		&i.PasswordHash,
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -115,7 +120,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 }
 
 const listAllUsers = `-- name: ListAllUsers :many
-SELECT id, email, name, avatar_url, bio, is_active, created_at, updated_at FROM users ORDER BY created_at DESC
+SELECT id, email, name, avatar_url, bio, password_hash, is_active, created_at, updated_at FROM users ORDER BY created_at DESC
 `
 
 func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
@@ -133,6 +138,7 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 			&i.Name,
 			&i.AvatarUrl,
 			&i.Bio,
+			&i.PasswordHash,
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -148,7 +154,7 @@ func (q *Queries) ListAllUsers(ctx context.Context) ([]User, error) {
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, email, name, avatar_url, bio, is_active, created_at, updated_at FROM users 
+SELECT id, email, name, avatar_url, bio, password_hash, is_active, created_at, updated_at FROM users 
 WHERE is_active = true 
 ORDER BY created_at DESC
 `
@@ -168,6 +174,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.Name,
 			&i.AvatarUrl,
 			&i.Bio,
+			&i.PasswordHash,
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -186,7 +193,7 @@ const updateUser = `-- name: UpdateUser :one
 UPDATE users 
 SET name = $1, bio = $2, avatar_url = $3, updated_at = CURRENT_TIMESTAMP
 WHERE id = $4
-RETURNING id, email, name, avatar_url, bio, is_active, created_at, updated_at
+RETURNING id, email, name, avatar_url, bio, password_hash, is_active, created_at, updated_at
 `
 
 type UpdateUserParams struct {
@@ -210,6 +217,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.Name,
 		&i.AvatarUrl,
 		&i.Bio,
+		&i.PasswordHash,
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,

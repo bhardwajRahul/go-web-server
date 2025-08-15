@@ -24,7 +24,7 @@ sudo systemctl enable postgresql
 mage dev
 ```
 
-**Prerequisites:** Go 1.24+, PostgreSQL (local installation)
+**Prerequisites:** Go 1.25+, PostgreSQL (local installation), Node.js + npm (for Tailwind CSS)
 
 Server runs at `http://localhost:8080`
 
@@ -78,10 +78,12 @@ DATABASE_SSLMODE=disable
 # Optional: Complete DATABASE_URL (overrides individual vars)
 # DATABASE_URL=postgres://user:password@localhost:5432/gowebserver?sslmode=disable
 
-# JWT Configuration
-JWT_SECRET=your-secret-key-change-in-production
-TOKEN_DURATION=24h
-REFRESH_DURATION=168h  # 7 days
+# Authentication Configuration  
+AUTH_JWT_SECRET=your-secret-key-change-in-production
+AUTH_TOKEN_DURATION=24h
+AUTH_REFRESH_DURATION=168h  # 7 days
+AUTH_COOKIE_NAME=auth_token
+AUTH_COOKIE_SECURE=true
 
 # Server Configuration
 SERVER_PORT=8080
@@ -96,8 +98,8 @@ FEATURES_ENABLE_METRICS=false
 FEATURES_ENABLE_PPROF=false
 
 # Security
-ENABLE_CORS=true
-ALLOWED_ORIGINS=*
+SECURITY_ENABLE_CORS=true
+SECURITY_ALLOWED_ORIGINS=*
 ```
 
 ## Code Generation Workflow
@@ -111,7 +113,10 @@ mage generateSqlc    # or: sqlc generate
 # Generate templates from .templ files  
 mage generateTempl   # or: templ generate
 
-# Generate both
+# Build Tailwind CSS
+mage buildCSS       # or: npm run build-css
+
+# Generate all
 mage generate
 ```
 
@@ -120,6 +125,7 @@ mage generate
 - After modifying `internal/store/queries.sql`
 - After modifying `internal/store/schema.sql`
 - After creating/modifying `.templ` files
+- After changing Tailwind CSS classes in templates
 - After pulling changes that affect generated code
 
 ## Hot Reload Development
@@ -134,6 +140,7 @@ mage dev  # Starts Air with automatic recompilation
 
 - Go source file changes
 - Template file changes (`.templ`)
+- Tailwind CSS input file changes
 - Static asset changes
 - Configuration changes
 
@@ -170,12 +177,12 @@ mage ci           # generate + fmt + quality + build + info
 
 **Manual Testing:**
 
-1. **Authentication Flow**: Test login/register/logout
+1. **Authentication Flow**: Test login/register/logout with session management
 2. **User Management**: Create, update, deactivate users
 3. **HTMX Interactions**: Test dynamic page updates
 4. **Error Handling**: Test validation and error responses
 5. **CSRF Protection**: Test form submissions
-6. **Theme Switching**: Test dark/light mode persistence
+6. **Theme Switching**: Test DaisyUI theme switching
 
 **Browser Testing:**
 
@@ -200,8 +207,9 @@ mage ci           # generate + fmt + quality + build + info
 **Adding New Features:**
 
 1. **Database Changes**:
-   - Add migration in `internal/store/migrations/`
-   - Update `schema.sql` and `queries.sql`
+   - Update `internal/store/schema.sql` 
+   - Run `mage migrate` to apply Atlas migrations
+   - Update `queries.sql` if needed
    - Run `mage generate` to update Go code
 
 2. **Handler Changes**:
@@ -211,8 +219,8 @@ mage ci           # generate + fmt + quality + build + info
 
 3. **Template Changes**:
    - Create/modify `.templ` files
-   - Run `mage generate` to compile templates
-   - Update CSS if needed
+   - Update Tailwind CSS classes as needed
+   - Run `mage generate` to compile templates and build CSS
 
 4. **Testing**:
    - Manual testing in browser
@@ -265,6 +273,7 @@ sudo -u postgres psql
 
 - Go extension for Go development
 - Templ extension for template syntax highlighting
+- Tailwind CSS IntelliSense for CSS classes
 - PostgreSQL extension for database management
 - Thunder Client for API testing
 

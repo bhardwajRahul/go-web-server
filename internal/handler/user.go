@@ -3,16 +3,11 @@ package handler
 import (
 	"log/slog"
 	"net/http"
-	"strconv"
 
 	"github.com/dunamismax/go-web-server/internal/middleware"
 	"github.com/dunamismax/go-web-server/internal/store"
 	"github.com/dunamismax/go-web-server/internal/view"
 	"github.com/labstack/echo/v4"
-)
-
-const (
-	htmxRequestHeader = "true"
 )
 
 // UserHandler handles all user-related HTTP requests including CRUD operations.
@@ -29,141 +24,63 @@ func NewUserHandler(s *store.Store) *UserHandler {
 
 // Users renders the main user management page.
 func (h *UserHandler) Users(c echo.Context) error {
-	// Get CSRF token for initial requests
-	token := middleware.GetCSRFToken(c)
-	if token != "" {
-		c.Response().Header().Set("X-CSRF-Token", token)
-	}
+	token := setupCSRFHeaders(c)
 
-	// Check if this is an HTMX request for partial content
-	if c.Request().Header.Get("HX-Request") == HtmxRequestHeader {
-		component := view.UsersContent()
-
-		return component.Render(c.Request().Context(), c.Response().Writer)
-	}
-
-	// Return full page with layout and CSRF token
-	if token != "" {
-		component := view.UsersWithCSRF(token)
-
-		return component.Render(c.Request().Context(), c.Response().Writer)
-	}
-
-	// Fallback to basic template
-	component := view.Users()
-
-	return component.Render(c.Request().Context(), c.Response().Writer)
+	return renderWithCSRF(c,
+		view.UsersContent(),       // HTMX component
+		view.UsersWithCSRF(token), // Full page component with CSRF
+		view.Users(),              // Basic component
+	)
 }
 
 // UserList returns the list of users as HTML fragment.
 func (h *UserHandler) UserList(c echo.Context) error {
 	ctx := c.Request().Context()
-
-	// Set CSRF token in response header for HTMX to pick up
-	token := middleware.GetCSRFToken(c)
-	if token != "" {
-		c.Response().Header().Set("X-CSRF-Token", token)
-	}
+	setupCSRFHeaders(c)
 
 	users, err := h.store.ListUsers(ctx)
 	if err != nil {
-		slog.Error("Failed to fetch users",
-			"error", err,
-			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
-
-		return middleware.NewAppError(
-			middleware.ErrorTypeInternal,
-			http.StatusInternalServerError,
-			"Failed to fetch users",
-		).WithContext(c).WithInternal(err)
+		return logAndReturnError(c, "fetch users", err, http.StatusInternalServerError, "Failed to fetch users")
 	}
 
-	component := view.UserList(users)
-
-	return component.Render(ctx, c.Response().Writer)
+	return view.UserList(users).Render(ctx, c.Response().Writer)
 }
 
 // UserCount returns the count of active users.
 func (h *UserHandler) UserCount(c echo.Context) error {
 	ctx := c.Request().Context()
-
-	// Set CSRF token in response header for HTMX to pick up
-	token := middleware.GetCSRFToken(c)
-	if token != "" {
-		c.Response().Header().Set("X-CSRF-Token", token)
-	}
+	setupCSRFHeaders(c)
 
 	count, err := h.store.CountUsers(ctx)
 	if err != nil {
-		slog.Error("Failed to count users",
-			"error", err,
-			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
-
-		return middleware.NewAppError(
-			middleware.ErrorTypeInternal,
-			http.StatusInternalServerError,
-			"Failed to count users",
-		).WithContext(c).WithInternal(err)
+		return logAndReturnError(c, "count users", err, http.StatusInternalServerError, "Failed to count users")
 	}
 
-	// Update metrics
-	middleware.UpdateActiveUsers(count)
-
-	component := view.UserCount(count)
-
-	return component.Render(ctx, c.Response().Writer)
+	return view.UserCount(count).Render(ctx, c.Response().Writer)
 }
 
 // UserForm renders the user creation/edit form.
 func (h *UserHandler) UserForm(c echo.Context) error {
-	// Set CSRF token in response header for HTMX to pick up
-	token := middleware.GetCSRFToken(c)
-	if token != "" {
-		c.Response().Header().Set("X-CSRF-Token", token)
-	}
-
-	component := view.UserForm(nil, token)
-
-	return component.Render(c.Request().Context(), c.Response().Writer)
+	token := setupCSRFHeaders(c)
+	return view.UserForm(nil, token).Render(c.Request().Context(), c.Response().Writer)
 }
 
 // EditUserForm renders the user edit form with existing data.
 func (h *UserHandler) EditUserForm(c echo.Context) error {
 	ctx := c.Request().Context()
-	idStr := c.Param("id")
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := parseIDParam(c, "id")
 	if err != nil {
-		return middleware.NewAppError(
-			middleware.ErrorTypeValidation,
-			http.StatusBadRequest,
-			"Invalid user ID format",
-		).WithContext(c).WithInternal(err)
+		return err
 	}
 
 	user, err := h.store.GetUser(ctx, id)
 	if err != nil {
-		slog.Error("Failed to fetch user",
-			"id", id,
-			"error", err,
-			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
-
-		return middleware.NewAppError(
-			middleware.ErrorTypeNotFound,
-			http.StatusNotFound,
-			"User not found",
-		).WithContext(c).WithInternal(err)
+		return logAndReturnError(c, "fetch user", err, http.StatusNotFound, "User not found")
 	}
 
-	// Set CSRF token in response header for HTMX to pick up
-	token := middleware.GetCSRFToken(c)
-	if token != "" {
-		c.Response().Header().Set("X-CSRF-Token", token)
-	}
-
-	component := view.UserForm(&user, token)
-
-	return component.Render(ctx, c.Response().Writer)
+	token := setupCSRFHeaders(c)
+	return view.UserForm(&user, token).Render(ctx, c.Response().Writer)
 }
 
 // CreateUser creates a new user.
@@ -188,36 +105,16 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 		).WithContext(c)
 	}
 
-	var bioPtr *string
-	if bio != "" {
-		bioPtr = &bio
-	}
-
-	var avatarURLPtr *string
-	if avatarURL != "" {
-		avatarURLPtr = &avatarURL
-	}
-
 	params := store.CreateUserParams{
 		Email:     email,
 		Name:      name,
-		Bio:       bioPtr,
-		AvatarUrl: avatarURLPtr,
+		Bio:       stringPtr(bio),
+		AvatarUrl: stringPtr(avatarURL),
 	}
 
 	_, err := h.store.CreateUser(ctx, params)
 	if err != nil {
-		slog.Error("Failed to create user",
-			"name", name,
-			"email", email,
-			"error", err,
-			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
-
-		return middleware.NewAppError(
-			middleware.ErrorTypeInternal,
-			http.StatusInternalServerError,
-			"Failed to create user",
-		).WithContext(c).WithInternal(err)
+		return logAndReturnError(c, "create user", err, http.StatusInternalServerError, "Failed to create user")
 	}
 
 	slog.Info("User created successfully",
@@ -225,38 +122,24 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 		"email", email,
 		"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
 
-	// Record metrics
-	middleware.RecordUserCreated()
-
 	// Trigger custom event for HTMX
 	c.Response().Header().Set("HX-Trigger", "userCreated")
 
 	users, err := h.store.ListUsers(ctx)
 	if err != nil {
-		return middleware.NewAppError(
-			middleware.ErrorTypeInternal,
-			http.StatusInternalServerError,
-			"Failed to fetch updated users",
-		).WithContext(c).WithInternal(err)
+		return logAndReturnError(c, "fetch updated users", err, http.StatusInternalServerError, "Failed to fetch updated users")
 	}
 
-	component := view.UserList(users)
-
-	return component.Render(ctx, c.Response().Writer)
+	return view.UserList(users).Render(ctx, c.Response().Writer)
 }
 
 // UpdateUser updates an existing user.
 func (h *UserHandler) UpdateUser(c echo.Context) error {
 	ctx := c.Request().Context()
-	idStr := c.Param("id")
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := parseIDParam(c, "id")
 	if err != nil {
-		return middleware.NewAppError(
-			middleware.ErrorTypeValidation,
-			http.StatusBadRequest,
-			"Invalid user ID format",
-		).WithContext(c).WithInternal(err)
+		return err
 	}
 
 	name := c.FormValue("name")
@@ -272,35 +155,16 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 		).WithContext(c)
 	}
 
-	var bioPtr *string
-	if bio != "" {
-		bioPtr = &bio
-	}
-
-	var avatarURLPtr *string
-	if avatarURL != "" {
-		avatarURLPtr = &avatarURL
-	}
-
 	params := store.UpdateUserParams{
 		Name:      name,
-		Bio:       bioPtr,
-		AvatarUrl: avatarURLPtr,
+		Bio:       stringPtr(bio),
+		AvatarUrl: stringPtr(avatarURL),
 		ID:        id,
 	}
 
 	_, err = h.store.UpdateUser(ctx, params)
 	if err != nil {
-		slog.Error("Failed to update user",
-			"id", id,
-			"error", err,
-			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
-
-		return middleware.NewAppError(
-			middleware.ErrorTypeInternal,
-			http.StatusInternalServerError,
-			"Failed to update user",
-		).WithContext(c).WithInternal(err)
+		return logAndReturnError(c, "update user", err, http.StatusInternalServerError, "Failed to update user")
 	}
 
 	slog.Info("User updated successfully",
@@ -313,44 +177,24 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 
 	users, err := h.store.ListUsers(ctx)
 	if err != nil {
-		return middleware.NewAppError(
-			middleware.ErrorTypeInternal,
-			http.StatusInternalServerError,
-			"Failed to fetch updated users",
-		).WithContext(c).WithInternal(err)
+		return logAndReturnError(c, "fetch updated users", err, http.StatusInternalServerError, "Failed to fetch updated users")
 	}
 
-	component := view.UserList(users)
-
-	return component.Render(ctx, c.Response().Writer)
+	return view.UserList(users).Render(ctx, c.Response().Writer)
 }
 
 // DeactivateUser deactivates a user instead of deleting.
 func (h *UserHandler) DeactivateUser(c echo.Context) error {
 	ctx := c.Request().Context()
-	idStr := c.Param("id")
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := parseIDParam(c, "id")
 	if err != nil {
-		return middleware.NewAppError(
-			middleware.ErrorTypeValidation,
-			http.StatusBadRequest,
-			"Invalid user ID format",
-		).WithContext(c).WithInternal(err)
+		return err
 	}
 
 	err = h.store.DeactivateUser(ctx, id)
 	if err != nil {
-		slog.Error("Failed to deactivate user",
-			"id", id,
-			"error", err,
-			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
-
-		return middleware.NewAppError(
-			middleware.ErrorTypeInternal,
-			http.StatusInternalServerError,
-			"Failed to deactivate user",
-		).WithContext(c).WithInternal(err)
+		return logAndReturnError(c, "deactivate user", err, http.StatusInternalServerError, "Failed to deactivate user")
 	}
 
 	slog.Info("User deactivated successfully",
@@ -360,47 +204,27 @@ func (h *UserHandler) DeactivateUser(c echo.Context) error {
 	// Get the updated user and return the row
 	user, err := h.store.GetUser(ctx, id)
 	if err != nil {
-		return middleware.NewAppError(
-			middleware.ErrorTypeInternal,
-			http.StatusInternalServerError,
-			"Failed to fetch updated user",
-		).WithContext(c).WithInternal(err)
+		return logAndReturnError(c, "fetch updated user", err, http.StatusInternalServerError, "Failed to fetch updated user")
 	}
 
 	// Trigger custom event for HTMX
 	c.Response().Header().Set("HX-Trigger", "userDeactivated")
 
-	component := view.UserRow(user)
-
-	return component.Render(ctx, c.Response().Writer)
+	return view.UserRow(user).Render(ctx, c.Response().Writer)
 }
 
 // DeleteUser permanently deletes a user.
 func (h *UserHandler) DeleteUser(c echo.Context) error {
 	ctx := c.Request().Context()
-	idStr := c.Param("id")
 
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := parseIDParam(c, "id")
 	if err != nil {
-		return middleware.NewAppError(
-			middleware.ErrorTypeValidation,
-			http.StatusBadRequest,
-			"Invalid user ID format",
-		).WithContext(c).WithInternal(err)
+		return err
 	}
 
 	err = h.store.DeleteUser(ctx, id)
 	if err != nil {
-		slog.Error("Failed to delete user",
-			"id", id,
-			"error", err,
-			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
-
-		return middleware.NewAppError(
-			middleware.ErrorTypeInternal,
-			http.StatusInternalServerError,
-			"Failed to delete user",
-		).WithContext(c).WithInternal(err)
+		return logAndReturnError(c, "delete user", err, http.StatusInternalServerError, "Failed to delete user")
 	}
 
 	slog.Info("User deleted successfully",
