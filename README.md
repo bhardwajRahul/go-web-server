@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/dunamismax/images/blob/main/golang/go-logo.png" alt="Go Web Server Template Logo" width="400" />
+  <img src="docs/media/go-logo.png" alt="Go Web Server Template Logo" width="400" />
 </p>
 
 <p align="center">
@@ -155,7 +155,7 @@ mage dev
 ---
 
 <p align="center">
-  <img src="https://github.com/dunamismax/images/blob/main/golang/gopher-mage.svg" alt="Gopher Mage" width="150" />
+  <img src="docs/media/gopher-mage.svg" alt="Gopher Mage" width="150" />
 </p>
 
 ## Mage Commands
@@ -228,7 +228,7 @@ Interactive user management application demonstrating:
 - **Enterprise Security**: Input sanitization, XSS/SQL injection prevention, and structured error handling
 
 <p align="center">
-  <img src="https://github.com/dunamismax/images/blob/main/golang/go-web-server-screenshot.png" alt="Go Web Server Screenshot" width="800" />
+  <img src="docs/media/go-web-server-screenshot.png" alt="Go Web Server Screenshot" width="800" />
 </p>
 
 > **Easter Egg**: The default user database comes pre-populated with Robert Griesemer, Rob Pike, and Ken Thompson - the three brilliant minds who created the Go programming language at Google starting in 2007. A small tribute to the creators of the language that powers this entire stack!
@@ -261,7 +261,7 @@ go-web-server/
 ---
 
 <p align="center">
-  <img src="https://github.com/dunamismax/images/blob/main/golang/gopher-aviator.jpg" alt="Go Gopher" width="400" />
+  <img src="docs/media/gopher-aviator.jpg" alt="Go Gopher" width="400" />
 </p>
 
 ## Ubuntu SystemD Deployment
@@ -314,7 +314,7 @@ The binary includes embedded Tailwind CSS, DaisyUI, HTMX, and Templ templates. *
 
 <p align="center">
   <a href="https://buymeacoffee.com/dunamismax" target="_blank">
-    <img src="https://github.com/dunamismax/images/blob/main/golang/buy-coffee-go.gif" alt="Buy Me A Coffee" style="height: 150px !important;" />
+    <img src="docs/media/buy-coffee-go.gif" alt="Buy Me A Coffee" style="height: 150px !important;" />
   </a>
 </p>
 
@@ -338,7 +338,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 </p>
 
 <p align="center">
-  <img src="https://github.com/dunamismax/images/blob/main/golang/gopher-running-jumping.gif" alt="Gopher Running and Jumping" width="600" />
+  <img src="docs/media/gopher-running-jumping.gif" alt="Gopher Running and Jumping" width="600" />
 </p>
 
 ---
