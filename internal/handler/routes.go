@@ -53,23 +53,25 @@ func RegisterRoutes(e *echo.Echo, handlers *Handlers) error {
 	auth.POST("/register", handlers.Auth.Register)
 	auth.POST("/logout", handlers.Auth.Logout)
 
+	requireAuth := handlers.Auth.authService.RequireAuth()
+
 	// Protected routes (authentication required)
-	protected := e.Group("/profile")
-	// protected.Use(middleware.JWTMiddleware(authService)) // Commented out for now as we don't have authService here
-	protected.GET("", handlers.Auth.Profile)
+	profile := e.Group("/profile", requireAuth)
+	profile.GET("", handlers.Auth.Profile)
 
 	// User management routes
-	e.GET("/users", handlers.User.Users)
-	e.GET("/users/list", handlers.User.UserList)
-	e.GET("/users/form", handlers.User.UserForm)
-	e.GET("/users/:id/edit", handlers.User.EditUserForm)
-	e.POST("/users", handlers.User.CreateUser)
-	e.PUT("/users/:id", handlers.User.UpdateUser)
-	e.PATCH("/users/:id/deactivate", handlers.User.DeactivateUser)
-	e.DELETE("/users/:id", handlers.User.DeleteUser)
+	users := e.Group("/users", requireAuth)
+	users.GET("", handlers.User.Users)
+	users.GET("/list", handlers.User.UserList)
+	users.GET("/form", handlers.User.UserForm)
+	users.GET("/:id/edit", handlers.User.EditUserForm)
+	users.POST("", handlers.User.CreateUser)
+	users.PUT("/:id", handlers.User.UpdateUser)
+	users.PATCH("/:id/deactivate", handlers.User.DeactivateUser)
+	users.DELETE("/:id", handlers.User.DeleteUser)
 
 	// API routes
-	api := e.Group("/api")
+	api := e.Group("/api", requireAuth)
 	api.GET("/users/count", handlers.User.UserCount)
 
 	return nil

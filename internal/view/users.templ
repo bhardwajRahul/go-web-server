@@ -96,7 +96,7 @@ templ UserRow(user store.User) {
 				if user.AvatarUrl != nil && *user.AvatarUrl != "" {
 					<img src={ *user.AvatarUrl } alt={ user.Name } class="avatar"/>
 				} else {
-					<div class="avatar" style="background: var(--pico-primary-background); display: flex; align-items: center; justify-content: center; color: var(--pico-primary);">
+					<div class="avatar" style="background: rgba(37, 99, 235, 0.12); display: flex; align-items: center; justify-content: center; color: #2563eb;">
 						{ string([]rune(user.Name)[0]) }
 					</div>
 				}
@@ -110,14 +110,14 @@ templ UserRow(user store.User) {
 			if user.Bio != nil && *user.Bio != "" {
 				<small>{ *user.Bio }</small>
 			} else {
-				<small style="color: var(--pico-muted-color);">No bio provided</small>
+				<small style="color: #6b7280;">No bio provided</small>
 			}
 		</td>
 		<td>
 			if user.IsActive != nil && *user.IsActive {
-				<span style="color: var(--pico-color-green-500);">● Active</span>
+				<span style="color: #16a34a;">● Active</span>
 			} else {
-				<span style="color: var(--pico-color-amber-500);">● Inactive</span>
+				<span style="color: #d97706;">● Inactive</span>
 			}
 		</td>
 		<td>
@@ -152,7 +152,7 @@ templ UserRow(user store.User) {
 					hx-swap="outerHTML"
 					hx-confirm="Are you sure you want to permanently delete this user?"
 					class="outline"
-					style="padding: 0.25rem 0.5rem; color: var(--pico-color-red-500);"
+					style="padding: 0.25rem 0.5rem; color: #dc2626;"
 				>
 					Delete
 				</button>

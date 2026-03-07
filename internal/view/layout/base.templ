@@ -11,17 +11,14 @@ templ BaseWithCSRF(title, csrfToken string) {
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 			<meta name="color-scheme" content="light dark"/>
-			<meta name="description" content="Modern Go Web Server Template with Echo, templ, HTMX, and Pico.css"/>
-			<title>{ title } - Go Web Server</title>
+			<meta name="description" content="Small Echo + Templ + HTMX starter with PostgreSQL-backed sessions and a protected user demo."/>
+			<title>{ title } - boring-go-web</title>
 			<link rel="icon" type="image/x-icon" href="/static/favicon.ico"/>
 			<link rel="preconnect" href="https://fonts.googleapis.com"/>
 			<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 			<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-			<link rel="stylesheet" href="/static/css/pico.min.css"/>
-			<link rel="stylesheet" href="/static/css/theme.css"/>
+			<link rel="stylesheet" href="/static/css/styles.css"/>
 			<link rel="stylesheet" href="/static/css/animations.css"/>
-			<link rel="stylesheet" href="/static/css/components.css"/>
-			<link rel="stylesheet" href="/static/css/layout.css"/>
 			<script src="/static/js/htmx.min.js"></script>
 			<meta name="csrf-header" content="X-CSRF-Token"/>
 			if csrfToken != "" {
@@ -100,7 +97,7 @@ templ BaseWithCSRF(title, csrfToken string) {
 				<hr/>
 				<div class="grid">
 					<div>
-						<p><small>Built with Go 1.24, Echo, templ, HTMX 2.x, and Pico.css v2 &copy; 2025</small></p>
+						<p><small>Echo + Templ + HTMX + PostgreSQL. Small on purpose.</small></p>
 					</div>
 					<div style="text-align: right;">
 						<p>

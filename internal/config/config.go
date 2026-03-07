@@ -118,7 +118,10 @@ func New() *Config {
 		host := k.String("database.host")
 		port := k.String("database.port")
 		name := k.String("database.name")
-		sslmode := k.String("database.sslmode")
+		sslmode := k.String("database.ssl_mode")
+		if sslmode == "" {
+			sslmode = k.String("database.sslmode")
+		}
 
 		// Set defaults for missing values
 		if host == "" {
