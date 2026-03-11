@@ -36,7 +36,8 @@ app:
   log_format: "text"
 
 security:
-  trusted_proxies: ["127.0.0.1"]
+  # Leave empty unless you are actually behind trusted reverse proxies/load balancers.
+  trusted_proxies: []
   enable_cors: true
   allowed_origins: ["*"]
 

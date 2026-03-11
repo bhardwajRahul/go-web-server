@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -18,13 +19,14 @@ import (
 	"github.com/dunamismax/go-web-server/internal/handler"
 	"github.com/dunamismax/go-web-server/internal/middleware"
 	"github.com/dunamismax/go-web-server/internal/store"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 )
 
 //go:generate go install github.com/a-h/templ/cmd/templ@latest
 //go:generate go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-//go:generate templ generate
+//go:generate sh -c "cd ../../ && templ generate"
 //go:generate sh -c "cd ../../ && sqlc generate"
 
 func main() {
@@ -65,7 +67,7 @@ func main() {
 
 	store, err := store.NewStoreWithConfig(ctx, cfg.Database.URL, poolConfig)
 	if err != nil {
-		slog.Error("failed to connect to database", "error", err, "database_url", cfg.Database.URL)
+		slog.Error("failed to connect to database", "error", err, "database_target", databaseTarget(cfg.Database.URL))
 		return
 	}
 
@@ -87,6 +89,13 @@ func main() {
 	e := echo.New()
 	e.HideBanner = true
 	e.Debug = cfg.App.Debug
+
+	ipExtractor, err := configureIPExtractor(cfg.Security.TrustedProxies)
+	if err != nil {
+		slog.Error("failed to configure trusted proxies", "error", err)
+		return
+	}
+	e.IPExtractor = ipExtractor
 
 	// Configure custom error handler
 	e.HTTPErrorHandler = middleware.ErrorHandler
@@ -251,4 +260,59 @@ func main() {
 	}
 
 	slog.Info("Server shutdown complete")
+}
+
+func configureIPExtractor(trustedProxies []string) (echo.IPExtractor, error) {
+	if len(trustedProxies) == 0 {
+		return echo.ExtractIPDirect(), nil
+	}
+
+	options := []echo.TrustOption{
+		echo.TrustLoopback(false),
+		echo.TrustLinkLocal(false),
+		echo.TrustPrivateNet(false),
+	}
+
+	for _, proxy := range trustedProxies {
+		if _, network, err := net.ParseCIDR(proxy); err == nil {
+			options = append(options, echo.TrustIPRange(network))
+			continue
+		}
+
+		ip := net.ParseIP(proxy)
+		if ip == nil {
+			return nil, fmt.Errorf("invalid trusted proxy %q", proxy)
+		}
+
+		maskBits := 32
+		if ip.To4() == nil {
+			maskBits = 128
+		}
+
+		options = append(options, echo.TrustIPRange(&net.IPNet{
+			IP:   ip,
+			Mask: net.CIDRMask(maskBits, maskBits),
+		}))
+	}
+
+	xffExtractor := echo.ExtractIPFromXFFHeader(options...)
+	realIPExtractor := echo.ExtractIPFromRealIPHeader(options...)
+	directExtractor := echo.ExtractIPDirect()
+
+	return func(r *http.Request) string {
+		directIP := directExtractor(r)
+		if ip := xffExtractor(r); ip != directIP {
+			return ip
+		}
+		return realIPExtractor(r)
+	}, nil
+}
+
+func databaseTarget(databaseURL string) string {
+	cfg, err := pgxpool.ParseConfig(databaseURL)
+	if err != nil {
+		return "configured-database"
+	}
+
+	return fmt.Sprintf("%s:%d/%s", cfg.ConnConfig.Host, cfg.ConnConfig.Port, cfg.ConnConfig.Database)
 }

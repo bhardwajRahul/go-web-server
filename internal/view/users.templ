@@ -203,6 +203,52 @@ templ UserForm(user *store.User, csrfToken string) {
 						value={ getUserEmail(user) }
 						required
 						placeholder="user@example.com"
+						autocomplete="email"
+					/>
+				</label>
+			</div>
+			<div class="grid">
+				<label for="password">
+					if user == nil {
+						Password *
+					} else {
+						New Password
+					}
+					<input
+						type="password"
+						id="password"
+						name="password"
+						placeholder={ getUserPasswordPlaceholder(user) }
+						if user == nil {
+							required
+							autocomplete="new-password"
+						} else {
+							autocomplete="new-password"
+						}
+					/>
+					if user == nil {
+						<small>Must be at least 8 characters with uppercase, lowercase, and numbers</small>
+					} else {
+						<small>Leave blank to keep the current password</small>
+					}
+				</label>
+				<label for="confirm_password">
+					if user == nil {
+						Confirm Password *
+					} else {
+						Confirm New Password
+					}
+					<input
+						type="password"
+						id="confirm_password"
+						name="confirm_password"
+						placeholder={ getUserConfirmPasswordPlaceholder(user) }
+						if user == nil {
+							required
+							autocomplete="new-password"
+						} else {
+							autocomplete="new-password"
+						}
 					/>
 				</label>
 			</div>
@@ -296,4 +342,18 @@ func getSubmitButtonText(user *store.User) string {
 		return "Update User"
 	}
 	return "Create User"
+}
+
+func getUserPasswordPlaceholder(user *store.User) string {
+	if user != nil {
+		return "Leave blank to keep the current password"
+	}
+	return "Choose a strong password"
+}
+
+func getUserConfirmPasswordPlaceholder(user *store.User) string {
+	if user != nil {
+		return "Repeat the new password"
+	}
+	return "Confirm the password"
 }

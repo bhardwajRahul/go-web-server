@@ -91,12 +91,6 @@ testdata/
 coverage/
 .coverage/
 
-# Generated code (templ, sqlc, etc.)
-*_templ.go
-*.sql.go
-internal/store/db.go
-internal/store/models.go
-
 # Node.js (if frontend tooling is added)
 node_modules/
 npm-debug.log*

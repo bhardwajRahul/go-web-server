@@ -96,6 +96,10 @@ func (s *SessionAuthService) VerifyPasswordArgon2(password, encoded string) (boo
 func (s *SessionAuthService) LoginUser(c echo.Context, user User) error {
 	ctx := c.Request().Context()
 
+	if err := s.sessionManager.RenewToken(ctx); err != nil {
+		return err
+	}
+
 	// Store user information in session
 	s.sessionManager.Put(ctx, "user_id", user.ID)
 	s.sessionManager.Put(ctx, "user_email", user.Email)
@@ -148,8 +152,7 @@ func (s *SessionAuthService) RequireAuth() echo.MiddlewareFunc {
 			user, exists := s.GetCurrentUser(c)
 			if !exists {
 				// Redirect to login page for browser requests
-				if c.Request().Header.Get("HX-Request") != "true" &&
-					c.Request().Header.Get("Accept") != "application/json" {
+				if c.Request().Header.Get("HX-Request") != "true" && !expectsJSONResponse(c.Request()) {
 					return c.Redirect(http.StatusFound, "/auth/login")
 				}
 
@@ -176,6 +179,11 @@ func (s *SessionAuthService) RequireAuth() echo.MiddlewareFunc {
 			return next(c)
 		}
 	}
+}
+
+func expectsJSONResponse(r *http.Request) bool {
+	accept := strings.ToLower(r.Header.Get(echo.HeaderAccept))
+	return strings.Contains(accept, echo.MIMEApplicationJSON) || strings.HasPrefix(r.URL.Path, "/api/")
 }
 
 // OptionalAuth middleware that loads user if authenticated but doesn't require it

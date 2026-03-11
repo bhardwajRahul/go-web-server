@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 
 	"github.com/dunamismax/go-web-server/internal/middleware"
 	"github.com/dunamismax/go-web-server/internal/store"
 	"github.com/dunamismax/go-web-server/internal/view"
+	"github.com/jackc/pgx/v5"
 	"github.com/labstack/echo/v4"
 )
 
@@ -99,6 +101,14 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	// Find user by email
 	user, err := h.store.GetUserByEmail(ctx, req.Email)
 	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			slog.Error("Failed to load user for login",
+				"email", req.Email,
+				"error", err,
+				"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
+			return internalError(c, "Authentication error", err)
+		}
+
 		slog.Warn("Login attempt with invalid email",
 			"email", req.Email,
 			"error", err,
@@ -107,21 +117,24 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		return authenticationError(c, "Invalid email or password")
 	}
 
-	// Verify password if user has a password hash
-	if user.PasswordHash != nil {
-		valid, err := h.authService.VerifyPasswordArgon2(req.Password, *user.PasswordHash)
-		if err != nil {
-			slog.Error("Password verification failed",
-				"error", err,
-				"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
-			return internalError(c, "Authentication error", err)
-		}
-		if !valid {
-			return authenticationError(c, "Invalid email or password")
-		}
-	} else {
-		// For demo users without passwords, allow any password
-		slog.Warn("User logging in without password set", "email", req.Email)
+	// Reject accounts without a usable password hash.
+	if user.PasswordHash == "" {
+		slog.Warn("Login attempt for account without password hash",
+			"email", req.Email,
+			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
+		return authenticationError(c, "Invalid email or password")
+	}
+
+	valid, err := h.authService.VerifyPasswordArgon2(req.Password, user.PasswordHash)
+	if err != nil {
+		slog.Warn("Password verification failed due to invalid hash",
+			"email", req.Email,
+			"error", err,
+			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
+		return authenticationError(c, "Invalid email or password")
+	}
+	if !valid {
+		return authenticationError(c, "Invalid email or password")
 	}
 
 	// Check if user is active
@@ -209,7 +222,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		Name:         req.Name,
 		Bio:          bioPtr,
 		AvatarUrl:    avatarURLPtr,
-		PasswordHash: &hashedPassword,
+		PasswordHash: hashedPassword,
 	}
 
 	user, err := h.store.CreateUser(ctx, params)
@@ -220,11 +233,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 			"error", err,
 			"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
 
-		return middleware.NewAppError(
-			middleware.ErrorTypeInternal,
-			http.StatusInternalServerError,
-			"Failed to create user account",
-		).WithContext(c).WithInternal(err)
+		return databaseWriteError(c, err, "Failed to create user account")
 	}
 
 	// Create user session for automatic login

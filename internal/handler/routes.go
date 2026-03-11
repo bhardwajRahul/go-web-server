@@ -23,7 +23,7 @@ type Handlers struct {
 func NewHandlers(s *store.Store, authService *middleware.SessionAuthService) *Handlers {
 	return &Handlers{
 		Home: NewHomeHandler(s),
-		User: NewUserHandler(s),
+		User: NewUserHandler(s, authService),
 		Auth: NewAuthHandler(s, authService),
 	}
 }

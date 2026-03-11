@@ -31,7 +31,7 @@ type CreateUserParams struct {
 	Name         string  `db:"name" json:"name"`
 	Bio          *string `db:"bio" json:"bio"`
 	AvatarUrl    *string `db:"avatar_url" json:"avatar_url"`
-	PasswordHash *string `db:"password_hash" json:"password_hash"`
+	PasswordHash string  `db:"password_hash" json:"password_hash"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -191,12 +191,13 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 
 const updateUser = `-- name: UpdateUser :one
 UPDATE users 
-SET name = $1, bio = $2, avatar_url = $3, updated_at = CURRENT_TIMESTAMP
-WHERE id = $4
+SET email = $1, name = $2, bio = $3, avatar_url = $4, updated_at = CURRENT_TIMESTAMP
+WHERE id = $5
 RETURNING id, email, name, avatar_url, bio, password_hash, is_active, created_at, updated_at
 `
 
 type UpdateUserParams struct {
+	Email     string  `db:"email" json:"email"`
 	Name      string  `db:"name" json:"name"`
 	Bio       *string `db:"bio" json:"bio"`
 	AvatarUrl *string `db:"avatar_url" json:"avatar_url"`
@@ -205,9 +206,50 @@ type UpdateUserParams struct {
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, updateUser,
+		arg.Email,
 		arg.Name,
 		arg.Bio,
 		arg.AvatarUrl,
+		arg.ID,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Name,
+		&i.AvatarUrl,
+		&i.Bio,
+		&i.PasswordHash,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateUserPassword = `-- name: UpdateUserPassword :one
+UPDATE users 
+SET email = $1, name = $2, bio = $3, avatar_url = $4, password_hash = $5, updated_at = CURRENT_TIMESTAMP
+WHERE id = $6
+RETURNING id, email, name, avatar_url, bio, password_hash, is_active, created_at, updated_at
+`
+
+type UpdateUserPasswordParams struct {
+	Email        string  `db:"email" json:"email"`
+	Name         string  `db:"name" json:"name"`
+	Bio          *string `db:"bio" json:"bio"`
+	AvatarUrl    *string `db:"avatar_url" json:"avatar_url"`
+	PasswordHash string  `db:"password_hash" json:"password_hash"`
+	ID           int64   `db:"id" json:"id"`
+}
+
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserPassword,
+		arg.Email,
+		arg.Name,
+		arg.Bio,
+		arg.AvatarUrl,
+		arg.PasswordHash,
 		arg.ID,
 	)
 	var i User

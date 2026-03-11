@@ -19,8 +19,14 @@ RETURNING *;
 
 -- name: UpdateUser :one
 UPDATE users 
-SET name = $1, bio = $2, avatar_url = $3, updated_at = CURRENT_TIMESTAMP
-WHERE id = $4
+SET email = $1, name = $2, bio = $3, avatar_url = $4, updated_at = CURRENT_TIMESTAMP
+WHERE id = $5
+RETURNING *;
+
+-- name: UpdateUserPassword :one
+UPDATE users 
+SET email = $1, name = $2, bio = $3, avatar_url = $4, password_hash = $5, updated_at = CURRENT_TIMESTAMP
+WHERE id = $6
 RETURNING *;
 
 -- name: DeactivateUser :exec

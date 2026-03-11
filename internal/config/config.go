@@ -183,7 +183,7 @@ func setDefaults(k *koanf.Koanf) {
 		"app.log_format":  "text",
 
 		// Security defaults
-		"security.trusted_proxies": []string{"127.0.0.1"},
+		"security.trusted_proxies": []string{},
 		"security.enable_cors":     true,
 		"security.allowed_origins": []string{"*"},
 

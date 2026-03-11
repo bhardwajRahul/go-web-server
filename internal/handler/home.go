@@ -76,22 +76,15 @@ func (h *HomeHandler) Health(c echo.Context) error {
 	if h.store != nil {
 		if _, err := h.store.CountUsers(ctx); err != nil {
 			checks["database"] = statusError
-			overallStatus = "degraded"
+			overallStatus = statusError
 		} else {
 			checks["database"] = "ok"
 		}
 
 		// Database connection stats
 		if db := h.store.DB(); db != nil {
-			if stats := db.Stat(); stats.AcquiredConns() > 0 {
-				checks["database_connections"] = "ok"
-			} else {
-				checks["database_connections"] = statusWarning
-
-				if overallStatus == "ok" {
-					overallStatus = "warning"
-				}
-			}
+			_ = db.Stat()
+			checks["database_connections"] = "ok"
 		}
 	} else {
 		checks["database"] = statusError

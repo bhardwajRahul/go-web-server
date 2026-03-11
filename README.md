@@ -54,6 +54,7 @@ mage run
 ```
 
 The app listens on `http://localhost:8080`.
+Open `http://localhost:8080/auth/register` to create the first account.
 
 ## Common Commands
 
@@ -83,3 +84,4 @@ mage migrateStatus  # show Atlas migration state
 
 - The checked-out directory is `boring-go-web`, but the current Go module path is still `github.com/dunamismax/go-web-server`.
 - The canonical Atlas migration directory is top-level [`migrations/`](/Users/sawyer/github/boring-go-web/migrations). The duplicate `internal/store/migrations/` directory still exists and should be treated as leftover cleanup, not source of truth.
+- Leave `security.trusted_proxies` empty unless the app is actually behind reverse proxies that you control.

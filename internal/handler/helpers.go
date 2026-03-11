@@ -1,12 +1,16 @@
 package handler
 
 import (
+	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/a-h/templ"
 	"github.com/dunamismax/go-web-server/internal/middleware"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/labstack/echo/v4"
 )
 
@@ -33,7 +37,8 @@ func redirectOrHtmx(c echo.Context, url, message string) error {
 
 // isJSONRequest checks if the request accepts JSON
 func isJSONRequest(c echo.Context) bool {
-	return c.Request().Header.Get("Accept") == ContentTypeJSON
+	accept := strings.ToLower(c.Request().Header.Get(echo.HeaderAccept))
+	return strings.Contains(accept, ContentTypeJSON) || strings.HasPrefix(c.Request().URL.Path, "/api/")
 }
 
 // setupCSRFHeaders sets CSRF token in response headers if available
@@ -92,6 +97,16 @@ func authenticationError(c echo.Context, message string) error {
 	).WithContext(c)
 }
 
+// conflictError creates a conflict error with optional details.
+func conflictError(c echo.Context, message string, details interface{}) error {
+	return middleware.NewAppErrorWithDetails(
+		middleware.ErrorTypeConflict,
+		http.StatusConflict,
+		message,
+		details,
+	).WithContext(c)
+}
+
 // internalError creates an internal server error with context
 func internalError(c echo.Context, message string, err error) error {
 	return middleware.NewAppError(
@@ -99,6 +114,55 @@ func internalError(c echo.Context, message string, err error) error {
 		http.StatusInternalServerError,
 		message,
 	).WithContext(c).WithInternal(err)
+}
+
+// databaseWriteError maps database constraint violations to useful client errors.
+func databaseWriteError(c echo.Context, err error, fallbackMessage string) error {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		switch pgErr.Code {
+		case "23505":
+			field := databaseConflictField(pgErr)
+			message := "Resource already exists"
+			details := map[string]string{}
+			if field != "" {
+				message = fmt.Sprintf("%s already exists", humanizeFieldName(field))
+				details[field] = message
+			}
+			return conflictError(c, message, details)
+		case "23502":
+			field := databaseFieldName(pgErr.ColumnName)
+			if field == "" {
+				field = "field"
+			}
+			return validationErrorWithDetails(c, "Validation failed", map[string]string{
+				field: fmt.Sprintf("%s is required", humanizeFieldName(field)),
+			})
+		}
+	}
+
+	return internalError(c, fallbackMessage, err)
+}
+
+func databaseConflictField(pgErr *pgconn.PgError) string {
+	switch {
+	case strings.Contains(pgErr.ConstraintName, "email"), pgErr.ColumnName == "email":
+		return "email"
+	default:
+		return databaseFieldName(pgErr.ColumnName)
+	}
+}
+
+func databaseFieldName(column string) string {
+	return strings.TrimSpace(strings.ToLower(column))
+}
+
+func humanizeFieldName(field string) string {
+	field = strings.ReplaceAll(field, "_", " ")
+	if field == "" {
+		return "Field"
+	}
+	return strings.ToUpper(field[:1]) + field[1:]
 }
 
 // notFoundError creates a not found error
