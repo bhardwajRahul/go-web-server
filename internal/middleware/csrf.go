@@ -48,6 +48,7 @@ type CSRFConfig struct {
 type CSRFErrorHandler func(error, echo.Context) error
 
 // DefaultCSRFConfig is the default CSRF middleware config.
+// #nosec G101 -- These are cookie/header identifiers, not credentials or secrets.
 var DefaultCSRFConfig = CSRFConfig{
 	TokenLength:    32,
 	TokenLookup:    "header:X-CSRF-Token,form:csrf_token",
@@ -154,7 +155,6 @@ func CSRFWithConfig(config CSRFConfig) echo.MiddlewareFunc {
 
 			// Validate token
 			if !validateCSRFToken(cookieToken, requestToken) {
-
 				return config.ErrorHandler(errors.New("CSRF token mismatch"), c)
 			}
 

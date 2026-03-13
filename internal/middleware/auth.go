@@ -164,7 +164,13 @@ func (s *SessionAuthService) RequireAuth() echo.MiddlewareFunc {
 			}
 
 			if !user.IsActive {
-				s.LogoutUser(c)
+				if err := s.LogoutUser(c); err != nil {
+					return NewAppError(
+						ErrorTypeInternal,
+						http.StatusInternalServerError,
+						"Failed to clear inactive user session",
+					).WithContext(c).WithInternal(err)
+				}
 				return NewAppError(
 					ErrorTypeAuthentication,
 					http.StatusUnauthorized,
@@ -214,6 +220,17 @@ func generateRandomBytes(n uint32) ([]byte, error) {
 	return b, nil
 }
 
+const maxUint32Value = ^uint32(0)
+
+func checkedUint32Len(value []byte) (uint32, error) {
+	if uint64(len(value)) > uint64(maxUint32Value) {
+		return 0, errors.New("decoded hash value exceeds uint32 length")
+	}
+
+	//nolint:gosec // The length is explicitly bounded above by maxUint32Value.
+	return uint32(len(value)), nil
+}
+
 // decodeArgon2Hash parses an encoded Argon2 hash
 func decodeArgon2Hash(encoded string) (params Argon2Params, salt, hash []byte, err error) {
 	var version int
@@ -236,13 +253,19 @@ func decodeArgon2Hash(encoded string) (params Argon2Params, salt, hash []byte, e
 	if err != nil {
 		return params, nil, nil, err
 	}
-	params.SaltLength = uint32(len(salt))
+	params.SaltLength, err = checkedUint32Len(salt)
+	if err != nil {
+		return params, nil, nil, err
+	}
 
 	hash, err = base64.RawStdEncoding.DecodeString(parts[5])
 	if err != nil {
 		return params, nil, nil, err
 	}
-	params.KeyLength = uint32(len(hash))
+	params.KeyLength, err = checkedUint32Len(hash)
+	if err != nil {
+		return params, nil, nil, err
+	}
 
 	return params, salt, hash, nil
 }

@@ -56,7 +56,7 @@ Tie-breaker: prefer the safer path with lower blast radius, then ask for clarifi
 
 Use the actual current stack unless Stephen explicitly approves changes:
 
-- Language/runtime: **Go 1.25**
+- Language/runtime: **Go 1.26**
 - Web framework: **Echo v4**
 - Templates/UI rendering: **Templ**
 - Frontend interaction: **HTMX**

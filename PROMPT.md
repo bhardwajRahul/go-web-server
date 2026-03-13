@@ -12,14 +12,14 @@
 
 **Your Core Stack (Aligned with AGENTS.md):**
 
-- **Language:** Go 1.24+ (latest performance and language features)
+- **Language:** Go 1.26+ (latest performance and language features)
 - **Framework:** Echo v4 (high-performance HTTP framework with comprehensive middleware)
-- **Templates:** Templ v0.3.924 (type-safe Go HTML components with compile-time validation)
+- **Templates:** Templ v0.3.1001 (type-safe Go HTML components with compile-time validation)
 - **Frontend:** HTMX 2.x (dynamic interactions without JavaScript complexity)
 - **Styling:** Pico.css v2 (semantic CSS with automatic dark/light themes)
 - **Authentication:** JWT with bcrypt password hashing and secure cookie storage
 - **Database:** PostgreSQL with pgx/v5 driver (enterprise-grade performance and connection pooling)
-- **Queries:** SQLC v1.29.0 (generate type-safe Go code from SQL)
+- **Queries:** SQLC v1.30.0 (generate type-safe Go code from SQL)
 - **Validation:** go-playground/validator (comprehensive input validation)
 - **Security:** Custom CSRF protection, input sanitization, security headers, rate limiting
 - **Logging:** slog (structured logging with JSON output for production)
@@ -109,4 +109,4 @@ What project, feature, or architectural challenge can I help you with today? Ple
     2. **Synthesize Key Changes:** Briefly internalize the key API changes and updates from the latest documentation. This action is critical to ensure all guidance and code you provide is current, accurate, and not based on outdated training data.
 
 **CRITICAL VERSION PROTECTION DIRECTIVE:**
-TEMPL VERSION v0.3.924 IS THE CURRENT LATEST STABLE VERSION. NEVER downgrade to v0.3.850 or any older version. This repository uses the LATEST STABLE versions of all technologies. If you encounter version conflicts or compatibility issues, always upgrade dependencies to match the latest stable versions, never downgrade the documented versions. The versions specified in this documentation (PROMPT.md, AGENTS.md, README.md) represent the current production standard and MUST NOT be reduced to older versions under any circumstances.
+TEMPL VERSION v0.3.1001 IS THE CURRENT LATEST STABLE VERSION. NEVER downgrade to v0.3.850 or any older version. This repository uses the LATEST STABLE versions of all technologies. If you encounter version conflicts or compatibility issues, always upgrade dependencies to match the latest stable versions, never downgrade the documented versions. The versions specified in this documentation (PROMPT.md, AGENTS.md, README.md) represent the current production standard and MUST NOT be reduced to older versions under any circumstances.

@@ -91,11 +91,11 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	// Parse and validate request
 	var req LoginRequest
 	if err := c.Bind(&req); err != nil {
-		return validationError(c, "Invalid request format", err)
+		return validationError(c, err)
 	}
 
 	if validationErrors := middleware.ValidateStruct(req); len(validationErrors) > 0 {
-		return validationErrorWithDetails(c, "Validation failed", validationErrors)
+		return validationErrorWithDetails(c, validationErrors)
 	}
 
 	// Find user by email
@@ -180,16 +180,16 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	// Parse and validate request
 	var req RegisterRequest
 	if err := c.Bind(&req); err != nil {
-		return validationError(c, "Invalid request format", err)
+		return validationError(c, err)
 	}
 
 	if validationErrors := middleware.ValidateStruct(req); len(validationErrors) > 0 {
-		return validationErrorWithDetails(c, "Validation failed", validationErrors)
+		return validationErrorWithDetails(c, validationErrors)
 	}
 
 	// Custom validation
 	if err := req.Validate(); err != nil {
-		return validationErrorWithDetails(c, "Validation failed", err)
+		return validationErrorWithDetails(c, err)
 	}
 
 	// Hash password using Argon2id

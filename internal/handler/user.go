@@ -102,7 +102,7 @@ func (h *UserHandler) UserForm(c echo.Context) error {
 func (h *UserHandler) EditUserForm(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	id, err := parseIDParam(c, "id")
+	id, err := parseIDParam(c)
 	if err != nil {
 		return err
 	}
@@ -122,15 +122,15 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 
 	var req RegisterRequest
 	if err := c.Bind(&req); err != nil {
-		return validationError(c, "Invalid request format", err)
+		return validationError(c, err)
 	}
 
 	if validationErrors := middleware.ValidateStruct(req); len(validationErrors) > 0 {
-		return validationErrorWithDetails(c, "Validation failed", validationErrors)
+		return validationErrorWithDetails(c, validationErrors)
 	}
 
 	if err := req.Validate(); err != nil {
-		return validationErrorWithDetails(c, "Validation failed", err)
+		return validationErrorWithDetails(c, err)
 	}
 
 	hashedPassword, err := h.authService.HashPasswordArgon2(req.Password)
@@ -176,22 +176,22 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 func (h *UserHandler) UpdateUser(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	id, err := parseIDParam(c, "id")
+	id, err := parseIDParam(c)
 	if err != nil {
 		return err
 	}
 
 	var req ManagedUserUpdateRequest
 	if err := c.Bind(&req); err != nil {
-		return validationError(c, "Invalid request format", err)
+		return validationError(c, err)
 	}
 
 	if validationErrors := middleware.ValidateStruct(req); len(validationErrors) > 0 {
-		return validationErrorWithDetails(c, "Validation failed", validationErrors)
+		return validationErrorWithDetails(c, validationErrors)
 	}
 
 	if err := req.Validate(); err != nil {
-		return validationErrorWithDetails(c, "Validation failed", err)
+		return validationErrorWithDetails(c, err)
 	}
 
 	params := store.UpdateUserParams{
@@ -257,7 +257,7 @@ func (h *UserHandler) UpdateUser(c echo.Context) error {
 func (h *UserHandler) DeactivateUser(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	id, err := parseIDParam(c, "id")
+	id, err := parseIDParam(c)
 	if err != nil {
 		return err
 	}
@@ -287,7 +287,7 @@ func (h *UserHandler) DeactivateUser(c echo.Context) error {
 func (h *UserHandler) DeleteUser(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	id, err := parseIDParam(c, "id")
+	id, err := parseIDParam(c)
 	if err != nil {
 		return err
 	}

@@ -75,7 +75,10 @@ func New() *Config {
 	k := koanf.New(".")
 
 	// Set defaults
-	setDefaults(k)
+	if err := setDefaults(k); err != nil {
+		slog.Error("failed to load default configuration", "error", err)
+		os.Exit(1)
+	}
 
 	// Try to read .env file first
 	if err := k.Load(file.Provider(".env"), dotenv.Parser()); err != nil {
@@ -99,10 +102,13 @@ func New() *Config {
 	}
 
 	// Environment variable handling
-	k.Load(env.Provider("", ".", func(s string) string {
+	if err := k.Load(env.Provider("", ".", func(s string) string {
 		// Convert environment variables to lowercase and replace _ with .
 		return strings.ReplaceAll(strings.ToLower(s), "_", ".")
-	}), nil)
+	}), nil); err != nil {
+		slog.Error("failed to load environment configuration", "error", err)
+		os.Exit(1)
+	}
 
 	// Unmarshal into config struct
 	var cfg Config
@@ -156,7 +162,7 @@ func New() *Config {
 	return &cfg
 }
 
-func setDefaults(k *koanf.Koanf) {
+func setDefaults(k *koanf.Koanf) error {
 	// Create a defaults map
 	defaults := map[string]interface{}{
 		// Server defaults
@@ -200,7 +206,7 @@ func setDefaults(k *koanf.Koanf) {
 	}
 
 	// Load defaults using the confmap provider
-	k.Load(confmap.Provider(defaults, "."), nil)
+	return k.Load(confmap.Provider(defaults, "."), nil)
 }
 
 // GetLogLevel converts the string log level to slog.Level.

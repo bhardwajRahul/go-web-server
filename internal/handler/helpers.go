@@ -35,12 +35,6 @@ func redirectOrHtmx(c echo.Context, url, message string) error {
 	return c.Redirect(http.StatusFound, url)
 }
 
-// isJSONRequest checks if the request accepts JSON
-func isJSONRequest(c echo.Context) bool {
-	accept := strings.ToLower(c.Request().Header.Get(echo.HeaderAccept))
-	return strings.Contains(accept, ContentTypeJSON) || strings.HasPrefix(c.Request().URL.Path, "/api/")
-}
-
 // setupCSRFHeaders sets CSRF token in response headers if available
 func setupCSRFHeaders(c echo.Context) string {
 	token := middleware.GetCSRFToken(c)
@@ -70,20 +64,20 @@ func renderWithCSRF(c echo.Context, htmxComponent, fullPageComponent, basicCompo
 // Error helpers for common error patterns
 
 // validationError creates a validation error with context
-func validationError(c echo.Context, message string, err error) error {
+func validationError(c echo.Context, err error) error {
 	return middleware.NewAppError(
 		middleware.ErrorTypeValidation,
 		http.StatusBadRequest,
-		message,
+		"Invalid request format",
 	).WithContext(c).WithInternal(err)
 }
 
 // validationErrorWithDetails creates a validation error with validation details
-func validationErrorWithDetails(c echo.Context, message string, details interface{}) error {
+func validationErrorWithDetails(c echo.Context, details interface{}) error {
 	return middleware.NewAppErrorWithDetails(
 		middleware.ErrorTypeValidation,
 		http.StatusBadRequest,
-		message,
+		"Validation failed",
 		details,
 	).WithContext(c)
 }
@@ -135,7 +129,7 @@ func databaseWriteError(c echo.Context, err error, fallbackMessage string) error
 			if field == "" {
 				field = "field"
 			}
-			return validationErrorWithDetails(c, "Validation failed", map[string]string{
+			return validationErrorWithDetails(c, map[string]string{
 				field: fmt.Sprintf("%s is required", humanizeFieldName(field)),
 			})
 		}
@@ -165,18 +159,9 @@ func humanizeFieldName(field string) string {
 	return strings.ToUpper(field[:1]) + field[1:]
 }
 
-// notFoundError creates a not found error
-func notFoundError(c echo.Context, message string) error {
-	return middleware.NewAppError(
-		middleware.ErrorTypeNotFound,
-		http.StatusNotFound,
-		message,
-	).WithContext(c)
-}
-
 // parseIDParam parses and validates an ID parameter from the URL
-func parseIDParam(c echo.Context, paramName string) (int64, error) {
-	idStr := c.Param(paramName)
+func parseIDParam(c echo.Context) (int64, error) {
+	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		return 0, middleware.NewAppError(

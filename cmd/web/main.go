@@ -50,7 +50,7 @@ func main() {
 	slog.Info("Starting Go Web Server",
 		"version", "1.0.0",
 		"environment", cfg.App.Environment,
-		"go_version", "1.25+",
+		"go_version", "1.26+",
 		"port", cfg.Server.Port,
 		"debug", cfg.App.Debug)
 
