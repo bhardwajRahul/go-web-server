@@ -1,19 +1,22 @@
 # Security
 
-This repo has a decent default baseline for a starter app. It does not have a full application security model.
+This repo has a decent starter baseline, but it is still a template. The security story is real enough to build on, not complete enough to call finished.
 
 ## What Exists
 
 ### Session Authentication
 
 - Sessions are managed with SCS and stored in PostgreSQL.
-- Newly registered users get Argon2id password hashes.
 - Protected routes use session middleware, not JWTs.
+- Newly registered users get Argon2id password hashes.
+- Accounts without a valid password hash are rejected during login.
+- Session cookies are `HttpOnly`, `SameSite=Strict`, and use the configured `auth.cookie_secure` setting.
 
 ### CSRF Protection
 
-- All state-changing routes go through custom CSRF middleware in [`internal/middleware/csrf.go`](/Users/sawyer/github/boring-go-web/internal/middleware/csrf.go).
+- All state-changing routes go through custom CSRF middleware in [`internal/middleware/csrf.go`](../internal/middleware/csrf.go).
 - Tokens are checked against the `_csrf` cookie.
+- The middleware accepts tokens from `X-CSRF-Token` or `csrf_token`.
 - Tokens rotate after successful state-changing requests.
 
 ### Output and Query Safety
@@ -24,7 +27,7 @@ This repo has a decent default baseline for a starter app. It does not have a fu
 
 ### Request Normalization
 
-- [`internal/middleware/sanitize.go`](/Users/sawyer/github/boring-go-web/internal/middleware/sanitize.go) now trims form/query values and strips NUL bytes.
+- [`internal/middleware/sanitize.go`](../internal/middleware/sanitize.go) trims form/query values and strips NUL bytes.
 - It does not try to “sanitize SQL” or pre-escape HTML before storage.
 - That is deliberate. Pre-escaping stored data and mutating SQL-looking input is a good way to corrupt data while pretending to be security.
 
@@ -33,6 +36,7 @@ This repo has a decent default baseline for a starter app. It does not have a fu
 - Security headers via Echo secure middleware
 - IP-based rate limiting with in-memory storage
 - Structured error handling with request IDs
+- Trusted proxy support is configurable, but should stay empty unless the app is actually behind proxies you control
 
 ## What Does Not Exist
 
@@ -41,12 +45,14 @@ This repo has a decent default baseline for a starter app. It does not have a fu
 - No password reset or email verification
 - No audit log
 - No metrics-backed security monitoring
-- No distributed/session revocation story beyond deleting sessions from the DB
+- No distributed rate limiting
+- No active use of the JWT config fields that still exist in config for future cleanup
 
 ## Current Risks
 
-- Demo users without password hashes can still log in with arbitrary passwords.
 - The app distinguishes only between “logged in” and “not logged in”.
 - The rate limiter is in-memory, so it is per-process only.
+- Default CORS settings are permissive unless you tighten them in configuration.
+- The session store is database-backed, but there is no deeper authorization model once a user is authenticated.
 
-If this repo becomes a real app, the next honest steps are removing passwordless demo logins, adding authorization rules, and deciding whether you want Atlas bootstrap-only, migrations-only, or both.
+If this repo becomes a real app, the next honest steps are adding authorization rules, tightening CORS and deployment settings, and deciding whether you want Atlas bootstrap-only, migrations-only, or both.

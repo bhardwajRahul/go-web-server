@@ -1,87 +1,101 @@
-# boring-go-web
+# go-web-server
 
-Small Go starter app built with Echo, Templ, HTMX, PostgreSQL, and SQLC.
+`go-web-server` is a small Go starter for server-rendered apps with Echo, Templ, HTMX, PostgreSQL, SQLC, and Mage. The goal is boring, legible defaults: one binary, one Postgres database, session auth, and enough structure to ship without dragging in a giant framework.
 
-This repo currently gives you:
+## What You Get
 
-- Session-based login and registration
-- A protected `/users` CRUD screen backed by Postgres
-- CSRF protection, security headers, rate limiting, and structured errors
-- Mage tasks for generate/build/lint/test
-- Atlas migrations plus a schema bootstrap path for local bring-up
+- Session-based login, registration, logout, and profile pages
+- A protected `/users` CRUD screen backed by PostgreSQL
+- Templ views with HTMX interactions and generated Tailwind CSS
+- CSRF protection, security headers, request IDs, rate limiting, and structured errors
+- Mage tasks for setup, generation, formatting, linting, building, and release work
+- Atlas migrations plus a schema bootstrap path for fresh local bring-up
 
-This repo does not give you:
+## What You Do Not Get
 
-- Roles or per-user authorization
-- Password reset, email, or account recovery
-- Metrics or `pprof` endpoints
-- A polished design system
-- A finished product architecture
+- Roles, per-user authorization, or record ownership rules
+- Password reset, email verification, or account recovery
+- Metrics, tracing, or `pprof` endpoints wired into the app
+- A polished design system or product-specific architecture
+- A complete production platform story beyond simple single-host deployment
 
 ## Quick Start
 
-1. Make sure PostgreSQL is running locally.
-2. Create a database and user:
+1. Start PostgreSQL locally and create a database:
 
 ```bash
 createuser -P gowebserver
 createdb -O gowebserver gowebserver
 ```
 
-3. Create a local `.env` file:
+2. Copy the sample environment file and update it for your machine:
 
 ```bash
-cat > .env <<'EOF'
-DATABASE_URL=postgres://gowebserver:your-password@localhost:5432/gowebserver?sslmode=disable
-AUTH_COOKIE_SECURE=false
-APP_ENVIRONMENT=development
-APP_DEBUG=true
-APP_LOG_LEVEL=debug
-EOF
+cp .env.example .env
 ```
 
-4. Install tools and generate assets:
+Set at least:
+
+- `DATABASE_URL=postgres://gowebserver:your-password@localhost:5432/gowebserver?sslmode=disable`
+- `AUTH_COOKIE_SECURE=false` for plain HTTP localhost development
+
+3. Install the local toolchain and generate code/assets:
 
 ```bash
 mage setup
 mage generate
 ```
 
-5. Run the app:
+4. Start the app:
 
 ```bash
-mage run
+mage dev
 ```
 
-The app listens on `http://localhost:8080`.
-Open `http://localhost:8080/auth/register` to create the first account.
+Use `mage run` if you want a plain build-and-run without Air.
+
+The app listens on [http://localhost:8080](http://localhost:8080). Open [http://localhost:8080/auth/register](http://localhost:8080/auth/register) to create the first account.
 
 ## Common Commands
 
-```bash
-mage dev            # Air hot reload
-mage generate       # sqlc + templ + CSS
-mage fmt            # goimports + gofmt + mod tidy
-mage vet            # go vet
-mage lint           # golangci-lint
-mage ci             # generate + fmt + vet + lint + build
-mage migrate        # apply Atlas migrations (requires atlas + .env)
-mage migrateStatus  # show Atlas migration state
-```
+| Command | Purpose |
+| --- | --- |
+| `mage setup` | Install Go tools and download dependencies |
+| `mage dev` | Run the app with Air hot reload |
+| `mage run` | Build and run the server once |
+| `mage generate` | Regenerate SQLC, Templ, and CSS output |
+| `mage fmt` | Format Go and Templ files and tidy modules |
+| `mage vet` | Run `go vet ./...` |
+| `mage lint` | Run `golangci-lint` |
+| `mage quality` | Run vet, lint, and `govulncheck` |
+| `mage ci` | Run the main CI-style pipeline locally |
+| `mage migrate` | Apply Atlas migrations |
+| `mage migrateStatus` | Show Atlas migration state |
 
 `mage migrateDown` is informational only. Atlas does not auto-rollback this repo.
 
-## Docs
+## Documentation
 
-- [docs/README.md](/Users/sawyer/github/boring-go-web/docs/README.md)
-- [docs/development.md](/Users/sawyer/github/boring-go-web/docs/development.md)
-- [docs/api.md](/Users/sawyer/github/boring-go-web/docs/api.md)
-- [docs/security.md](/Users/sawyer/github/boring-go-web/docs/security.md)
-- [docs/architecture.md](/Users/sawyer/github/boring-go-web/docs/architecture.md)
-- [docs/deployment.md](/Users/sawyer/github/boring-go-web/docs/deployment.md)
+- [Docs index](docs/README.md)
+- [Development guide](docs/development.md)
+- [API and route behavior](docs/api.md)
+- [Security notes](docs/security.md)
+- [Architecture overview](docs/architecture.md)
+- [Deployment notes](docs/deployment.md)
+- [Ubuntu deployment walkthrough](docs/ubuntu-deployment.md)
+- [Example YAML config](docs/config.example.yaml)
 
-## Notes
+## Naming Notes
 
-- The checked-out directory is `boring-go-web`, but the current Go module path is still `github.com/dunamismax/go-web-server`.
-- The canonical Atlas migration directory is top-level [`migrations/`](/Users/sawyer/github/boring-go-web/migrations). The duplicate `internal/store/migrations/` directory still exists and should be treated as leftover cleanup, not source of truth.
-- Leave `security.trusted_proxies` empty unless the app is actually behind reverse proxies that you control.
+This repo currently has two names in play:
+
+- Repo, local checkout, and Go module path: `go-web-server`
+- Deployment user/service/database examples: `gowebserver`
+
+The repo and module naming are aligned again. The `gowebserver` deployment naming stays as a simple service/database slug.
+
+## Operational Notes
+
+- The canonical Atlas migration directory is top-level [`migrations/`](migrations/).
+- The duplicate `internal/store/migrations/` directory is leftover history, not the source of truth.
+- Leave `security.trusted_proxies` empty unless the app is actually behind reverse proxies you control.

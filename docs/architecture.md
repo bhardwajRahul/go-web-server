@@ -1,6 +1,6 @@
 # Architecture
 
-## Shape
+## High-Level Shape
 
 ```text
 Browser
@@ -24,19 +24,34 @@ The repo is a small monolith. There is one binary, one Postgres database, and on
 - Public: home, demo, health, login, registration, static assets
 - Protected: profile, user CRUD, user count API
 
+## Configuration Flow
+
+Configuration is loaded by [`internal/config/config.go`](../internal/config/config.go) in this order:
+
+1. Built-in defaults
+2. `.env`
+3. `config.yaml` or `config/config.yaml`
+4. Environment variables
+
+Environment variables win last.
+
 ## Repo Layout
 
-- [`cmd/web/main.go`](/Users/sawyer/github/boring-go-web/cmd/web/main.go): app bootstrap and middleware stack
-- [`internal/handler/`](/Users/sawyer/github/boring-go-web/internal/handler): route handlers
-- [`internal/middleware/`](/Users/sawyer/github/boring-go-web/internal/middleware): auth, CSRF, error, validation, normalization
-- [`internal/store/`](/Users/sawyer/github/boring-go-web/internal/store): SQLC queries, schema, pool setup
-- [`internal/view/`](/Users/sawyer/github/boring-go-web/internal/view): Templ views
-- [`internal/ui/static/`](/Users/sawyer/github/boring-go-web/internal/ui/static): embedded CSS, JS, favicon
-- [`migrations/`](/Users/sawyer/github/boring-go-web/migrations): Atlas-managed SQL migrations
+| Path | Purpose |
+| --- | --- |
+| [`cmd/web/main.go`](../cmd/web/main.go) | App bootstrap, middleware stack, config wiring, and graceful shutdown |
+| [`internal/handler/`](../internal/handler/) | Route handlers and response helpers |
+| [`internal/middleware/`](../internal/middleware/) | Auth, CSRF, error, validation, and normalization middleware |
+| [`internal/store/`](../internal/store/) | Database pool setup, SQLC queries, schema, and store methods |
+| [`internal/view/`](../internal/view/) | Templ components and layouts |
+| [`internal/ui/static/`](../internal/ui/static/) | Embedded CSS, JS, images, and favicon |
+| [`migrations/`](../migrations/) | Atlas-managed SQL migrations |
+| [`docs/`](./) | User-facing repo documentation |
 
-## Schema Sources
+## Schema and Migration Sources
 
-- [`internal/store/schema.sql`](/Users/sawyer/github/boring-go-web/internal/store/schema.sql) is the canonical schema definition used by Atlas.
-- [`internal/store/store.go`](/Users/sawyer/github/boring-go-web/internal/store/store.go) contains a matching bootstrap schema for local startup.
+- [`internal/store/schema.sql`](../internal/store/schema.sql) is the canonical schema definition used by Atlas.
+- [`internal/store/store.go`](../internal/store/store.go) contains a matching bootstrap path for local startup.
+- Top-level [`migrations/`](../migrations/) is the canonical migration directory.
 
-The duplicate `internal/store/migrations/` directory still exists, but the app and docs should treat top-level [`migrations/`](/Users/sawyer/github/boring-go-web/migrations) as the source of truth.
+The duplicate [`internal/store/migrations/`](../internal/store/migrations/) directory still exists, but the app and docs should treat top-level [`migrations/`](../migrations/) as the source of truth.

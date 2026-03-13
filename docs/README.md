@@ -1,11 +1,23 @@
-# Docs
+# Documentation
 
-This docs set is intentionally small. It describes the repo that exists today.
+This docs set stays close to the repo that exists today. Start with the development guide if you are bringing the project up locally for the first time.
 
-- [development.md](/Users/sawyer/github/boring-go-web/docs/development.md): local setup, commands, and daily workflow
-- [api.md](/Users/sawyer/github/boring-go-web/docs/api.md): public and protected HTTP routes
-- [security.md](/Users/sawyer/github/boring-go-web/docs/security.md): actual security controls and current gaps
-- [architecture.md](/Users/sawyer/github/boring-go-web/docs/architecture.md): repo layout and request flow
-- [deployment.md](/Users/sawyer/github/boring-go-web/docs/deployment.md): basic deployment notes
-- [ubuntu-deployment.md](/Users/sawyer/github/boring-go-web/docs/ubuntu-deployment.md): simple Ubuntu + systemd path
-- [config.example.yaml](/Users/sawyer/github/boring-go-web/docs/config.example.yaml): example YAML config
+## Start Here
+
+- [Development guide](development.md): prerequisites, local setup, configuration, and daily commands
+- [Architecture overview](architecture.md): repo layout, request flow, config loading, and schema ownership
+
+## App Behavior
+
+- [API and route behavior](api.md): public routes, protected routes, HTMX fragments, and auth behavior
+- [Security notes](security.md): actual controls in the code today, plus current gaps and risks
+
+## Deployment
+
+- [Deployment notes](deployment.md): the current single-host deployment story and its limits
+- [Ubuntu deployment walkthrough](ubuntu-deployment.md): the repo's `systemd`-based path
+- [Example YAML config](config.example.yaml): sample config file for non-`.env` usage
+
+## Naming Note
+
+The repo directory and Go module path use `go-web-server`. Deployment examples still use `gowebserver` for the service user, systemd unit, and sample database name.
