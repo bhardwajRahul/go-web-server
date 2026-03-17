@@ -71,7 +71,7 @@ func BaseWithCSRF(title, csrfToken string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " - go-web-server</title><link rel=\"icon\" type=\"image/x-icon\" href=\"/static/favicon.ico\"><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap\" rel=\"stylesheet\"><link rel=\"stylesheet\" href=\"/static/css/styles.css\"><link rel=\"stylesheet\" href=\"/static/css/animations.css\"><script src=\"/static/js/htmx.min.js\"></script><meta name=\"csrf-header\" content=\"X-CSRF-Token\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " - go-web-server</title><link rel=\"icon\" type=\"image/x-icon\" href=\"/static/favicon.ico\"><link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"><link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin><link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap\" rel=\"stylesheet\"><link rel=\"stylesheet\" href=\"/static/css/styles.css\"><link rel=\"stylesheet\" href=\"/static/css/pico.min.css\"><link rel=\"stylesheet\" href=\"/static/css/animations.css\"><script src=\"/static/js/htmx.min.js\"></script><meta name=\"csrf-header\" content=\"X-CSRF-Token\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -83,7 +83,7 @@ func BaseWithCSRF(title, csrfToken string) templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(csrfToken)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/layout/base.templ`, Line: 25, Col: 47}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/view/layout/base.templ`, Line: 26, Col: 47}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {

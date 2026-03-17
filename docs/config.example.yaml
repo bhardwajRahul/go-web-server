@@ -26,7 +26,7 @@ database:
   max_conn_lifetime: 1h
   max_conn_idle_time: 30m
 
-  # Reserved in config, but startup currently relies on InitSchema() and mage/Atlas.
+  # Enables the lightweight startup schema bootstrap. Atlas migrations remain preferred.
   run_migrations: true
 
 app:
@@ -53,4 +53,5 @@ auth:
   token_duration: 24h
   refresh_duration: 168h
   cookie_name: "auth_token"
+  # Defaults to false in development and true in production when unset.
   cookie_secure: false

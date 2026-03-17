@@ -125,9 +125,13 @@ func CSRFWithConfig(config CSRFConfig) echo.MiddlewareFunc {
 			// Skip CSRF for safe methods
 			method := c.Request().Method
 			if method == http.MethodGet || method == http.MethodHead || method == http.MethodOptions {
-				token := generateCSRFToken(config.TokenLength)
-				setCSRFCookie(c, config, token)
+				token := existingCSRFCookieToken(c, config.CookieName)
+				if token == "" {
+					token = generateCSRFToken(config.TokenLength)
+					setCSRFCookie(c, config, token)
+				}
 				c.Set(config.ContextKey, token)
+				c.Response().Header().Set(echo.HeaderXCSRFToken, token)
 
 				return next(c)
 			}
@@ -162,10 +166,20 @@ func CSRFWithConfig(config CSRFConfig) echo.MiddlewareFunc {
 			newToken := generateCSRFToken(config.TokenLength)
 			setCSRFCookie(c, config, newToken)
 			c.Set(config.ContextKey, newToken)
+			c.Response().Header().Set(echo.HeaderXCSRFToken, newToken)
 
 			return next(c)
 		}
 	}
+}
+
+func existingCSRFCookieToken(c echo.Context, cookieName string) string {
+	cookie, err := c.Cookie(cookieName)
+	if err != nil || cookie == nil {
+		return ""
+	}
+
+	return cookie.Value
 }
 
 // csrfTokenExtractor extracts CSRF token from different sources.

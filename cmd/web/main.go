@@ -79,10 +79,14 @@ func main() {
 	// Note: Database migrations are now managed by Atlas CLI
 	// Run: atlas migrate apply --url $DATABASE_URL --dir file://migrations
 
-	// Initialize schema (fallback if migrations not used)
-	if err := store.InitSchema(ctx); err != nil {
-		slog.Error("failed to initialize schema", "error", err)
-		return
+	// Initialize schema for local bootstrap only when enabled.
+	if cfg.Database.RunMigrations {
+		if err := store.InitSchema(ctx); err != nil {
+			slog.Error("failed to initialize schema", "error", err)
+			return
+		}
+	} else {
+		slog.Info("Skipping schema bootstrap", "database_target", databaseTarget(cfg.Database.URL))
 	}
 
 	// Create Echo instance
@@ -194,10 +198,10 @@ func main() {
 		},
 	}))
 
-	// Timeout middleware
-	e.Use(echomiddleware.TimeoutWithConfig(echomiddleware.TimeoutConfig{
-		Timeout: cfg.Server.ReadTimeout,
-	}))
+	// Request deadline middleware.
+	// We avoid Echo's Timeout middleware here because it swaps the response writer
+	// and breaks templ rendering for full-page HTML responses.
+	e.Use(middleware.RequestTimeout(cfg.Server.ReadTimeout))
 
 	// Add environment to context for error handling
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {

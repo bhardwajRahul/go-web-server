@@ -298,6 +298,9 @@ func Clean() error {
 	if err := sh.Rm("internal/ui/static/css/styles.css"); err != nil && !os.IsNotExist(err) {
 		fmt.Printf("Warning: failed to remove generated CSS: %v\n", err)
 	}
+	if err := sh.Rm("internal/ui/static/css/pico.min.css"); err != nil && !os.IsNotExist(err) {
+		fmt.Printf("Warning: failed to remove generated Pico CSS: %v\n", err)
+	}
 
 	fmt.Println("Clean complete!")
 	return nil

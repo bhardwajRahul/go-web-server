@@ -271,16 +271,15 @@ func (h *UserHandler) DeactivateUser(c echo.Context) error {
 		"id", id,
 		"request_id", c.Response().Header().Get(echo.HeaderXRequestID))
 
-	// Get the updated user and return the row
-	user, err := h.store.GetUser(ctx, id)
-	if err != nil {
-		return logAndReturnError(c, "fetch updated user", err, http.StatusInternalServerError, "Failed to fetch updated user")
-	}
-
 	// Trigger custom event for HTMX
 	c.Response().Header().Set("HX-Trigger", "userDeactivated")
 
-	return view.UserRow(user).Render(ctx, c.Response().Writer)
+	users, err := h.store.ListUsers(ctx)
+	if err != nil {
+		return logAndReturnError(c, "fetch updated users", err, http.StatusInternalServerError, "Failed to fetch updated users")
+	}
+
+	return view.UserList(users).Render(ctx, c.Response().Writer)
 }
 
 // DeleteUser permanently deletes a user.

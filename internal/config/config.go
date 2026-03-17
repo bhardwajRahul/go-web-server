@@ -2,8 +2,9 @@
 package config
 
 import (
-	"fmt"
 	"log/slog"
+	"net"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -117,6 +118,8 @@ func New() *Config {
 		os.Exit(1)
 	}
 
+	applyDerivedDefaults(k, &cfg)
+
 	// Construct database URL if not provided directly
 	if cfg.Database.URL == "" {
 		user := k.String("database.user")
@@ -144,7 +147,7 @@ func New() *Config {
 		}
 
 		if user != "" && password != "" {
-			cfg.Database.URL = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s", user, password, host, port, name, sslmode)
+			cfg.Database.URL = buildDatabaseURL(user, password, host, port, name, sslmode)
 		} else {
 			slog.Error("DATABASE_URL not provided and DATABASE_USER/DATABASE_PASSWORD not found in environment")
 			os.Exit(1)
@@ -202,7 +205,6 @@ func setDefaults(k *koanf.Koanf) error {
 		"auth.token_duration":   24 * time.Hour,
 		"auth.refresh_duration": 7 * 24 * time.Hour,
 		"auth.cookie_name":      "auth_token",
-		"auth.cookie_secure":    true,
 	}
 
 	// Load defaults using the confmap provider
@@ -221,4 +223,23 @@ func (c *Config) GetLogLevel() slog.Level {
 	default:
 		return slog.LevelInfo
 	}
+}
+
+func applyDerivedDefaults(k *koanf.Koanf, cfg *Config) {
+	if !k.Exists("auth.cookie_secure") {
+		cfg.Auth.CookieSecure = strings.EqualFold(cfg.App.Environment, "production")
+	}
+}
+
+func buildDatabaseURL(user, password, host, port, name, sslmode string) string {
+	query := url.Values{}
+	query.Set("sslmode", sslmode)
+
+	return (&url.URL{
+		Scheme:   "postgres",
+		User:     url.UserPassword(user, password),
+		Host:     net.JoinHostPort(host, port),
+		Path:     "/" + name,
+		RawQuery: query.Encode(),
+	}).String()
 }
