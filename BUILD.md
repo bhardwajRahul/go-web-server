@@ -96,8 +96,8 @@ Verified on 2026-03-18 in this workspace with:
 - `go version` -> `go1.26.1 darwin/arm64`
 - `node -v` -> `v24.13.1`
 - `npm -v` -> `11.8.0`
-- `templ version` -> `v0.3.924`
-- `sqlc version` -> `v1.29.0`
+- `templ version` -> `v0.3.1001`
+- `sqlc version` -> `v1.30.0`
 - `atlas version` -> not installed (`command not found`)
 - `pg_isready` -> failed (`/tmp:5432 - no response`)
 
@@ -111,23 +111,23 @@ These commands were run successfully from the repo root unless noted otherwise:
 | --- | --- | --- |
 | `go test ./...` | Passed | Coverage exists only in `internal/config` and `internal/middleware` tests. |
 | `go build -o /tmp/go-web-server-review ./cmd/web` | Passed | Confirms plain Go build works. |
+| `npm ci` | Passed | `package-lock.json` is now present locally and should be tracked to keep frontend installs reproducible. |
 | `npm run build-css` | Passed | Emits a Browserslist warning about outdated `caniuse-lite`. |
 | `go run github.com/magefile/mage -l` | Passed | Listed Mage targets correctly. |
-| `go run github.com/magefile/mage generate` | Passed | Warned that local `templ` CLI (`v0.3.924`) is older than `go.mod` templ version (`v0.3.1001`). Rewrote generated-file version headers. |
+| `go run github.com/magefile/mage generate` | Passed | Clean with pinned `templ`/`sqlc` versions installed locally. |
 | `go run github.com/magefile/mage vet` | Passed | Wrapper around `go vet ./...`. |
-| `go run github.com/magefile/mage build` | Passed | Runs generation + CSS build + Go build. Same templ version warning as above. |
+| `go run github.com/magefile/mage lint` | Passed | The prior `goconst` failure in `internal/middleware/csrf_test.go` is fixed. |
+| `go run github.com/magefile/mage build` | Passed | Runs generation + CSS build + Go build successfully after the lint/tooling fixes. |
 
 ### Verified commands that currently fail
 
-| Command | Result | Failure summary |
-| --- | --- | --- |
-| `go run github.com/magefile/mage lint` | Failed | `internal/middleware/csrf_test.go` trips `goconst` because the string `existing-token` is repeated 4 times. |
+No build/test/lint command failures were reproduced in this pass.
 
-Expected downstream impact:
+Still unverified because of missing local dependencies:
 
-- `mage quality` likely fails because it includes `Lint`
-- `mage ci` likely fails locally because it includes `Lint`
-- GitHub Actions CI is also likely red until the lint issue is fixed, because `.github/workflows/ci.yml` runs `golangci-lint`
+- Runtime boot against PostgreSQL
+- Atlas-backed migration commands
+- End-to-end auth and `/users` CRUD in a live browser
 
 ### Unverified but likely commands
 
@@ -135,14 +135,14 @@ These are present in repo code/docs but were **not** verified in this review:
 
 | Command | Why unverified | What it likely does |
 | --- | --- | --- |
-| `mage setup` | Not run because it installs/upgrades toolchain binaries | Installs `templ`, `sqlc`, `govulncheck`, `air`, `goimports`, then downloads Go modules |
+| `mage setup` | Not run directly in this pass because equivalent tool installs were run manually | Installs pinned `templ`/`sqlc`, plus `govulncheck`, `air`, `goimports`, then downloads Go modules |
 | `mage dev` | Requires app runtime env and reachable Postgres | Runs Air using `.air.toml` |
 | `mage run` | Requires app runtime env and reachable Postgres | Builds and runs `bin/server` once |
 | `mage migrate` | `atlas` missing locally and no verified DB | Runs `atlas migrate apply --env dev` |
 | `mage migrateStatus` | `atlas` missing locally and no verified DB | Runs `atlas migrate status --env dev` |
 | `mage vulnCheck` | Not run | Runs `govulncheck ./...` |
-| `mage quality` | Not run after lint failure was found | Runs vet + lint + vulncheck |
-| `mage ci` | Not run after lint failure was found | Runs generate + fmt + vet + lint + build + build-info |
+| `mage quality` | Not run end-to-end in this pass | Runs vet + lint + vulncheck |
+| `mage ci` | Not run end-to-end in this pass | Runs generate + fmt + vet + lint + build + build-info |
 | `docker build .` | Not run | Likely works only if committed generated assets are already current |
 | `goreleaser build --snapshot --clean` / `mage snapshot` | Not run | Release packaging path defined in `.goreleaser.yaml` |
 | `./scripts/deploy.sh` | Not run | Ubuntu/systemd deployment helper for `/opt/gowebserver` |
@@ -224,9 +224,10 @@ Important: some build/release paths rely on these files already being current.
    - `internal/store/store.go` -> `InitSchema()`
    This is a real maintenance risk.
 
-3. `.env.example` is not fully aligned with the current docs/runtime intent.
-   - It sets `SECURITY_TRUSTED_PROXIES=127.0.0.1`, but the docs say trusted proxies should usually be empty unless the app is actually behind controlled proxies.
-   - It sets `FEATURES_ENABLE_METRICS=true`, but metrics are not wired into the app.
+3. `.env.example` was realigned in this pass, but compatibility fields can still confuse readers.
+   - `SECURITY_TRUSTED_PROXIES` now defaults to empty, which matches the docs/runtime intent.
+   - `FEATURES_ENABLE_METRICS` now defaults to `false`, which matches the live app.
+   - JWT-related env vars still exist only because config still exposes those fields.
 
 4. Config contains dead or not-yet-live fields.
    - `auth.jwt_secret`
@@ -236,12 +237,12 @@ Important: some build/release paths rely on these files already being current.
    - `features.enable_pprof`
    These exist in config, but the live app uses session auth and does not expose metrics or pprof endpoints.
 
-5. Generator tool versions are drifting from committed generated files.
-   - `go.mod` references `templ v0.3.1001`
-   - Local verified `templ version` was `v0.3.924`
-   - Checked-in SQLC output says it was generated with `sqlc v1.30.0`
-   - Local verified `sqlc version` was `v1.29.0`
-   Running `mage generate` in this environment rewrote generated-file version headers even when logic did not materially change.
+5. Generator version drift was reduced, but not completely eliminated.
+   - `mage setup` now pins `templ v0.3.1001`.
+   - `mage setup` now pins `sqlc v1.30.0`.
+   - `cmd/web/main.go` `go:generate` directives now use those same explicit versions.
+   - `mage lint` now installs the same `golangci-lint v2.11.3` version used in CI.
+   - `mage generate` still uses whatever `templ`/`sqlc` binaries are currently on `PATH`, so rerun `mage setup` if generation output looks unexpectedly noisy.
 
 6. Release/build paths are inconsistent about generation.
    - `mage build` runs SQLC + Templ + CSS generation
@@ -249,26 +250,25 @@ Important: some build/release paths rely on these files already being current.
    - `.goreleaser.yaml` runs `go generate ./...`, which does not run the Node/Tailwind CSS build
    If `input.css` changes and generated CSS is not committed, Docker/GoReleaser may package stale assets.
 
-7. The Node lockfile is not tracked in git.
-   - `package-lock.json` exists locally in this workspace
-   - `.gitignore` ignores it
-   This reduces frontend build reproducibility.
+7. Frontend reproducibility is improved, but only once the lockfile is committed.
+   - `.gitignore` no longer ignores `package-lock.json`.
+   - `mage` now prefers `npm ci` over `npm install` when a lockfile is present and `node_modules` is missing.
 
-8. The repo contains tracked artifact files that are not primary source.
-   - `web` is a tracked Mach-O binary in the repo root
-   - `output/playwright/*.png` are tracked screenshots
-   Do not treat those as authoritative build inputs.
+8. Obvious tracked artifacts were removed in this pass.
+   - The root `web` Mach-O binary was deleted.
+   - `output/playwright/*.png` screenshots were deleted.
+   - `.gitignore` now explicitly ignores those generated artifact paths.
 
 ## 4. Current Gaps and Known Issues
 
 ### Verified issues
 
-- Lint is currently failing.
-  - Failure: `goconst` in `internal/middleware/csrf_test.go`
 - Local Postgres was unavailable in this review environment.
   - Runtime bring-up, login flow, migrations, and `/health` against a real DB were not verified
 - Atlas CLI was not installed locally.
   - Migration commands were not verified
+- CSS builds emit a Browserslist maintenance warning.
+  - `caniuse-lite` is outdated, but this did not block the build
 
 ### Obvious codebase gaps
 
@@ -288,7 +288,6 @@ Important: some build/release paths rely on these files already being current.
 
 - Schema drift between `schema.sql`, `migrations/`, and `InitSchema()`
 - Legacy duplicate migration directory may mislead future edits
-- Generator version mismatch can create dirty trees and noisy diffs
 - Docker/GoReleaser rely on committed generated assets being current
 - `mage ci` includes `Fmt`, which mutates the working tree; that is unusual for CI-style validation
 
@@ -302,26 +301,23 @@ Important: some build/release paths rely on these files already being current.
    - Update docs and build paths to reflect the chosen approach.
 
 2. Stabilize the toolchain and generated-file workflow.
-   - Pin `templ` and `sqlc` installation versions in `mage setup`
-   - Make generation output deterministic across contributors
+   - Decide whether `mage generate` itself should enforce pinned CLI versions, not just `mage setup`
    - Decide whether Docker/GoReleaser should explicitly run CSS generation
 
-3. Get CI green again.
-   - Fix the current lint failure
-   - Re-run local lint/CI path
-   - Confirm GitHub Actions behavior matches local expectations
-
-4. Add at least one real DB-backed integration path.
+3. Add at least one real DB-backed integration path.
    - Auth registration/login
    - Protected `/users` CRUD
    - Health endpoint against a live DB
 
 ### Quick wins
 
-- Fix the `goconst` lint failure in `internal/middleware/csrf_test.go`
-- Update `.env.example` to stop implying trusted proxies and metrics are enabled by default
-- Add a note in `README.md` or this file about tracked `web` binary and untracked `package-lock.json`
-- Make generator versions explicit in `mage setup`
+Completed in this pass:
+
+- Fixed the `goconst` lint failure in `internal/middleware/csrf_test.go`
+- Updated `.env.example` to stop implying trusted proxies and metrics are enabled by default
+- Added a README note about tracking `package-lock.json`
+- Made `templ`, `sqlc`, and local `golangci-lint` versions explicit in build tooling
+- Removed tracked binary/screenshot artifacts and ignored those paths going forward
 
 ### Deeper refactors
 
@@ -365,11 +361,11 @@ Follow this order to minimize confusion:
    - `go test ./...`
    - `go run github.com/magefile/mage vet`
    - `npm run build-css`
-9. Expect `go run github.com/magefile/mage lint` to fail until the current `goconst` issue is fixed.
+9. Run `go run github.com/magefile/mage lint`.
 10. If you change `internal/view/**/*.templ`, `internal/store/queries.sql`, `internal/store/schema.sql`, or `input.css`, run:
     - `go run github.com/magefile/mage generate`
 11. Inspect generated diffs carefully.
-    - In mismatched tool environments, generation may change only version headers
+    - If output looks unexpectedly noisy, rerun `mage setup` to restore the pinned tool versions first
 12. Once the DB is live, verify the app bring-up path:
     - `go run github.com/magefile/mage dev`
     - or `go run github.com/magefile/mage run`
@@ -385,6 +381,6 @@ Follow this order to minimize confusion:
 If you need the shortest honest summary before working:
 
 - The repo builds, tests, vets, and generates successfully in this environment.
-- The linter is currently failing on a small test-file constant issue.
+- Local lint is green again after fixing the small test-file constant issue.
 - Runtime and migration bring-up were not verified because local PostgreSQL was unavailable and Atlas was not installed.
 - The biggest repo hygiene problem is source-of-truth drift: schema/bootstrap/migrations/generated artifacts are all close enough to work, but not unified enough to be low-risk.

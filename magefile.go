@@ -16,10 +16,13 @@ import (
 )
 
 const (
-	packageName = "github.com/dunamismax/go-web-server"
-	binaryName  = "server"
-	buildDir    = "bin"
-	tmpDir      = "tmp"
+	packageName         = "github.com/dunamismax/go-web-server"
+	binaryName          = "server"
+	buildDir            = "bin"
+	tmpDir              = "tmp"
+	templVersion        = "v0.3.1001"
+	sqlcVersion         = "v1.30.0"
+	golangciLintVersion = "v2.11.3"
 )
 
 // Default target to run when none is specified
@@ -95,6 +98,15 @@ func getCurrentTime() string {
 	return time.Now().UTC().Format("2006-01-02T15:04:05Z")
 }
 
+func installGoTool(name, pkg string) error {
+	fmt.Printf("  Installing %s...\n", name)
+	if err := sh.RunV("go", "install", pkg); err != nil {
+		return fmt.Errorf("failed to install %s: %w", name, err)
+	}
+
+	return nil
+}
+
 // getGoBinaryPath finds the path to a Go binary, checking GOBIN, GOPATH/bin, and PATH
 func getGoBinaryPath(binaryName string) (string, error) {
 	// First check if it's in PATH
@@ -164,9 +176,14 @@ func buildCSS() error {
 
 	// Check if node_modules exists
 	if _, err := os.Stat("node_modules"); os.IsNotExist(err) {
-		fmt.Println("    Installing npm dependencies...")
-		if err := sh.RunV("npm", "install"); err != nil {
-			return fmt.Errorf("failed to install npm dependencies: %w", err)
+		npmCommand := "install"
+		if _, err := os.Stat("package-lock.json"); err == nil {
+			npmCommand = "ci"
+		}
+
+		fmt.Printf("    Installing npm dependencies with npm %s...\n", npmCommand)
+		if err := sh.RunV("npm", npmCommand); err != nil {
+			return fmt.Errorf("failed to install npm dependencies with npm %s: %w", npmCommand, err)
 		}
 	}
 
@@ -231,9 +248,8 @@ func VulnCheck() error {
 func Lint() error {
 	fmt.Println("Running golangci-lint...")
 
-	// Ensure the correct version of golangci-lint v2 is installed
-	fmt.Println("  Ensuring golangci-lint v2 is installed...")
-	if err := sh.RunV("go", "install", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest"); err != nil {
+	// Match the CI version locally to avoid version-specific lint drift.
+	if err := installGoTool("golangci-lint", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@"+golangciLintVersion); err != nil {
 		return fmt.Errorf("failed to install golangci-lint v2: %w", err)
 	}
 
@@ -266,8 +282,7 @@ func Dev() error {
 	// Find air binary
 	airPath, err := getGoBinaryPath("air")
 	if err != nil {
-		fmt.Println("Installing air...")
-		if err := sh.RunV("go", "install", "github.com/air-verse/air@latest"); err != nil {
+		if err := installGoTool("air", "github.com/air-verse/air@latest"); err != nil {
 			return fmt.Errorf("failed to install air: %w", err)
 		}
 		// Try to find it again after installation
@@ -359,8 +374,8 @@ func Setup() error {
 	fmt.Println("Setting up development environment...")
 
 	tools := map[string]string{
-		"templ":       "github.com/a-h/templ/cmd/templ@latest",
-		"sqlc":        "github.com/sqlc-dev/sqlc/cmd/sqlc@latest",
+		"templ":       "github.com/a-h/templ/cmd/templ@" + templVersion,
+		"sqlc":        "github.com/sqlc-dev/sqlc/cmd/sqlc@" + sqlcVersion,
 		"govulncheck": "golang.org/x/vuln/cmd/govulncheck@latest",
 		"air":         "github.com/air-verse/air@latest",
 
@@ -368,8 +383,7 @@ func Setup() error {
 	}
 
 	for tool, pkg := range tools {
-		fmt.Printf("  Installing %s...\n", tool)
-		if err := sh.RunV("go", "install", pkg); err != nil {
+		if err := installGoTool(tool, pkg); err != nil {
 			return fmt.Errorf("failed to install %s: %w", tool, err)
 		}
 	}

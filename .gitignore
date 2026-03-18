@@ -96,8 +96,11 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
 yarn.lock
+
+# Local generated artifacts that should not be tracked
+/web
+/output/playwright/
 
 # Docker
 Dockerfile.dev

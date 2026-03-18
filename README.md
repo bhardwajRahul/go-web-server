@@ -99,3 +99,4 @@ The repo and module naming are aligned again. The `gowebserver` deployment namin
 - The canonical Atlas migration directory is top-level [`migrations/`](migrations/).
 - The duplicate `internal/store/migrations/` directory is leftover history, not the source of truth.
 - Leave `security.trusted_proxies` empty unless the app is actually behind reverse proxies you control.
+- `package-lock.json` is tracked so frontend dependency resolution stays reproducible across contributors and CI.

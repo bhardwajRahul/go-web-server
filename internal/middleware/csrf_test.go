@@ -10,18 +10,20 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+const existingCSRFToken = "existing-token"
+
 func TestCSRFSafeRequestReusesExistingCookieToken(t *testing.T) {
 	t.Parallel()
 
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.AddCookie(&http.Cookie{Name: DefaultCSRFConfig.CookieName, Value: "existing-token"})
+	req.AddCookie(&http.Cookie{Name: DefaultCSRFConfig.CookieName, Value: existingCSRFToken})
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
 	handler := CSRF()(func(c echo.Context) error {
-		if got := GetCSRFToken(c); got != "existing-token" {
-			t.Fatalf("GetCSRFToken() = %q, want %q", got, "existing-token")
+		if got := GetCSRFToken(c); got != existingCSRFToken {
+			t.Fatalf("GetCSRFToken() = %q, want %q", got, existingCSRFToken)
 		}
 		return c.NoContent(http.StatusOK)
 	})
@@ -34,8 +36,8 @@ func TestCSRFSafeRequestReusesExistingCookieToken(t *testing.T) {
 		t.Fatalf("expected no new Set-Cookie header, got %q", setCookie)
 	}
 
-	if got := rec.Header().Get(echo.HeaderXCSRFToken); got != "existing-token" {
-		t.Fatalf("X-CSRF-Token = %q, want %q", got, "existing-token")
+	if got := rec.Header().Get(echo.HeaderXCSRFToken); got != existingCSRFToken {
+		t.Fatalf("X-CSRF-Token = %q, want %q", got, existingCSRFToken)
 	}
 }
 
@@ -77,17 +79,17 @@ func TestCSRFUnsafeRequestRotatesTokenAndReturnsHeader(t *testing.T) {
 
 	e := echo.New()
 	form := url.Values{}
-	form.Set("csrf_token", "existing-token")
+	form.Set("csrf_token", existingCSRFToken)
 
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(form.Encode()))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationForm)
-	req.AddCookie(&http.Cookie{Name: DefaultCSRFConfig.CookieName, Value: "existing-token"})
+	req.AddCookie(&http.Cookie{Name: DefaultCSRFConfig.CookieName, Value: existingCSRFToken})
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
 	handler := CSRF()(func(c echo.Context) error {
 		token := GetCSRFToken(c)
-		if token == "" || token == "existing-token" {
+		if token == "" || token == existingCSRFToken {
 			t.Fatalf("expected rotated CSRF token, got %q", token)
 		}
 		return c.NoContent(http.StatusOK)
@@ -98,7 +100,7 @@ func TestCSRFUnsafeRequestRotatesTokenAndReturnsHeader(t *testing.T) {
 	}
 
 	got := rec.Header().Get(echo.HeaderXCSRFToken)
-	if got == "" || got == "existing-token" {
+	if got == "" || got == existingCSRFToken {
 		t.Fatalf("X-CSRF-Token = %q, want rotated token", got)
 	}
 }
