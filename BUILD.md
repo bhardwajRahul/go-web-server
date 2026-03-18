@@ -1,0 +1,390 @@
+# BUILD.md
+
+**This is the primary operational handoff document for `go-web-server`. It is a living document. Every future agent or developer who touches this repository is responsible for keeping it accurate, current, and up to date. If you verify, break, fix, rename, add, or remove anything that affects setup, build, runtime, deployment, testing, migrations, or source-of-truth ownership, update this file in the same change.**
+
+Last reviewed: 2026-03-18  
+Reviewer: Codex  
+Repository: `/Users/sawyer/github/go-web-server`
+
+## 1. Project Baseline
+
+### What the application currently does
+
+`go-web-server` is a small server-rendered Go monolith built around:
+
+- Echo for routing and middleware
+- Templ for HTML rendering
+- HTMX for partial-page interactions
+- PostgreSQL for app data and session storage
+- SQLC for typed query generation
+- Mage for local task orchestration
+- Tailwind + DaisyUI + Pico CSS for styling
+
+Current user-visible behavior:
+
+- Public routes:
+  - `/` home page
+  - `/demo` HTMX/JSON demo endpoint
+  - `/health` health endpoint with a database check
+  - `/auth/login`
+  - `/auth/register`
+- Protected routes:
+  - `/profile`
+  - `/users` CRUD screen for users
+  - `/api/users/count` returns an HTML fragment despite the `/api` prefix
+- Authentication:
+  - Session-based auth backed by PostgreSQL via SCS
+  - Registration hashes passwords with Argon2id
+  - Login rejects users missing a usable password hash
+
+### Major components, services, modules, and entry points
+
+- `cmd/web/main.go`
+  - Main application entry point
+  - Loads config, opens the PostgreSQL pool, initializes Echo, installs middleware, wires session auth, and starts the server
+- `internal/config/config.go`
+  - Runtime configuration source of truth
+  - Config precedence: defaults -> `.env` -> `config.yaml` / `config/config.yaml` -> environment variables
+- `internal/handler/`
+  - Route handlers for home, auth, and users
+- `internal/middleware/`
+  - Recovery, security headers, sanitization, CSRF, validation, timeout, auth/session helpers, structured errors
+- `internal/store/`
+  - `schema.sql`: canonical schema definition for SQLC and Atlas
+  - `queries.sql`: SQLC query definitions
+  - `store.go`: pool wiring plus a startup bootstrap schema path
+- `internal/view/`
+  - Templ source files and checked-in generated `*_templ.go` files
+- `internal/ui/`
+  - Embedded static assets served from `/static/*`
+- `magefile.go`
+  - Primary repo task runner for setup, generation, build, lint, vet, migrations, and release helpers
+- `package.json`
+  - CSS build/watch commands
+- `.air.toml`
+  - Hot-reload config used by `mage dev`
+- `atlas.hcl`
+  - Atlas migration environment config
+- `.github/workflows/ci.yml`
+  - Current GitHub Actions CI workflow
+
+### Current implemented state
+
+This repo is a working starter app, not a finished product. The implemented system is:
+
+- One Go binary
+- One PostgreSQL database
+- One main domain model: `users`
+- One auth mode: database-backed sessions
+- One protected CRUD surface: `/users`
+
+It does not currently implement:
+
+- Roles or per-record authorization
+- Password reset, email verification, or account recovery
+- Metrics or `pprof` endpoints, despite config flags existing for them
+- A JSON-first API surface
+- Background jobs or async workflows
+- A polished deployment platform beyond simple single-host scripts
+
+## 2. Verified Build and Run Workflow
+
+### Verification environment used for this review
+
+Verified on 2026-03-18 in this workspace with:
+
+- `go version` -> `go1.26.1 darwin/arm64`
+- `node -v` -> `v24.13.1`
+- `npm -v` -> `11.8.0`
+- `templ version` -> `v0.3.924`
+- `sqlc version` -> `v1.29.0`
+- `atlas version` -> not installed (`command not found`)
+- `pg_isready` -> failed (`/tmp:5432 - no response`)
+
+Important implication: I verified build/test/generation paths, but I did **not** verify a successful app boot against a live PostgreSQL instance in this environment.
+
+### Verified commands
+
+These commands were run successfully from the repo root unless noted otherwise:
+
+| Command | Result | Notes |
+| --- | --- | --- |
+| `go test ./...` | Passed | Coverage exists only in `internal/config` and `internal/middleware` tests. |
+| `go build -o /tmp/go-web-server-review ./cmd/web` | Passed | Confirms plain Go build works. |
+| `npm run build-css` | Passed | Emits a Browserslist warning about outdated `caniuse-lite`. |
+| `go run github.com/magefile/mage -l` | Passed | Listed Mage targets correctly. |
+| `go run github.com/magefile/mage generate` | Passed | Warned that local `templ` CLI (`v0.3.924`) is older than `go.mod` templ version (`v0.3.1001`). Rewrote generated-file version headers. |
+| `go run github.com/magefile/mage vet` | Passed | Wrapper around `go vet ./...`. |
+| `go run github.com/magefile/mage build` | Passed | Runs generation + CSS build + Go build. Same templ version warning as above. |
+
+### Verified commands that currently fail
+
+| Command | Result | Failure summary |
+| --- | --- | --- |
+| `go run github.com/magefile/mage lint` | Failed | `internal/middleware/csrf_test.go` trips `goconst` because the string `existing-token` is repeated 4 times. |
+
+Expected downstream impact:
+
+- `mage quality` likely fails because it includes `Lint`
+- `mage ci` likely fails locally because it includes `Lint`
+- GitHub Actions CI is also likely red until the lint issue is fixed, because `.github/workflows/ci.yml` runs `golangci-lint`
+
+### Unverified but likely commands
+
+These are present in repo code/docs but were **not** verified in this review:
+
+| Command | Why unverified | What it likely does |
+| --- | --- | --- |
+| `mage setup` | Not run because it installs/upgrades toolchain binaries | Installs `templ`, `sqlc`, `govulncheck`, `air`, `goimports`, then downloads Go modules |
+| `mage dev` | Requires app runtime env and reachable Postgres | Runs Air using `.air.toml` |
+| `mage run` | Requires app runtime env and reachable Postgres | Builds and runs `bin/server` once |
+| `mage migrate` | `atlas` missing locally and no verified DB | Runs `atlas migrate apply --env dev` |
+| `mage migrateStatus` | `atlas` missing locally and no verified DB | Runs `atlas migrate status --env dev` |
+| `mage vulnCheck` | Not run | Runs `govulncheck ./...` |
+| `mage quality` | Not run after lint failure was found | Runs vet + lint + vulncheck |
+| `mage ci` | Not run after lint failure was found | Runs generate + fmt + vet + lint + build + build-info |
+| `docker build .` | Not run | Likely works only if committed generated assets are already current |
+| `goreleaser build --snapshot --clean` / `mage snapshot` | Not run | Release packaging path defined in `.goreleaser.yaml` |
+| `./scripts/deploy.sh` | Not run | Ubuntu/systemd deployment helper for `/opt/gowebserver` |
+
+### Practical local bring-up sequence
+
+This is the safest intended local flow, based on code + docs, but runtime boot was not verified here because PostgreSQL was unavailable:
+
+1. Ensure PostgreSQL is running and reachable.
+2. Create `.env` from `.env.example`.
+3. Set at minimum:
+   - `DATABASE_URL=postgres://...`
+   - `AUTH_COOKIE_SECURE=false` for plain localhost HTTP
+4. Install tooling:
+   - `mage setup`
+5. Generate derived files:
+   - `mage generate`
+6. Start the app:
+   - `mage dev` for hot reload
+   - or `mage run` for a one-shot run
+
+## 3. Source-of-Truth Notes
+
+### Treat these as authoritative first
+
+- Runtime wiring:
+  - `cmd/web/main.go`
+- Config schema and precedence:
+  - `internal/config/config.go`
+- Route surface:
+  - `internal/handler/routes.go`
+- Database schema for SQLC + Atlas:
+  - `internal/store/schema.sql`
+- Canonical Atlas migration history:
+  - top-level `migrations/`
+- Query definitions:
+  - `internal/store/queries.sql`
+- Templ source:
+  - `internal/view/**/*.templ`
+- Static asset source:
+  - `input.css`
+  - `tailwind.config.js`
+  - `package.json`
+- Embedded static asset serving:
+  - `internal/ui/embed.go`
+- Dev/build orchestration:
+  - `magefile.go`
+  - `.air.toml`
+  - `.golangci.yml`
+  - `atlas.hcl`
+- CI truth:
+  - `.github/workflows/ci.yml`
+
+### Generated files that are checked in
+
+These are committed artifacts, not hand-edited source:
+
+- `internal/view/*_templ.go`
+- `internal/store/db.go`
+- `internal/store/models.go`
+- `internal/store/queries.sql.go`
+- `internal/ui/static/css/styles.css`
+- `internal/ui/static/css/pico.min.css`
+
+Important: some build/release paths rely on these files already being current.
+
+### Conflicts, drift, and ambiguous areas
+
+1. Duplicate migration directories are not just leftover; they have drifted.
+   - Top-level `migrations/` contains Atlas-style files and `atlas.sum`.
+   - `internal/store/migrations/` contains older Goose-style `Up`/`Down` files.
+   - The files are not identical.
+   - Treat top-level `migrations/` as canonical for Atlas.
+   - Treat `internal/store/migrations/` as legacy/confusing until it is removed or clearly quarantined.
+
+2. There are effectively three schema definitions to keep aligned.
+   - `internal/store/schema.sql`
+   - top-level `migrations/`
+   - `internal/store/store.go` -> `InitSchema()`
+   This is a real maintenance risk.
+
+3. `.env.example` is not fully aligned with the current docs/runtime intent.
+   - It sets `SECURITY_TRUSTED_PROXIES=127.0.0.1`, but the docs say trusted proxies should usually be empty unless the app is actually behind controlled proxies.
+   - It sets `FEATURES_ENABLE_METRICS=true`, but metrics are not wired into the app.
+
+4. Config contains dead or not-yet-live fields.
+   - `auth.jwt_secret`
+   - `auth.token_duration`
+   - `auth.refresh_duration`
+   - `features.enable_metrics`
+   - `features.enable_pprof`
+   These exist in config, but the live app uses session auth and does not expose metrics or pprof endpoints.
+
+5. Generator tool versions are drifting from committed generated files.
+   - `go.mod` references `templ v0.3.1001`
+   - Local verified `templ version` was `v0.3.924`
+   - Checked-in SQLC output says it was generated with `sqlc v1.30.0`
+   - Local verified `sqlc version` was `v1.29.0`
+   Running `mage generate` in this environment rewrote generated-file version headers even when logic did not materially change.
+
+6. Release/build paths are inconsistent about generation.
+   - `mage build` runs SQLC + Templ + CSS generation
+   - `Dockerfile` does a plain `go build` and assumes generated assets are already current
+   - `.goreleaser.yaml` runs `go generate ./...`, which does not run the Node/Tailwind CSS build
+   If `input.css` changes and generated CSS is not committed, Docker/GoReleaser may package stale assets.
+
+7. The Node lockfile is not tracked in git.
+   - `package-lock.json` exists locally in this workspace
+   - `.gitignore` ignores it
+   This reduces frontend build reproducibility.
+
+8. The repo contains tracked artifact files that are not primary source.
+   - `web` is a tracked Mach-O binary in the repo root
+   - `output/playwright/*.png` are tracked screenshots
+   Do not treat those as authoritative build inputs.
+
+## 4. Current Gaps and Known Issues
+
+### Verified issues
+
+- Lint is currently failing.
+  - Failure: `goconst` in `internal/middleware/csrf_test.go`
+- Local Postgres was unavailable in this review environment.
+  - Runtime bring-up, login flow, migrations, and `/health` against a real DB were not verified
+- Atlas CLI was not installed locally.
+  - Migration commands were not verified
+
+### Obvious codebase gaps
+
+- No tests for:
+  - handler flows
+  - auth session lifecycle
+  - SQLC/store behavior against a real database
+  - end-to-end user CRUD
+- No authorization model beyond authenticated vs unauthenticated
+- In-memory rate limiting only; no shared/distributed store
+- CORS defaults are permissive unless tightened in config
+- No metrics, pprof, or observability endpoints despite config flags
+- No audit trail for auth/user-management actions
+- No password reset or email-based account recovery
+
+### Risk areas
+
+- Schema drift between `schema.sql`, `migrations/`, and `InitSchema()`
+- Legacy duplicate migration directory may mislead future edits
+- Generator version mismatch can create dirty trees and noisy diffs
+- Docker/GoReleaser rely on committed generated assets being current
+- `mage ci` includes `Fmt`, which mutates the working tree; that is unusual for CI-style validation
+
+## 5. Next-Pass Priorities
+
+### Highest impact, dependency-ordered
+
+1. Resolve source-of-truth ambiguity around database schema and migrations.
+   - Decide whether `internal/store/migrations/` should be deleted, archived, or clearly marked as legacy-only.
+   - Decide whether startup should keep `InitSchema()` bootstrap behavior or move to Atlas-only expectations.
+   - Update docs and build paths to reflect the chosen approach.
+
+2. Stabilize the toolchain and generated-file workflow.
+   - Pin `templ` and `sqlc` installation versions in `mage setup`
+   - Make generation output deterministic across contributors
+   - Decide whether Docker/GoReleaser should explicitly run CSS generation
+
+3. Get CI green again.
+   - Fix the current lint failure
+   - Re-run local lint/CI path
+   - Confirm GitHub Actions behavior matches local expectations
+
+4. Add at least one real DB-backed integration path.
+   - Auth registration/login
+   - Protected `/users` CRUD
+   - Health endpoint against a live DB
+
+### Quick wins
+
+- Fix the `goconst` lint failure in `internal/middleware/csrf_test.go`
+- Update `.env.example` to stop implying trusted proxies and metrics are enabled by default
+- Add a note in `README.md` or this file about tracked `web` binary and untracked `package-lock.json`
+- Make generator versions explicit in `mage setup`
+
+### Deeper refactors
+
+- Collapse schema ownership to one migration story plus one canonical schema definition
+- Remove dead JWT/metrics/pprof config if the app will stay session-only and minimal
+- Align Docker, Mage, and GoReleaser so they all build from the same generation assumptions
+
+## 6. Next-Agent Checklist
+
+Follow this order to minimize confusion:
+
+1. Read this file first.
+2. Read the runtime and routing entry points:
+   - `cmd/web/main.go`
+   - `internal/config/config.go`
+   - `internal/handler/routes.go`
+3. Read the auth and user flows:
+   - `internal/handler/auth.go`
+   - `internal/handler/user.go`
+   - `internal/middleware/auth.go`
+   - `internal/middleware/csrf.go`
+4. Read the data ownership files:
+   - `internal/store/schema.sql`
+   - top-level `migrations/`
+   - `internal/store/store.go`
+   - `internal/store/queries.sql`
+5. Check local tool versions before generating anything:
+   - `go version`
+   - `templ version`
+   - `sqlc version`
+   - `node -v`
+   - `npm -v`
+   - `atlas version`
+6. Create local runtime config:
+   - `cp .env.example .env`
+   - set a real `DATABASE_URL`
+   - keep `AUTH_COOKIE_SECURE=false` for local HTTP
+7. Confirm PostgreSQL is reachable before trying to boot:
+   - `pg_isready`
+8. Run the lowest-risk validation commands first:
+   - `go test ./...`
+   - `go run github.com/magefile/mage vet`
+   - `npm run build-css`
+9. Expect `go run github.com/magefile/mage lint` to fail until the current `goconst` issue is fixed.
+10. If you change `internal/view/**/*.templ`, `internal/store/queries.sql`, `internal/store/schema.sql`, or `input.css`, run:
+    - `go run github.com/magefile/mage generate`
+11. Inspect generated diffs carefully.
+    - In mismatched tool environments, generation may change only version headers
+12. Once the DB is live, verify the app bring-up path:
+    - `go run github.com/magefile/mage dev`
+    - or `go run github.com/magefile/mage run`
+13. Manually verify:
+    - `/health`
+    - register a user
+    - login/logout
+    - `/users` CRUD
+14. If you touch schema or migrations, update this file before finishing.
+
+## 7. Short Truth Summary
+
+If you need the shortest honest summary before working:
+
+- The repo builds, tests, vets, and generates successfully in this environment.
+- The linter is currently failing on a small test-file constant issue.
+- Runtime and migration bring-up were not verified because local PostgreSQL was unavailable and Atlas was not installed.
+- The biggest repo hygiene problem is source-of-truth drift: schema/bootstrap/migrations/generated artifacts are all close enough to work, but not unified enough to be low-risk.
